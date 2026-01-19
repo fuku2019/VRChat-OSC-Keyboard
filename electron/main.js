@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, dialog } from 'electron';
 import { WebSocketServer } from 'ws';
 import { Client } from 'node-osc';
 import path from 'path';
@@ -13,6 +13,7 @@ let mainWindow;
 const OSC_IP = '127.0.0.1';
 const OSC_PORT = 9000;
 const WS_PORT = 8080;
+const WS_HOST = '127.0.0.1'; // Explicitly bind to localhost for security
 
 let oscClient;
 let wss;
@@ -21,9 +22,11 @@ function startBridge() {
   console.log('⚡ Starting OSC Bridge in Electron Main Process...');
   try {
     oscClient = new Client(OSC_IP, OSC_PORT);
-    wss = new WebSocketServer({ port: WS_PORT });
+    
+    // Bind specifically to localhost to avoid triggering firewall "Public Network" warnings
+    wss = new WebSocketServer({ port: WS_PORT, host: WS_HOST });
 
-    console.log(`⚡ WebSocket listening on port ${WS_PORT}`);
+    console.log(`⚡ WebSocket listening on ws://${WS_HOST}:${WS_PORT}`);
     console.log(`➡️  Forwarding to VRChat at ${OSC_IP}:${OSC_PORT}`);
 
     wss.on('connection', (ws) => {
@@ -43,6 +46,11 @@ function startBridge() {
 
     wss.on('error', (e) => {
       console.error('[WS Server] Error:', e);
+      if (e.code === 'EADDRINUSE') {
+        console.error(`Port ${WS_PORT} is already in use.`);
+        // Optional: Show error dialog to user
+        // dialog.showErrorBox('Port Conflict', `Port ${WS_PORT} is already in use. Is the app already open?`);
+      }
     });
 
   } catch (err) {
@@ -54,23 +62,28 @@ function startBridge() {
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 1100, // Increased to ensure UI fits
-    height: 700, // Increased to ensure UI fits
+    width: 1100,
+    height: 700,
     minWidth: 800,
     minHeight: 700,
     frame: true,
     transparent: false,
     backgroundColor: '#020617', // Match slate-950
+    icon: path.join(__dirname, '../dist/icon.ico'), // Try to load icon if available
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
+      devTools: !app.isPackaged 
     },
   });
+
+  // Hide menu bar for cleaner look
+  mainWindow.setMenuBarVisibility(false);
 
   // In development, load from Vite server. In production, load built file.
   if (!app.isPackaged) {
     mainWindow.loadURL('http://localhost:5173');
-    // mainWindow.webContents.openDevTools();
+    mainWindow.webContents.openDevTools();
   } else {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
   }

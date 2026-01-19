@@ -44,6 +44,7 @@
     "rimraf": "^6.0.1"
   },
   "build": {
+    "publish": null,
     "appId": "com.vrchat.osc.keyboard",
     "productName": "VRChat OSC Keyboard",
     "files": [

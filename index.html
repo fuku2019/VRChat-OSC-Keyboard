@@ -6,17 +6,20 @@
     <title>VRChat OSC Keyboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+      /* Global Styles & Animations */
       html, body {
         margin: 0;
         padding: 0;
-        background-color: transparent; /* Allow overlay transparency */
+        background-color: transparent;
         overflow: hidden;
         user-select: none;
         height: 100%;
       }
+
       #root {
         height: 100%;
       }
+
       /* Custom Scrollbar */
       ::-webkit-scrollbar {
         width: 8px;
@@ -37,41 +40,58 @@
         from { opacity: 0; }
         to { opacity: 1; }
       }
+      @keyframes fadeOut {
+        from { opacity: 1; }
+        to { opacity: 0; }
+      }
+      
       @keyframes scaleIn {
         from { opacity: 0; transform: scale(0.95); }
         to { opacity: 1; transform: scale(1); }
       }
+      @keyframes scaleOut {
+        from { opacity: 1; transform: scale(1); }
+        to { opacity: 0; transform: scale(0.95); }
+      }
+
       @keyframes slideUp {
         from { opacity: 0; transform: translateY(20px); }
         to { opacity: 1; transform: translateY(0); }
       }
-      
+
       .animate-fade-in {
         animation: fadeIn 0.3s ease-out forwards;
       }
-      
+      .animate-fade-out {
+        animation: fadeOut 0.2s ease-in forwards;
+      }
+
       .animate-scale-in {
         animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
       }
-      
+      .animate-scale-out {
+        animation: scaleOut 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+
       .animate-slide-up {
         animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
       }
     </style>
-  <script type="importmap">
+    <!-- Import map removed: Dependencies are bundled by Vite for Electron stability and offline use -->
+<script type="importmap">
 {
   "imports": {
-    "react/": "https://esm.sh/react@^19.2.3/",
-    "react": "https://esm.sh/react@^19.2.3",
-    "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "ws": "https://esm.sh/ws@^8.19.0",
-    "node-osc": "https://esm.sh/node-osc@^11.2.2",
     "vite": "https://esm.sh/vite@^7.3.1",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
     "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
     "path": "https://esm.sh/path@^0.12.7",
     "url": "https://esm.sh/url@^0.11.4",
-    "electron": "https://esm.sh/electron@^40.0.0"
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "ws": "https://esm.sh/ws@^8.19.0",
+    "electron": "https://esm.sh/electron@^40.0.0",
+    "node-osc": "https://esm.sh/node-osc@^11.2.2"
   }
 }
 </script>
