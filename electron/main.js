@@ -54,10 +54,10 @@ function startBridge() {
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 1200, // Increased to ensure UI fits
-    height: 800, // Increased to ensure UI fits
+    width: 1100, // Increased to ensure UI fits
+    height: 700, // Increased to ensure UI fits
     minWidth: 800,
-    minHeight: 600,
+    minHeight: 700,
     frame: true,
     transparent: false,
     backgroundColor: '#020617', // Match slate-950
