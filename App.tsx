@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Settings, WifiOff } from 'lucide-react';
 import VirtualKeyboard from './components/VirtualKeyboard';
 import SettingsModal from './components/SettingsModal';
+import TutorialOverlay from './components/TutorialOverlay';
 import { InputMode, OscConfig } from './types';
 import { sendOscMessage } from './services/oscService';
 import { useIME } from './hooks/useIME';
@@ -14,6 +15,7 @@ const App: React.FC = () => {
   } = useIME(InputMode.HIRAGANA);
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isTutorialOpen, setIsTutorialOpen] = useState(false);
   const [lastSent, setLastSent] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSending, setIsSending] = useState(false);
@@ -24,7 +26,7 @@ const App: React.FC = () => {
     return saved ? JSON.parse(saved) : {
       bridgeUrl: 'ws://127.0.0.1:8080',
       autoSend: false,
-      language: 'ja' // Default to Japanese
+      language: 'ja'
     };
   });
 
@@ -35,11 +37,32 @@ const App: React.FC = () => {
     }
   }, []);
 
+  // Check for first launch to show tutorial
+  useEffect(() => {
+    const hasSeenTutorial = localStorage.getItem('vrc_osc_has_seen_tutorial');
+    if (!hasSeenTutorial) {
+      setIsTutorialOpen(true);
+    } else {
+      textareaRef.current?.focus();
+    }
+  }, []);
+
   const t = TRANSLATIONS[config.language || 'ja'];
 
   const saveConfig = (newConfig: OscConfig) => {
     setConfig(newConfig);
     localStorage.setItem('vrc_osc_config', JSON.stringify(newConfig));
+  };
+
+  const handleTutorialClose = () => {
+    setIsTutorialOpen(false);
+    localStorage.setItem('vrc_osc_has_seen_tutorial', 'true');
+    setTimeout(() => textareaRef.current?.focus(), 100);
+  };
+
+  const handleOpenTutorialFromSettings = () => {
+    setIsSettingsOpen(false);
+    setIsTutorialOpen(true);
   };
 
   const handleSend = async () => {
@@ -104,12 +127,14 @@ const App: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    textareaRef.current?.focus();
-  }, []);
-
   return (
     <div className="h-screen w-screen bg-slate-950/90 flex flex-col items-center justify-center p-2 overflow-hidden">
+      <TutorialOverlay 
+        isOpen={isTutorialOpen} 
+        onClose={handleTutorialClose} 
+        language={config.language || 'ja'} 
+      />
+
       <div className="w-full max-w-5xl flex justify-between items-center mb-4 px-4 shrink-0">
         <div className="flex items-center gap-3">
           <div className="w-3 h-3 rounded-full bg-cyan-500 shadow-[0_0_10px_rgba(6,182,212,0.8)]"></div>
@@ -179,12 +204,10 @@ const App: React.FC = () => {
 
       <SettingsModal 
         isOpen={isSettingsOpen}
-        onClose={() => {
-          setIsSettingsOpen(false);
-          textareaRef.current?.focus();
-        }}
+        onClose={() => setIsSettingsOpen(false)}
         config={config}
         onSave={saveConfig}
+        onShowTutorial={handleOpenTutorialFromSettings}
       />
     </div>
   );

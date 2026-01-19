@@ -7,12 +7,20 @@ export const TRANSLATIONS = {
       language: '言語 / Language',
       oscUrl: 'OSCブリッジ URL',
       defaultUrl: 'デフォルト: ws://127.0.0.1:8080',
-      instructionsTitle: '使い方',
-      instructions: [
-        'アプリを起動すると自動的に接続されます。',
-        'VRChatのOSCを有効にしてください。'
-      ],
+      instructionsTitle: 'ヘルプ',
+      resetWelcome: '使い方ガイドを表示する',
       save: '保存して閉じる'
+    },
+    tutorial: {
+      title: 'VRChat OSC キーボードへようこそ',
+      subtitle: 'このアプリはVRChatのチャットボックスへテキストを送信するためのツールです。',
+      step1Title: 'OSCの準備',
+      step1Desc: 'VRChat内のアクションメニューから OSC > Enable を有効にしてください。',
+      step2Title: '入力モード',
+      step2Desc: 'Tabキーや画面ボタンで入力モードを切り替えられます。物理キーボードでの直接入力にも対応しています。',
+      step3Title: '送信',
+      step3Desc: 'Enterキー、または送信ボタンでVRChatへメッセージを飛ばします。',
+      startButton: 'はじめる'
     },
     status: {
       sending: '送信中...',
@@ -25,7 +33,7 @@ export const TRANSLATIONS = {
       clear: 'クリア',
       space: '空白',
       enter: 'Enter',
-      backspace: 'BS',
+      backspace: '←',
       shift: 'Shift',
       tab: 'Tab'
     },
@@ -41,12 +49,20 @@ export const TRANSLATIONS = {
       language: 'Language',
       oscUrl: 'OSC Bridge URL',
       defaultUrl: 'Default: ws://127.0.0.1:8080',
-      instructionsTitle: 'Instructions',
-      instructions: [
-        'App connects automatically on launch.',
-        'Ensure VRChat OSC is enabled.'
-      ],
+      instructionsTitle: 'Help',
+      resetWelcome: 'Show Tutorial Guide',
       save: 'Save & Close'
+    },
+    tutorial: {
+      title: 'Welcome to VRC OSC Keyboard',
+      subtitle: 'This tool helps you send text to the VRChat chatbox easily.',
+      step1Title: 'Prepare OSC',
+      step1Desc: 'Enable OSC in VRChat via Action Menu > OSC > Enable.',
+      step2Title: 'Input Modes',
+      step2Desc: 'Switch Input modes using Tab or the UI button. You can also type directly using your physical keyboard.',
+      step3Title: 'Send Message',
+      step3Desc: 'Press Enter or the Send button to display your text in-game.',
+      startButton: 'Get Started'
     },
     status: {
       sending: 'SENDING...',
@@ -59,7 +75,7 @@ export const TRANSLATIONS = {
       clear: 'Clear',
       space: 'Space',
       enter: 'Enter',
-      backspace: 'BS',
+      backspace: '←',
       shift: 'Shift',
       tab: 'Tab'
     },
@@ -126,7 +142,7 @@ export const KEYBOARD_LAYOUT: KeyConfig[] = [
   { label: '-', value: '-', shiftValue: '=', gridCols: 2 },
   { label: '^', value: '^', shiftValue: '~', gridCols: 2 },
   { label: '¥', value: '¥', shiftValue: '|', gridCols: 2 },
-  { label: 'BS', value: 'backspace', action: 'backspace', gridCols: 4 },
+  { label: '←', value: 'backspace', action: 'backspace', gridCols: 4 },
 
   // ROW 2 (3 + 12*2 + 3 = 30)
   { label: 'Tab', value: 'tab', action: 'tab', gridCols: 3 },

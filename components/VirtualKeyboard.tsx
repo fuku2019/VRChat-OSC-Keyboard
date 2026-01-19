@@ -65,7 +65,7 @@ const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({
           if (key.action === 'send') displayKey.label = tKeys.send;
           if (key.action === 'clear') displayKey.label = tKeys.clear;
           if (key.action === 'space' && key.label.trim() === '') displayKey.label = tKeys.space;
-          if (key.action === 'backspace' && key.label === 'BS') displayKey.label = tKeys.backspace;
+          if (key.action === 'backspace' && key.label === '←') displayKey.label = tKeys.backspace;
           
           // Dynamic Labels
           if (key.action === 'mode') {
