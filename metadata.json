@@ -1,0 +1,5 @@
+{
+  "name": "VRChat OSC Keyboard",
+  "description": "A Japanese/English virtual keyboard and chatbox interface designed for SteamVR overlays to send text to VRChat via OSC.",
+  "requestFramePermissions": []
+}

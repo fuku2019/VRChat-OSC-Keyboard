@@ -1,0 +1,95 @@
+import { app, BrowserWindow } from 'electron';
+import { WebSocketServer } from 'ws';
+import { Client } from 'node-osc';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+let mainWindow;
+
+// --- OSC Bridge Logic (Integrated) ---
+const OSC_IP = '127.0.0.1';
+const OSC_PORT = 9000;
+const WS_PORT = 8080;
+
+let oscClient;
+let wss;
+
+function startBridge() {
+  console.log('⚡ Starting OSC Bridge in Electron Main Process...');
+  try {
+    oscClient = new Client(OSC_IP, OSC_PORT);
+    wss = new WebSocketServer({ port: WS_PORT });
+
+    console.log(`⚡ WebSocket listening on port ${WS_PORT}`);
+    console.log(`➡️  Forwarding to VRChat at ${OSC_IP}:${OSC_PORT}`);
+
+    wss.on('connection', (ws) => {
+      ws.on('message', (message) => {
+        try {
+          const data = JSON.parse(message.toString());
+          if (data.text) {
+            oscClient.send('/chatbox/input', [data.text, true]);
+            ws.send(JSON.stringify({ success: true }));
+          }
+        } catch (e) {
+          console.error('[OSC Bridge] Error:', e);
+          ws.send(JSON.stringify({ success: false, error: 'Bridge Error' }));
+        }
+      });
+    });
+
+    wss.on('error', (e) => {
+      console.error('[WS Server] Error:', e);
+    });
+
+  } catch (err) {
+    console.error('Failed to start bridge:', err);
+  }
+}
+
+// --- Electron Window Logic ---
+
+function createWindow() {
+  mainWindow = new BrowserWindow({
+    width: 1000,
+    height: 600,
+    frame: true, // Set to false if you want a fully custom overlay style window
+    transparent: false, // Set to true if you want transparency (requires frame: false usually)
+    backgroundColor: '#020617', // Match slate-950
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+    },
+  });
+
+  // In development, load from Vite server. In production, load built file.
+  if (!app.isPackaged) {
+    mainWindow.loadURL('http://localhost:5173');
+    // mainWindow.webContents.openDevTools();
+  } else {
+    mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
+  }
+}
+
+app.whenReady().then(() => {
+  startBridge();
+  createWindow();
+
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) {
+      createWindow();
+    }
+  });
+});
+
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') {
+    // Close bridge connections
+    if (wss) wss.close();
+    if (oscClient) oscClient.close();
+    app.quit();
+  }
+});
