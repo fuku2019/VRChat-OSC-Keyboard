@@ -8,14 +8,14 @@ export const TRANSLATIONS = {
       oscUrl: 'OSCブリッジ URL',
       defaultUrl: 'デフォルト: ws://127.0.0.1:8080',
       instructionsTitle: 'ヘルプ',
-      resetWelcome: '使い方ガイドを表示する',
+      resetWelcome: 'チュートリアルを表示する',
       save: '保存して閉じる'
     },
     tutorial: {
       title: 'VRChat OSC キーボードへようこそ',
       subtitle: 'このアプリはVRChatのチャットボックスへテキストを送信するためのツールです。',
-      step1Title: 'OSCの準備',
-      step1Desc: 'VRChat内のアクションメニューから OSC > Enable を有効にしてください。',
+      step1Title: 'OSCの有効化',
+      step1Desc: 'VRChat内のアクションメニューからOSC設定を開きOSCを有効にしてください。',
       step2Title: '入力モード',
       step2Desc: 'Tabキーや画面ボタンで入力モードを切り替えられます。物理キーボードでの直接入力にも対応しています。',
       step3Title: '送信',
