@@ -71,5 +71,20 @@ export default defineConfig({
   ],
   server: {
     host: true
+  },
+  build: {
+    outDir: 'dist',
+    emptyOutDir: true,
+    sourcemap: false, // Disable sourcemaps to save space
+    minify: 'esbuild', // Faster and usually smaller than terser default
+    target: 'esnext',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          ui: ['lucide-react']
+        }
+      }
+    }
   }
 });
