@@ -1,5 +1,5 @@
 import React from 'react';
-import { Wifi, Keyboard, Send, CheckCircle } from 'lucide-react';
+import { Wifi, Keyboard, Send, CircleCheck } from 'lucide-react';
 import { TRANSLATIONS } from '../constants';
 import { Language } from '../types';
 
@@ -57,7 +57,7 @@ const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ isOpen, onClose, lang
           className="group relative inline-flex items-center justify-center px-10 py-4 font-bold text-white transition-all duration-200 bg-cyan-600 font-pj rounded-2xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-600 hover:bg-cyan-500 active:scale-95 shadow-[0_0_20px_rgba(8,145,178,0.3)] opacity-0 animate-slide-up"
           style={{ animationDelay: '750ms' }}
         >
-          <CheckCircle className="mr-2" size={20} />
+          <CircleCheck className="mr-2" size={20} />
           {t.startButton}
         </button>
       </div>

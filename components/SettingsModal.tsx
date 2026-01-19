@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Save, Info, HelpCircle } from 'lucide-react';
+import { X, Save, Info, CircleHelp } from 'lucide-react';
 import { OscConfig, Language } from '../types';
 import { TRANSLATIONS } from '../constants';
 
@@ -84,7 +84,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, config, 
               className="w-full flex items-center justify-between p-4 bg-slate-700/30 hover:bg-slate-700/50 rounded-xl border border-slate-600/50 text-slate-300 hover:text-white transition-all group"
             >
               <div className="flex items-center gap-3">
-                <HelpCircle size={20} className="text-cyan-500" />
+                <CircleHelp size={20} className="text-cyan-500" />
                 <span className="font-medium text-sm">{t.resetWelcome}</span>
               </div>
               <span className="text-slate-500 group-hover:translate-x-1 transition-transform">→</span>
