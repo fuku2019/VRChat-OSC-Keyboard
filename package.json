@@ -2,8 +2,10 @@
   "name": "vrchat-osc-keyboard",
   "productName": "VRChat OSC Keyboard",
   "version": "1.0.3",
-  "description": "A virtual keyboard for sending text to VRChat via OSC",
-  "author": "User",
+  "description": "A Japanese/English virtual keyboard and chatbox interface designed for SteamVR overlays to send text to VRChat via OSC.",
+  "author": {
+    "name": "fuku_2019"
+  },
   "private": true,
   "type": "module",
   "main": "electron/main.js",
@@ -37,7 +39,7 @@
     "vite": "^6.1.0",
     "wait-on": "^9.0.0"
   },
-    "overrides": {
+  "overrides": {
     "glob": "^10.4.5",
     "rimraf": "^6.0.1"
   },
@@ -54,11 +56,19 @@
     },
     "win": {
       "target": "nsis",
-      "forceCodeSigning": false,
+      "icon": "build/icon.ico",
+      "legalTrademarks": "VRChat OSC Keyboard",
       "verifyUpdateCodeSignature": false
     },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "deleteAppDataOnUninstall": true
+    },
     "linux": {
-      "target": "AppImage"
+      "target": "AppImage",
+      "category": "Utility"
     }
   }
 }
