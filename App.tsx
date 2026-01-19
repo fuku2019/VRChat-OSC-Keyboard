@@ -128,14 +128,14 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="h-screen w-screen bg-slate-950/90 flex flex-col items-center justify-center p-2 overflow-hidden">
+    <div className="h-full min-h-screen w-full bg-slate-950/90 flex flex-col items-center justify-center p-4 overflow-y-auto overflow-x-hidden">
       <TutorialOverlay 
         isOpen={isTutorialOpen} 
         onClose={handleTutorialClose} 
         language={config.language || 'ja'} 
       />
 
-      <div className="w-full max-w-5xl flex justify-between items-center mb-4 px-4 shrink-0">
+      <div className="w-full max-w-5xl flex justify-between items-center mb-4 px-2 shrink-0 pt-4 md:pt-0">
         <div className="flex items-center gap-3">
           <div className="w-3 h-3 rounded-full bg-cyan-500 shadow-[0_0_10px_rgba(6,182,212,0.8)]"></div>
           <h1 className="text-xl md:text-2xl font-bold text-slate-100 tracking-wider drop-shadow-md">
@@ -150,7 +150,7 @@ const App: React.FC = () => {
         </button>
       </div>
 
-      <div className="w-full max-w-5xl mb-4 relative shrink-0 group">
+      <div className="w-full max-w-5xl mb-4 relative shrink-0 group px-1">
         <div className={`
           relative w-full h-24 md:h-32 bg-slate-900/80 rounded-2xl border-2 
           flex flex-col px-6 py-2 shadow-inner backdrop-blur transition-colors
@@ -188,7 +188,7 @@ const App: React.FC = () => {
         </div>
       </div>
 
-      <div className="w-full max-w-5xl shrink-0">
+      <div className="w-full max-w-5xl shrink-0 px-1 pb-4">
         <VirtualKeyboard 
           onChar={(c) => handleVirtualKey(() => handleCharInput(c))}
           onBackspace={() => handleVirtualKey(handleBackspace)}

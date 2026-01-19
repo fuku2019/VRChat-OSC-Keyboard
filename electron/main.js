@@ -54,10 +54,12 @@ function startBridge() {
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 1000,
-    height: 600,
-    frame: true, // Set to false if you want a fully custom overlay style window
-    transparent: false, // Set to true if you want transparency (requires frame: false usually)
+    width: 1200, // Increased to ensure UI fits
+    height: 800, // Increased to ensure UI fits
+    minWidth: 800,
+    minHeight: 600,
+    frame: true,
+    transparent: false,
     backgroundColor: '#020617', // Match slate-950
     webPreferences: {
       nodeIntegration: false,
