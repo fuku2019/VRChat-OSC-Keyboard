@@ -28,8 +28,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, config, 
   };
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="bg-slate-800 w-full max-w-lg max-h-[90vh] flex flex-col rounded-2xl border border-slate-600 shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in">
+      <div className="bg-slate-800 w-full max-w-lg max-h-[90vh] flex flex-col rounded-2xl border border-slate-600 shadow-2xl overflow-hidden animate-scale-in">
         
         <div className="flex justify-between items-center p-6 border-b border-slate-700 bg-slate-800">
           <h2 className="text-2xl font-bold text-cyan-400">{t.title}</h2>
