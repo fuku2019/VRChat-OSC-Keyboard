@@ -1,7 +1,7 @@
 {
   "name": "vrchat-osc-keyboard",
   "productName": "VRChat OSC Keyboard",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A virtual keyboard for sending text to VRChat via OSC",
   "author": "User",
   "private": true,
