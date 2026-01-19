@@ -43,8 +43,18 @@ export const useIME = (initialMode: InputMode = InputMode.HIRAGANA): UseIMERetur
     }
 
     // Japanese Logic
-    // Only process alphabet chars for IME, others (numbers/symbols) go direct
-    if (!/^[a-zA-Z-]$/.test(char)) {
+
+    // Check if input is Uppercase (Shift+Key behavior in JP mode)
+    // This allows typing Uppercase English letters while in Hiragana/Katakana mode
+    if (/^[A-Z]$/.test(char)) {
+       commitBuffer();
+       setInput(prev => prev + char);
+       return;
+    }
+
+    // Only process lowercase alphabet chars and hyphen for IME conversion
+    // Numbers and symbols should go through directly
+    if (!/^[a-z-]$/.test(char)) {
       commitBuffer();
       setInput(prev => prev + char);
       return;
