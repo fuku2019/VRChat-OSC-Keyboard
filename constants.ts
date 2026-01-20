@@ -229,5 +229,5 @@ export const KEYBOARD_LAYOUT: KeyConfig[] = [
   // ROW 5 (4 + 22 + 4 = 30)
   { label: 'Clear', value: 'clear', action: 'clear', gridCols: 4 },
   { label: 'Space', value: ' ', action: 'space', gridCols: 22 },
-  { label: 'Send', value: 'send', action: 'send', gridCols: 4 }
+  { label: 'Clear', value: 'clear', action: 'clear', gridCols: 4 }
 ];
