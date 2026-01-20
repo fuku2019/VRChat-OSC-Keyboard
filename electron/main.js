@@ -29,7 +29,7 @@ function startBridge() {
   console.log('⚡ Starting OSC Bridge in Electron Main Process...');
   try {
     oscClient = new Client(OSC_IP, OSC_PORT);
-    
+
     // Bind specifically to localhost to avoid triggering firewall "Public Network" warnings / ファイアウォールの「パブリックネットワーク」警告のトリガーを避けるために、特にlocalhostにバインドする
     wss = new WebSocketServer({ port: WS_PORT, host: WS_HOST });
 
@@ -59,7 +59,6 @@ function startBridge() {
         // dialog.showErrorBox('Port Conflict', `Port ${WS_PORT} is already in use. Is the app already open?`);
       }
     });
-
   } catch (err) {
     console.error('Failed to start bridge:', err);
   }
@@ -81,7 +80,7 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      devTools: !app.isPackaged 
+      devTools: !app.isPackaged,
     },
   });
 

@@ -16,7 +16,7 @@ const newFolderName = `VRChat-OSC-Keyboard-${version}`;
 const newPath = path.join(releaseDir, newFolderName);
 
 // Wait function with retry / リトライ付きの待機関数
-const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function retryOperation(operation, maxRetries = 5, delayMs = 1000) {
   for (let i = 0; i < maxRetries; i++) {
@@ -25,7 +25,9 @@ async function retryOperation(operation, maxRetries = 5, delayMs = 1000) {
       return true;
     } catch (error) {
       if (i === maxRetries - 1) throw error;
-      console.log(`Retry ${i + 1}/${maxRetries} after error: ${error.code || error.message}`);
+      console.log(
+        `Retry ${i + 1}/${maxRetries} after error: ${error.code || error.message}`,
+      );
       await sleep(delayMs);
     }
   }
@@ -65,21 +67,24 @@ async function main() {
         });
         console.log(`Successfully renamed executable to '${newExeName}'`);
       } else {
-        console.warn(`Executable '${exeName}' not found in '${newPath}'. Check package.json executableName.`);
+        console.warn(
+          `Executable '${exeName}' not found in '${newPath}'. Check package.json executableName.`,
+        );
       }
-
     } catch (error) {
       console.error(`Error renaming directory:`, error);
       process.exit(1);
     }
   } else {
     console.error(`Directory not found: ${oldPath}`);
-    console.log('Skipping rename (maybe build failed or target is not directory?)');
+    console.log(
+      'Skipping rename (maybe build failed or target is not directory?)',
+    );
     process.exit(1);
   }
 }
 
-main().catch(err => {
+main().catch((err) => {
   console.error('Unexpected error:', err);
   process.exit(1);
 });

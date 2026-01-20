@@ -12,7 +12,9 @@ const oscBridgePlugin = () => {
     configureServer(server) {
       // If we are running inside Electron dev mode, let Electron handle the bridge / Electron開発モード内で実行している場合は、Electronにブリッジを処理させる
       if (process.env.IS_ELECTRON) {
-        console.log("ℹ️  Running in Electron mode: Vite OSC bridge disabled (Electron handles it).");
+        console.log(
+          'ℹ️  Running in Electron mode: Vite OSC bridge disabled (Electron handles it).',
+        );
         return;
       }
 
@@ -40,7 +42,12 @@ const oscBridgePlugin = () => {
             }
           } catch (e) {
             console.error('[OSC] Bridge Error:', e);
-            ws.send(JSON.stringify({ success: false, error: 'Bridge Processing Error' }));
+            ws.send(
+              JSON.stringify({
+                success: false,
+                error: 'Bridge Processing Error',
+              }),
+            );
           }
         });
         // Error handling to prevent crash on port conflict / ポート競合によるクラッシュを防ぐためのエラーハンドリング
@@ -49,9 +56,11 @@ const oscBridgePlugin = () => {
 
       wss.on('error', (err: any) => {
         if (err.code === 'EADDRINUSE') {
-          console.error(`⚠️  Port ${WS_PORT} is already in use. Assuming external bridge (e.g. Electron) is running.`);
+          console.error(
+            `⚠️  Port ${WS_PORT} is already in use. Assuming external bridge (e.g. Electron) is running.`,
+          );
         } else {
-          console.error("WebSocket Server Error:", err);
+          console.error('WebSocket Server Error:', err);
         }
       });
 
@@ -60,19 +69,15 @@ const oscBridgePlugin = () => {
         wss.close();
         oscClient.close();
       });
-    }
+    },
   };
 };
 
 export default defineConfig({
   base: './', // Crucial for Electron apps loading via file:// / Electronアプリがfile://経由で読み込むために重要
-  plugins: [
-    react(),
-    tailwindcss(),
-    oscBridgePlugin()
-  ],
+  plugins: [react(), tailwindcss(), oscBridgePlugin()],
   server: {
-    host: true
+    host: true,
   },
   build: {
     outDir: 'dist',
@@ -84,9 +89,9 @@ export default defineConfig({
       output: {
         manualChunks: {
           vendor: ['react', 'react-dom'],
-          ui: ['lucide-react']
-        }
-      }
-    }
-  }
+          ui: ['lucide-react'],
+        },
+      },
+    },
+  },
 });

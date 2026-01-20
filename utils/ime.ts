@@ -1,8 +1,11 @@
 import { ROMAJI_MAP, HIRAGANA_TO_KATAKANA } from '../constants';
 
-export const toKana = (input: string, buffer: string): { output: string; newBuffer: string } => {
+export const toKana = (
+  input: string,
+  buffer: string,
+): { output: string; newBuffer: string } => {
   const nextBuffer = buffer + input;
-  
+
   // Check for exact match / 完全一致を確認
   if (ROMAJI_MAP[nextBuffer]) {
     return { output: ROMAJI_MAP[nextBuffer], newBuffer: '' };
@@ -16,8 +19,12 @@ export const toKana = (input: string, buffer: string): { output: string; newBuff
 
   // Small tsu (double consonant) / 促音（二重子音）
   // If we have 'tt', 'ss', 'kk' etc. / 'tt', 'ss', 'kk' などがある場合
-  if (nextBuffer.length >= 2 && nextBuffer[0] === nextBuffer[1] && !['a','i','u','e','o','n'].includes(nextBuffer[0])) {
-     return { output: 'っ', newBuffer: nextBuffer.substring(1) };
+  if (
+    nextBuffer.length >= 2 &&
+    nextBuffer[0] === nextBuffer[1] &&
+    !['a', 'i', 'u', 'e', 'o', 'n'].includes(nextBuffer[0])
+  ) {
+    return { output: 'っ', newBuffer: nextBuffer.substring(1) };
   }
 
   // If buffer gets too long (3 chars) and no match, flush first char / バッファが長すぎる（3文字）かつ一致がない場合、最初の文字をフラッシュする
@@ -29,5 +36,8 @@ export const toKana = (input: string, buffer: string): { output: string; newBuff
 };
 
 export const convertToKatakana = (text: string): string => {
-  return text.split('').map(char => HIRAGANA_TO_KATAKANA[char] || char).join('');
+  return text
+    .split('')
+    .map((char) => HIRAGANA_TO_KATAKANA[char] || char)
+    .join('');
 };
