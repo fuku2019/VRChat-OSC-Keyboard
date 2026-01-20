@@ -17,6 +17,15 @@ export const toKana = (
     return { output: 'ん', newBuffer: '' };
   }
 
+  // Check for "n" + consonant (except y) -> ん
+  if (
+    nextBuffer.length === 2 &&
+    nextBuffer[0] === 'n' &&
+    !['a', 'i', 'u', 'e', 'o', 'n', 'y'].includes(nextBuffer[1])
+  ) {
+    return { output: 'ん', newBuffer: nextBuffer[1] };
+  }
+
   // Small tsu (double consonant) / 促音（二重子音）
   // If we have 'tt', 'ss', 'kk' etc. / 'tt', 'ss', 'kk' などがある場合
   if (
