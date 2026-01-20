@@ -19,7 +19,7 @@ OSC経由でメッセージを送信するツール
 <br>
 ・
 
-https://github.com/user-attachments/assets/90d87833-1077-4712-814b-3ad2505e6b34
+https://github.com/user-attachments/assets/988b4c58-d770-46fa-ad06-91ad71321da8
 
 ## 手動ビルド
 ```bash
