@@ -8,10 +8,11 @@ interface SettingsModalProps {
   onClose: () => void;
   config: OscConfig;
   onSave: (config: OscConfig) => void;
+  onLanguageChange: (lang: Language) => void;
   onShowTutorial: () => void;
 }
 
-const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, config, onSave, onShowTutorial }) => {
+const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, config, onSave, onLanguageChange, onShowTutorial }) => {
   const [localConfig, setLocalConfig] = useState(config);
   const [shouldRender, setShouldRender] = useState(false);
 
@@ -19,15 +20,18 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, config, 
   useEffect(() => {
     if (isOpen) {
       setShouldRender(true);
+      // Sync local state when opening
+      setLocalConfig(config);
     } else {
       const timer = setTimeout(() => setShouldRender(false), 200); // Match CSS animation duration
       return () => clearTimeout(timer);
     }
-  }, [isOpen]);
+  }, [isOpen, config]);
   
   if (!shouldRender) return null;
 
-  const t = TRANSLATIONS[config.language || 'ja'].settings;
+  // Use localConfig for translations to ensure immediate UI update within modal
+  const t = TRANSLATIONS[localConfig.language || 'ja'].settings;
 
   const handleSave = () => {
     onSave(localConfig);
@@ -36,6 +40,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, config, 
 
   const handleLanguageChange = (lang: Language) => {
     setLocalConfig({ ...localConfig, language: lang });
+    onLanguageChange(lang); // Trigger immediate update in parent
   };
 
   const animationClass = isOpen ? 'animate-fade-in' : 'animate-fade-out';

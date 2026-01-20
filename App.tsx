@@ -207,6 +207,7 @@ const App: React.FC = () => {
         onClose={() => setIsSettingsOpen(false)}
         config={config}
         onSave={saveConfig}
+        onLanguageChange={(lang) => saveConfig({ ...config, language: lang })}
         onShowTutorial={handleOpenTutorialFromSettings}
       />
     </div>
