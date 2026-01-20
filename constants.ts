@@ -12,7 +12,7 @@ export const TRANSLATIONS = {
       save: '保存して閉じる'
     },
     tutorial: {
-      title: 'VRChat OSC キーボードへようこそ',
+      title: 'VRChat OSC Keyboardへようこそ',
       subtitle: 'このアプリはVRChatのチャットボックスへテキストを送信するためのツールです。',
       step1Title: 'OSCの有効化',
       step1Desc: 'VRChat内のアクションメニューからOSC設定を開きOSCを有効にしてください。',
@@ -27,7 +27,7 @@ export const TRANSLATIONS = {
       sent: '送信完了',
       error: 'エラー'
     },
-    appTitle: 'キーボード',
+    appTitle: 'Keyboard',
     appTitlePrefix: 'VRC OSC',
     keys: {
       send: '送信',
@@ -70,7 +70,7 @@ export const TRANSLATIONS = {
       sent: 'SENT OK',
       error: 'ERROR'
     },
-    appTitle: 'KEYBOARD',
+    appTitle: 'Keyboard',
     appTitlePrefix: 'VRC OSC',
     keys: {
       send: 'Send',
