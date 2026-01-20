@@ -22,7 +22,7 @@ const oscBridgePlugin = () => {
       const WS_PORT = 8080;
 
       console.log(`\n⚡ OSC Bridge initializing (Vite Plugin)...`);
-      
+
       const oscClient = new Client(OSC_IP, OSC_PORT);
       const wss = new WebSocketServer({ port: WS_PORT });
 
@@ -46,7 +46,7 @@ const oscBridgePlugin = () => {
         // Error handling to prevent crash on port conflict
         ws.on('error', (err) => console.error(err));
       });
-      
+
       wss.on('error', (err: any) => {
         if (err.code === 'EADDRINUSE') {
           console.error(`⚠️  Port ${WS_PORT} is already in use. Assuming external bridge (e.g. Electron) is running.`);

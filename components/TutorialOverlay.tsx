@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, FC } from 'react';
 import { Wifi, Keyboard, Send, CircleCheck } from 'lucide-react';
 import { TRANSLATIONS } from '../constants';
 import { Language } from '../types';
@@ -9,7 +9,7 @@ interface TutorialOverlayProps {
   language: Language;
 }
 
-const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ isOpen, onClose, language }) => {
+const TutorialOverlay: FC<TutorialOverlayProps> = ({ isOpen, onClose, language }) => {
   const [shouldRender, setShouldRender] = useState(false);
 
   // Handle opening and closing animations

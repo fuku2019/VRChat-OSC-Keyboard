@@ -1,4 +1,4 @@
-import React from 'react';
+import { FC } from 'react';
 import { KeyConfig } from '../types';
 
 interface KeyProps {
@@ -8,7 +8,7 @@ interface KeyProps {
   isShiftActive?: boolean;
 }
 
-const Key: React.FC<KeyProps> = ({ config, onPress, highlight = false, isShiftActive = false }) => {
+const Key: FC<KeyProps> = ({ config, onPress, highlight = false, isShiftActive = false }) => {
   const baseClasses = "rounded-lg font-bold text-xl transition-all duration-75 active:scale-95 select-none flex shadow-lg border-b-4 border-slate-700 active:border-b-0 active:translate-y-1 relative items-center justify-center";
   
   const colorClasses = highlight

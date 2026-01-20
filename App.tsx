@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Settings, WifiOff } from 'lucide-react';
 import VirtualKeyboard from './components/VirtualKeyboard';
 import SettingsModal from './components/SettingsModal';
@@ -8,7 +8,7 @@ import { sendOscMessage } from './services/oscService';
 import { useIME } from './hooks/useIME';
 import { TRANSLATIONS } from './constants';
 
-const App: React.FC = () => {
+const App = () => {
   const { 
     input, buffer, mode, setMode, setInput, overwriteInput,
     handleCharInput, handleBackspace, handleClear, handleSpace, commitBuffer 

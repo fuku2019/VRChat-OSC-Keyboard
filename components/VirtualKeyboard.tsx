@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState, FC } from 'react';
 import { KEYBOARD_LAYOUT, TRANSLATIONS } from '../constants';
 import { KeyConfig, InputMode, Language } from '../types';
 import Key from './Key';
@@ -15,7 +15,7 @@ interface VirtualKeyboardProps {
   language: Language;
 }
 
-const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ 
+const VirtualKeyboard: FC<VirtualKeyboardProps> = ({ 
   onChar, onBackspace, onClear, onSend, onSpace, mode, onToggleMode, buffer, language
 }) => {
   const [shift, setShift] = useState(false);

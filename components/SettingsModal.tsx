@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, FC } from 'react';
 import { X, Save, Info, CircleHelp } from 'lucide-react';
 import { OscConfig, Language } from '../types';
 import { TRANSLATIONS } from '../constants';
@@ -12,7 +12,7 @@ interface SettingsModalProps {
   onShowTutorial: () => void;
 }
 
-const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, config, onSave, onLanguageChange, onShowTutorial }) => {
+const SettingsModal: FC<SettingsModalProps> = ({ isOpen, onClose, config, onSave, onLanguageChange, onShowTutorial }) => {
   const [localConfig, setLocalConfig] = useState(config);
   const [shouldRender, setShouldRender] = useState(false);
 
