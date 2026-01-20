@@ -69,6 +69,12 @@ export const sendOscMessage = async (
           error: 'Connection Refused (Is server.js running?)',
         });
       };
+
+      ws.onclose = () => {
+        // Cleanup timeout if not already cleared / まだクリアされていない場合はタイムアウトをクリーンアップ
+        clearTimeout(timeout);
+        // Promise may already be resolved by onerror or onmessage / Promiseはonerrorまたはonmessageによって既に解決されている可能性がある
+      };
     } catch (error: any) {
       resolve({ success: false, error: error.message || 'WebSocket Error' });
     }
