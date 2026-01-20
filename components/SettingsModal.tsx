@@ -1,7 +1,7 @@
 import { useState, useEffect, FC } from 'react';
 import { X, Save, Info, CircleHelp } from 'lucide-react';
 import { OscConfig, Language } from '../types';
-import { TRANSLATIONS, TIMEOUTS } from '../constants';
+import { TRANSLATIONS } from '../constants';
 import { useModalAnimation } from '../hooks/useModalAnimation';
 import packageJson from '../package.json';
 
