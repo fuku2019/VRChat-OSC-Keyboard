@@ -3,8 +3,9 @@ VRChatのチャットボックスにソフトウェアキーボードや物理�
 OSC経由でメッセージを送信するツール
 
 [**日本語**](./README.md) | [**English**](./docs/en/README.en.md)
+<br></br>
 
-![demo](/docs/img/compressed_demo.gif)
+https://github.com/user-attachments/assets/90d87833-1077-4712-814b-3ad2505e6b34
 
 # 🔨 手動ビルド
 ```bash
