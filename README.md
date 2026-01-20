@@ -12,12 +12,17 @@ OSC経由でメッセージを送信するツール
 [**日本語**](./README.md) | [**English**](./docs/en/README.en.md)
 <br></br>
 
+# 機能
+・ソフトウェアキーボードによりVRから簡単にチャット
+<br>
+・物理キーボードから入力することで変換も使用可
+
 https://github.com/user-attachments/assets/90d87833-1077-4712-814b-3ad2505e6b34
 
 ### 手動ビルド
 ```bash
 #ライブラリのインストール
 npm install
-#ビルド
+#ビルドの実行
 npm run dist
 ```
