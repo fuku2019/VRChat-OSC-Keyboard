@@ -45,6 +45,7 @@
   },
   "build": {
     "npmRebuild": false,
+    "afterPack": "./scripts/removeLocales.cjs",
     "publish": null,
     "appId": "com.vrchat.osc.keyboard",
     "productName": "VRChat OSC Keyboard",
