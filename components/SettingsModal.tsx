@@ -2,6 +2,9 @@ import { useState, useEffect, FC } from 'react';
 import { X, Save, Info, CircleHelp } from 'lucide-react';
 import { OscConfig, Language } from '../types';
 import { TRANSLATIONS } from '../constants';
+import packageJson from '../package.json';
+
+const APP_VERSION = packageJson.version;
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -108,6 +111,11 @@ const SettingsModal: FC<SettingsModalProps> = ({ isOpen, onClose, config, onSave
               </div>
               <span className="text-slate-500 group-hover:translate-x-1 transition-transform">→</span>
             </button>
+          </section>
+
+          {/* Version Info */}
+          <section className="pt-2 text-center">
+            <p className="text-xs text-slate-500">Version: {APP_VERSION}</p>
           </section>
 
         </div>

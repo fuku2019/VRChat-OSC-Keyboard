@@ -3,9 +3,16 @@ import { WebSocketServer } from 'ws';
 import { Client } from 'node-osc';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// package.jsonからバージョン情報を読み込む
+const packageJsonPath = path.join(__dirname, '../package.json');
+const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+const APP_VERSION = packageJson.version;
+const APP_TITLE = `VRChat OSC Keyboard ${APP_VERSION}`;
 
 let mainWindow;
 
@@ -62,6 +69,7 @@ function startBridge() {
 
 function createWindow() {
   mainWindow = new BrowserWindow({
+    title: APP_TITLE,
     width: 1100,
     height: 700,
     minWidth: 800,
@@ -79,6 +87,11 @@ function createWindow() {
 
   // Hide menu bar for cleaner look
   mainWindow.setMenuBarVisibility(false);
+
+  // HTMLのtitleタグによるウィンドウタイトルの上書きを防ぐ
+  mainWindow.on('page-title-updated', (event) => {
+    event.preventDefault();
+  });
 
   // In development, load from Vite server. In production, load built file.
   if (!app.isPackaged) {
