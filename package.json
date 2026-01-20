@@ -1,7 +1,7 @@
 {
   "name": "vrchat-osc-keyboard",
   "productName": "VRChat OSC Keyboard",
-  "version": "1.0.5",
+  "version": "v1.1.0",
   "description": "A Japanese/English virtual keyboard and chatbox interface designed for SteamVR overlays to send text to VRChat via OSC.",
   "author": {
     "name": "fuku_2019"
@@ -14,7 +14,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "electron:dev": "concurrently -k \"cross-env IS_ELECTRON=true vite\" \"wait-on tcp:5173 && electron .\"",
-    "dist": "vite build && electron-builder"
+    "dist": "vite build && electron-builder && node scripts/rename-build-output.js"
   },
   "dependencies": {
     "node-osc": "^11.0.0",
@@ -60,6 +60,7 @@
       "target": "nsis",
       "icon": "build/icon.ico",
       "legalTrademarks": "VRChat OSC Keyboard",
+      "executableName": "VRChat-OSC-Keyboard",
       "verifyUpdateCodeSignature": false
     },
     "nsis": {
