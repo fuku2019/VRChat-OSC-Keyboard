@@ -12,12 +12,12 @@ interface TutorialOverlayProps {
 const TutorialOverlay: FC<TutorialOverlayProps> = ({ isOpen, onClose, language }) => {
   const [shouldRender, setShouldRender] = useState(false);
 
-  // Handle opening and closing animations
+  // Handle opening and closing animations / 開閉アニメーションの処理
   useEffect(() => {
     if (isOpen) {
       setShouldRender(true);
     } else {
-      const timer = setTimeout(() => setShouldRender(false), 200); // Match CSS animation duration
+      const timer = setTimeout(() => setShouldRender(false), 200); // Match CSS animation duration / CSSアニメーションの期間に合わせる
       return () => clearTimeout(timer);
     }
   }, [isOpen]);
@@ -35,8 +35,8 @@ const TutorialOverlay: FC<TutorialOverlayProps> = ({ isOpen, onClose, language }
   const animationClass = isOpen ? 'animate-fade-in' : 'animate-fade-out';
   const modalAnimationClass = isOpen ? 'animate-scale-in' : 'animate-scale-out';
   
-  // When closing, we disable the stagger effect by forcing opacity:1 on children or just relying on container fade out
-  // The container fade/scale out is usually enough.
+  // When closing, we disable the stagger effect by forcing opacity:1 on children or just relying on container fade out / 閉じるときは、子要素の不透明度を1に強制するか、コンテナのフェードアウトに依存して、スタッガー効果を無効にする
+  // The container fade/scale out is usually enough. / コンテナのフェード/スケールアウトで通常は十分
 
   return (
     <div className={`fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/95 backdrop-blur-md p-4 ${animationClass}`}>

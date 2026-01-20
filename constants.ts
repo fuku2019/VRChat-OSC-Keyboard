@@ -90,7 +90,7 @@ export const TRANSLATIONS = {
 };
 
 export const ROMAJI_MAP: Record<string, string> = {
-  // Basic
+  // Basic / 基本
   'a': 'あ', 'i': 'い', 'u': 'う', 'e': 'え', 'o': 'お',
   'ka': 'か', 'ki': 'き', 'ku': 'く', 'ke': 'け', 'ko': 'こ',
   'sa': 'さ', 'si': 'し', 'shi': 'し', 'su': 'す', 'se': 'せ', 'so': 'そ',
@@ -109,7 +109,7 @@ export const ROMAJI_MAP: Record<string, string> = {
   'nn': 'ん',
   '-': 'ー',
 
-  // Contracted sounds
+  // Contracted sounds / 拗音
   'kya': 'きゃ', 'kyi': 'きぃ', 'kyu': 'きゅ', 'kye': 'きぇ', 'kyo': 'きょ',
   'gya': 'ぎゃ', 'gyi': 'ぎぃ', 'gyu': 'ぎゅ', 'gye': 'ぎぇ', 'gyo': 'ぎょ',
   'sya': 'しゃ', 'syi': 'しぃ', 'syu': 'しゅ', 'sye': 'しぇ', 'syo': 'しょ',
@@ -126,7 +126,7 @@ export const ROMAJI_MAP: Record<string, string> = {
   'mya': 'みゃ', 'myi': 'みぃ', 'myu': 'みゅ', 'mye': 'みぇ', 'myo': 'みょ',
   'rya': 'りゃ', 'ryi': 'りぃ', 'ryu': 'りゅ', 'rye': 'りぇ', 'ryo': 'りょ',
 
-  // Small characters
+  // Small characters / 促音・小文字
   'la': 'ぁ', 'li': 'ぃ', 'lu': 'ぅ', 'le': 'ぇ', 'lo': 'ぉ',
   'xa': 'ぁ', 'xi': 'ぃ', 'xu': 'ぅ', 'xe': 'ぇ', 'xo': 'ぉ',
   'lya': 'ゃ', 'lyu': 'ゅ', 'lyo': 'ょ',
@@ -134,7 +134,7 @@ export const ROMAJI_MAP: Record<string, string> = {
   'ltu': 'っ', 'xtu': 'っ',
   'lwa': 'ゎ', 'xwa': 'ゎ',
 
-  // Extras
+  // Extras / その他
   'fa': 'ふぁ', 'fi': 'ふぃ', 'fe': 'ふぇ', 'fo': 'ふぉ',
   'va': 'ヴぁ', 'vi': 'ヴぃ', 'vu': 'ヴ', 've': 'ヴぇ', 'vo': 'ヴぉ',
   'wi': 'うぃ', 'we': 'うぇ'
@@ -163,9 +163,9 @@ export const HIRAGANA_TO_KATAKANA: Record<string, string> = {
   'ゔ': 'ヴ'
 };
 
-// JIS Layout (30 columns grid)
+// JIS Layout (30 columns grid) / JIS配列（30列グリッド）
 export const KEYBOARD_LAYOUT: KeyConfig[] = [
-  // ROW 1 (13 keys * 2 + 1 * 4 = 30)
+  // ROW 1 (13 keys * 2 + 1 * 4 = 30) / 1行目
   { label: '1', value: '1', shiftValue: '!', gridCols: 2 },
   { label: '2', value: '2', shiftValue: '"', gridCols: 2 },
   { label: '3', value: '3', shiftValue: '#', gridCols: 2 },
@@ -181,7 +181,7 @@ export const KEYBOARD_LAYOUT: KeyConfig[] = [
   { label: '¥', value: '¥', shiftValue: '|', gridCols: 2 },
   { label: '←', value: 'backspace', action: 'backspace', gridCols: 4 },
 
-  // ROW 2 (3 + 12*2 + 3 = 30)
+  // ROW 2 (3 + 12*2 + 3 = 30) / 2行目
   { label: 'Tab', value: 'tab', action: 'tab', gridCols: 3 },
   { label: 'q', value: 'q', gridCols: 2 },
   { label: 'w', value: 'w', gridCols: 2 },
@@ -197,7 +197,7 @@ export const KEYBOARD_LAYOUT: KeyConfig[] = [
   { label: '[', value: '[', shiftValue: '{', gridCols: 2 },
   { label: 'Enter', value: 'enter', action: 'send', gridCols: 3, gridRows: 2 },
 
-  // ROW 3 (3 + 12*2 = 27 + Enter's 3 = 30)
+  // ROW 3 (3 + 12*2 = 27 + Enter's 3 = 30) / 3行目
   { label: 'Mode', value: 'mode', action: 'mode', gridCols: 3 },
   { label: 'a', value: 'a', gridCols: 2 },
   { label: 's', value: 's', gridCols: 2 },
@@ -211,9 +211,9 @@ export const KEYBOARD_LAYOUT: KeyConfig[] = [
   { label: ';', value: ';', shiftValue: '+', gridCols: 2 },
   { label: ':', value: ':', shiftValue: '*', gridCols: 2 },
   { label: ']', value: ']', shiftValue: '}', gridCols: 2 },
-  // Enter spans here (3 cols)
+  // Enter spans here (3 cols) / Enterキーはここにまたがる（3列）
 
-  // ROW 4 (4 + 11*2 + 4 = 30)
+  // ROW 4 (4 + 11*2 + 4 = 30) / 4行目
   { label: 'Shift', value: 'shift', action: 'shift', gridCols: 4 },
   { label: 'z', value: 'z', gridCols: 2 },
   { label: 'x', value: 'x', gridCols: 2 },
@@ -225,10 +225,10 @@ export const KEYBOARD_LAYOUT: KeyConfig[] = [
   { label: ',', value: ',', shiftValue: '<', gridCols: 2 },
   { label: '.', value: '.', shiftValue: '>', gridCols: 2 },
   { label: '/', value: '/', shiftValue: '?', gridCols: 2 },
-  { label: '_', value: '_', shiftValue: '_', gridCols: 2 }, // Ro
+  { label: '_', value: '_', shiftValue: '_', gridCols: 2 },
   { label: 'Shift', value: 'shift', action: 'shift', gridCols: 4 },
 
-  // ROW 5 (4 + 22 + 4 = 30)
+  // ROW 5 (4 + 22 + 4 = 30) / 5行目
   { label: 'Clear', value: 'clear', action: 'clear', gridCols: 4 },
   { label: 'Space', value: ' ', action: 'space', gridCols: 22 },
   { label: 'Clear', value: 'clear', action: 'clear', gridCols: 4 }

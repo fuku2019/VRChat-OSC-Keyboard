@@ -56,7 +56,7 @@ const VirtualKeyboard: FC<VirtualKeyboardProps> = ({
 
   const handleShiftLongPress = () => {
     setCapsLock(!capsLock);
-    setShift(false); // Reset temp shift logic
+    setShift(false); // Reset temp shift logic / 一時的なシフトロジックをリセット
   };
 
   return (
@@ -79,13 +79,13 @@ const VirtualKeyboard: FC<VirtualKeyboardProps> = ({
         {KEYBOARD_LAYOUT.map((key, index) => {
           let displayKey = { ...key };
           
-          // Localization
+          // Localization / ローカリゼーション（多言語対応）
           if (key.action === 'send') displayKey.label = tKeys.send;
           if (key.action === 'clear') displayKey.label = tKeys.clear;
           if (key.action === 'space' && key.label.trim() === '') displayKey.label = tKeys.space;
           if (key.action === 'backspace' && key.label === '←') displayKey.label = tKeys.backspace;
           
-          // Dynamic Labels
+          // Dynamic Labels / 動的ラベル
           if (key.action === 'mode') {
              displayKey.label = mode === InputMode.ENGLISH ? 'ENG' : mode === InputMode.HIRAGANA ? 'あ' : 'ア';
           }

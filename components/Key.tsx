@@ -16,7 +16,7 @@ const Key: FC<KeyProps> = ({ config, onPress, onLongPress, highlight = false, is
   const isLongPressTriggeredRef = useRef(false);
 
   const handlePointerDown = (e: React.PointerEvent) => {
-    // Only left click or touch
+    // Only left click or touch / 左クリックまたはタッチのみ
     if (e.button !== 0) return;
     
     isLongPressTriggeredRef.current = false;
@@ -25,8 +25,8 @@ const Key: FC<KeyProps> = ({ config, onPress, onLongPress, highlight = false, is
       timerRef.current = window.setTimeout(() => {
         onLongPress(config);
         isLongPressTriggeredRef.current = true;
-        // Optional: Provide haptic/visual feedback here
-      }, 500); // 0.5 second threshold
+        // Optional: Provide haptic/visual feedback here / オプション: ここでハプティック/視覚フィードバックを提供する
+      }, 500); // 0.5 second threshold / 0.5秒のしきい値
     }
   };
 
@@ -46,7 +46,7 @@ const Key: FC<KeyProps> = ({ config, onPress, onLongPress, highlight = false, is
 
   const handleClick = (e: React.MouseEvent) => {
     if (isLongPressTriggeredRef.current) {
-      // Prevent default click action if long press happened
+      // Prevent default click action if long press happened / 長押しが発生した場合はデフォルトのクリックアクションを防ぐ
       e.stopPropagation();
       return;
     }
@@ -63,11 +63,11 @@ const Key: FC<KeyProps> = ({ config, onPress, onLongPress, highlight = false, is
           ? "bg-slate-700 text-slate-300 hover:bg-slate-600 border-slate-800" 
           : "bg-slate-800 text-slate-200 hover:bg-slate-700 border-slate-900"; 
 
-  // Label Logic
+  // Label Logic / ラベルロジック
   let displayLabel = config.label;
   
-  // JIS Shift Logic: If shiftValue is present, showing it depends on design preference.
-  // Requested: "When shift is pressed, show the symbol".
+  // JIS Shift Logic: If shiftValue is present, showing it depends on design preference. / JISシフトロジック：shiftValueが存在する場合、それを表示するかどうかはデザインの好みによる。
+  // Requested: "When shift is pressed, show the symbol". / 要望：「Shiftが押されたときに記号を表示する」。
   if (isShiftActive) {
     if (config.shiftValue) {
       displayLabel = config.shiftValue;
@@ -76,7 +76,7 @@ const Key: FC<KeyProps> = ({ config, onPress, onLongPress, highlight = false, is
     }
   }
 
-  // Handle Shift Key label itself
+  // Handle Shift Key label itself / Shiftキー自体のラベルを処理する
   if (config.action === 'shift' && isShiftActive) displayLabel = 'SHIFT';
 
   return (

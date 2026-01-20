@@ -15,7 +15,7 @@ const oldPath = path.join(releaseDir, 'win-unpacked');
 const newFolderName = `VRChat-OSC-Keyboard-${version}`;
 const newPath = path.join(releaseDir, newFolderName);
 
-// リトライ付きの待機関数
+// Wait function with retry / リトライ付きの待機関数
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 async function retryOperation(operation, maxRetries = 5, delayMs = 1000) {
@@ -35,25 +35,25 @@ async function main() {
   console.log(`Renaming build output...`);
   console.log(`Version: ${version}`);
 
-  // 既存フォルダを削除（リトライ付き）
+  // Remove existing directory (with retry) / 既存フォルダを削除（リトライ付き）
   if (fs.existsSync(newPath)) {
     console.log(`Removing existing directory: ${newPath}`);
     await retryOperation(() => {
       fs.rmSync(newPath, { recursive: true, force: true });
     });
-    // 削除後に少し待機
+    // Wait a bit after deletion / 削除後に少し待機
     await sleep(500);
   }
 
   if (fs.existsSync(oldPath)) {
     try {
-      // リネーム操作（リトライ付き）
+      // Rename operation (with retry) / リネーム操作（リトライ付き）
       await retryOperation(() => {
         fs.renameSync(oldPath, newPath);
       });
       console.log(`Successfully renamed '${oldPath}' to '${newPath}'`);
 
-      // Rename executable
+      // Rename executable / 実行可能ファイルの名前変更
       const exeName = `VRChat-OSC-Keyboard.exe`;
       const newExeName = `VRChat-OSC-Keyboard-${version}.exe`;
       const oldExePath = path.join(newPath, exeName);

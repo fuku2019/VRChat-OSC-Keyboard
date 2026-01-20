@@ -3,24 +3,24 @@ import { ROMAJI_MAP, HIRAGANA_TO_KATAKANA } from '../constants';
 export const toKana = (input: string, buffer: string): { output: string; newBuffer: string } => {
   const nextBuffer = buffer + input;
   
-  // Check for exact match
+  // Check for exact match / 完全一致を確認
   if (ROMAJI_MAP[nextBuffer]) {
     return { output: ROMAJI_MAP[nextBuffer], newBuffer: '' };
   }
 
-  // Check for "n" special case (single n followed by non-vowel or end)
-  // Actually, standard behavior: type 'n' -> 'n'. type 'a' -> 'na'. type 'n' -> 'nn' -> 'ん'.
+  // Check for "n" special case (single n followed by non-vowel or end) / "n"の特殊ケースを確認（単一のnの後に母音以外または末尾が続く場合）
+  // Actually, standard behavior: type 'n' -> 'n'. type 'a' -> 'na'. type 'n' -> 'nn' -> 'ん'. / 実際には標準動作: 'n' -> 'n'. 'a' -> 'na'. 'n' -> 'nn' -> 'ん'.
   if (nextBuffer === 'nn') {
     return { output: 'ん', newBuffer: '' };
   }
 
-  // Small tsu (double consonant)
-  // If we have 'tt', 'ss', 'kk' etc.
+  // Small tsu (double consonant) / 促音（二重子音）
+  // If we have 'tt', 'ss', 'kk' etc. / 'tt', 'ss', 'kk' などがある場合
   if (nextBuffer.length >= 2 && nextBuffer[0] === nextBuffer[1] && !['a','i','u','e','o','n'].includes(nextBuffer[0])) {
      return { output: 'っ', newBuffer: nextBuffer.substring(1) };
   }
 
-  // If buffer gets too long (3 chars) and no match, flush first char
+  // If buffer gets too long (3 chars) and no match, flush first char / バッファが長すぎる（3文字）かつ一致がない場合、最初の文字をフラッシュする
   if (nextBuffer.length > 3) {
     return { output: nextBuffer[0], newBuffer: nextBuffer.slice(1) };
   }

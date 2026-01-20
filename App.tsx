@@ -30,14 +30,14 @@ const App = () => {
     };
   });
 
-  // Ensure config has language if loaded from old state
+  // Ensure config has language if loaded from old state / 古い状態からロードされた場合にconfigが言語設定を持っていることを確認
   useEffect(() => {
     if (!config.language) {
       setConfig(prev => ({ ...prev, language: 'ja' }));
     }
   }, []);
 
-  // Check for first launch to show tutorial
+  // Check for first launch to show tutorial / 初回起動を確認してチュートリアルを表示
   useEffect(() => {
     const hasSeenTutorial = localStorage.getItem('vrc_osc_has_seen_tutorial');
     if (!hasSeenTutorial) {

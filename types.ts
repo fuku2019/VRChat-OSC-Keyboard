@@ -11,9 +11,9 @@ export interface KeyConfig {
   value: string;
   shiftValue?: string;
   
-  // Grid Layout Props
-  gridCols?: number; // Span columns (base 30)
-  gridRows?: number; // Span rows
+  // Grid Layout Props / グリッドレイアウトのプロパティ
+  gridCols?: number; // Span columns (base 30) / 列のスパン（30ベース）
+  gridRows?: number; // Span rows / 行のスパン
   
   action?: 'backspace' | 'enter' | 'space' | 'shift' | 'mode' | 'clear' | 'send' | 'tab';
 }

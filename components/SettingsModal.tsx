@@ -19,21 +19,21 @@ const SettingsModal: FC<SettingsModalProps> = ({ isOpen, onClose, config, onSave
   const [localConfig, setLocalConfig] = useState(config);
   const [shouldRender, setShouldRender] = useState(false);
 
-  // Handle opening and closing animations
+  // Handle opening and closing animations / 開閉アニメーションの処理
   useEffect(() => {
     if (isOpen) {
       setShouldRender(true);
-      // Sync local state when opening
+      // Sync local state when opening / 開くときにローカル状態を同期する
       setLocalConfig(config);
     } else {
-      const timer = setTimeout(() => setShouldRender(false), 200); // Match CSS animation duration
+      const timer = setTimeout(() => setShouldRender(false), 200); // Match CSS animation duration / CSSアニメーションの期間に合わせる
       return () => clearTimeout(timer);
     }
   }, [isOpen, config]);
   
   if (!shouldRender) return null;
 
-  // Use localConfig for translations to ensure immediate UI update within modal
+  // Use localConfig for translations to ensure immediate UI update within modal / モーダル内で即時UI更新を保証するために翻訳にlocalConfigを使用する
   const t = TRANSLATIONS[localConfig.language || 'ja'].settings;
 
   const handleSave = () => {
@@ -43,7 +43,7 @@ const SettingsModal: FC<SettingsModalProps> = ({ isOpen, onClose, config, onSave
 
   const handleLanguageChange = (lang: Language) => {
     setLocalConfig({ ...localConfig, language: lang });
-    onLanguageChange(lang); // Trigger immediate update in parent
+    onLanguageChange(lang); // Trigger immediate update in parent / 親コンポーネントで即時更新をトリガーする
   };
 
   const animationClass = isOpen ? 'animate-fade-in' : 'animate-fade-out';
@@ -62,7 +62,7 @@ const SettingsModal: FC<SettingsModalProps> = ({ isOpen, onClose, config, onSave
 
         <div className="flex-1 overflow-y-auto p-6 space-y-8">
           
-          {/* Language Selection */}
+          {/* Language Selection / 言語選択 */}
           <section>
             <label className="block text-slate-300 mb-3 text-sm font-semibold uppercase tracking-wider">{t.language}</label>
             <div className="flex gap-2">
@@ -81,7 +81,7 @@ const SettingsModal: FC<SettingsModalProps> = ({ isOpen, onClose, config, onSave
             </div>
           </section>
 
-          {/* URL Config */}
+          {/* URL Config / URL設定 */}
           <section>
             <label className="block text-slate-300 mb-3 text-sm font-semibold uppercase tracking-wider">{t.oscUrl}</label>
             <div className="relative group">
@@ -99,7 +99,7 @@ const SettingsModal: FC<SettingsModalProps> = ({ isOpen, onClose, config, onSave
             </p>
           </section>
 
-          {/* Tutorial Trigger */}
+          {/* Tutorial Trigger / チュートリアル表示 */}
           <section className="pt-4 border-t border-slate-700/50">
             <button 
               onClick={onShowTutorial}
@@ -113,7 +113,7 @@ const SettingsModal: FC<SettingsModalProps> = ({ isOpen, onClose, config, onSave
             </button>
           </section>
 
-          {/* Version Info */}
+          {/* Version Info / バージョン情報 */}
           <section className="pt-2 text-center">
             <p className="text-xs text-slate-500">Version: {APP_VERSION}</p>
           </section>
