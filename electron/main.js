@@ -30,11 +30,11 @@ function startBridge() {
     console.log(`➡️  Forwarding to VRChat at ${OSC_IP}:${OSC_PORT}`);
 
     wss.on('connection', (ws) => {
-      ws.on('message', (message) => {
+      ws.on('message', async (message) => {
         try {
           const data = JSON.parse(message.toString());
           if (data.text) {
-            oscClient.send('/chatbox/input', [data.text, true]);
+            await oscClient.send('/chatbox/input', [data.text, true]);
             ws.send(JSON.stringify({ success: true }));
           }
         } catch (e) {

@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
 import { WebSocketServer } from 'ws';
 import { Client } from 'node-osc';
 
@@ -29,12 +30,12 @@ const oscBridgePlugin = () => {
       console.log(`➡️  Forwarding to VRChat at ${OSC_IP}:${OSC_PORT}\n`);
 
       wss.on('connection', (ws) => {
-        ws.on('message', (message) => {
+        ws.on('message', async (message) => {
           try {
             const data = JSON.parse(message.toString());
             if (data.text) {
               // VRChat Chatbox format
-              oscClient.send('/chatbox/input', [data.text, true]);
+              await oscClient.send('/chatbox/input', [data.text, true]);
               ws.send(JSON.stringify({ success: true }));
             }
           } catch (e) {
@@ -67,6 +68,7 @@ export default defineConfig({
   base: './', // Crucial for Electron apps loading via file://
   plugins: [
     react(),
+    tailwindcss(),
     oscBridgePlugin()
   ],
   server: {
