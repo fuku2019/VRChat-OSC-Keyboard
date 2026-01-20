@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { TIMEOUTS } from '../constants/index';
+import { TIMEOUTS } from '../constants';
 
 interface UseModalAnimationReturn {
   shouldRender: boolean;

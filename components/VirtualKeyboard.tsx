@@ -1,5 +1,5 @@
 import { useState, FC } from 'react';
-import { KEYBOARD_LAYOUT, TRANSLATIONS, KEYBOARD_GRID } from '../constants/index';
+import { KEYBOARD_LAYOUT, TRANSLATIONS, KEYBOARD_GRID } from '../constants';
 import { KeyConfig, InputMode, Language } from '../types';
 import Key from './Key';
 

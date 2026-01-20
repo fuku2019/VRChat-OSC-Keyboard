@@ -1,6 +1,6 @@
 import { useState, useEffect, FC } from 'react';
 import { Wifi, Keyboard, Send, CircleCheck } from 'lucide-react';
-import { TRANSLATIONS } from '../constants/index';
+import { TRANSLATIONS } from '../constants';
 import { Language } from '../types';
 import { useModalAnimation } from '../hooks/useModalAnimation';
 

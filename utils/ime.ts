@@ -1,4 +1,4 @@
-import { ROMAJI_MAP, HIRAGANA_TO_KATAKANA } from '../constants/index';
+import { ROMAJI_MAP, HIRAGANA_TO_KATAKANA } from '../constants';
 
 export const toKana = (input: string, buffer: string): { output: string; newBuffer: string } => {
   const nextBuffer = buffer + input;

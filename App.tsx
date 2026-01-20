@@ -6,7 +6,7 @@ import TutorialOverlay from './components/TutorialOverlay';
 import { InputMode, OscConfig } from './types';
 import { sendOscMessage } from './services/oscService';
 import { useIME } from './hooks/useIME';
-import { TRANSLATIONS, STORAGE_KEYS, DEFAULT_CONFIG, TIMEOUTS } from './constants/index';
+import { TRANSLATIONS, STORAGE_KEYS, DEFAULT_CONFIG, TIMEOUTS } from './constants';
 
 const App = () => {
   const { 

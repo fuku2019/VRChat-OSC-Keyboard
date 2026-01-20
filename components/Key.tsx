@@ -1,6 +1,6 @@
 import { FC, useRef } from 'react';
 import { KeyConfig } from '../types';
-import { TIMEOUTS } from '../constants/index';
+import { TIMEOUTS } from '../constants';
 
 interface KeyProps {
   config: KeyConfig;
