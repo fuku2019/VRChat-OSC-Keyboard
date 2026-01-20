@@ -2,7 +2,7 @@
 VRChatのチャットボックスにソフトウェアキーボードや物理キーボードを使用して<br>
 OSC経由でメッセージを送信するツール
 
-[![made_with](https://img.shields.io/badge/MADE_WITH%E2%99%A1-A2A2FF)](https://aistudio.google.com)
+[![made_with](https://img.shields.io/badge/MADE_WITH%E2%99%A1-A2A2FF)](https://antigravity.google)
 
 ![not_a_fuku2019](https://counter.seku.su/cmoe?name=notAfuku2019&theme=mb)
 
