@@ -1,5 +1,5 @@
 import { useState, FC } from 'react';
-import { KEYBOARD_LAYOUT, TRANSLATIONS } from '../constants';
+import { KEYBOARD_LAYOUT, TRANSLATIONS, KEYBOARD_GRID } from '../constants/index';
 import { KeyConfig, InputMode, Language } from '../types';
 import Key from './Key';
 
@@ -72,8 +72,8 @@ const VirtualKeyboard: FC<VirtualKeyboardProps> = ({
       <div 
         className="grid gap-1 w-full"
         style={{
-          gridTemplateColumns: 'repeat(30, 1fr)',
-          gridAutoRows: '3.5rem'
+          gridTemplateColumns: `repeat(${KEYBOARD_GRID.COLUMNS}, 1fr)`,
+          gridAutoRows: KEYBOARD_GRID.ROW_HEIGHT
         }}
       >
         {KEYBOARD_LAYOUT.map((key, index) => {

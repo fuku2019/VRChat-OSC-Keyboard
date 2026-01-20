@@ -6,7 +6,7 @@ import TutorialOverlay from './components/TutorialOverlay';
 import { InputMode, OscConfig } from './types';
 import { sendOscMessage } from './services/oscService';
 import { useIME } from './hooks/useIME';
-import { TRANSLATIONS } from './constants';
+import { TRANSLATIONS, STORAGE_KEYS, DEFAULT_CONFIG, TIMEOUTS } from './constants/index';
 
 const App = () => {
   const { 
@@ -22,24 +22,24 @@ const App = () => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   
   const [config, setConfig] = useState<OscConfig>(() => {
-    const saved = localStorage.getItem('vrc_osc_config');
+    const saved = localStorage.getItem(STORAGE_KEYS.OSC_CONFIG);
     return saved ? JSON.parse(saved) : {
-      bridgeUrl: 'ws://127.0.0.1:8080',
-      autoSend: false,
-      language: 'ja'
+      bridgeUrl: DEFAULT_CONFIG.BRIDGE_URL,
+      autoSend: DEFAULT_CONFIG.AUTO_SEND,
+      language: DEFAULT_CONFIG.LANGUAGE
     };
   });
 
   // Ensure config has language if loaded from old state / 古い状態からロードされた場合にconfigが言語設定を持っていることを確認
   useEffect(() => {
     if (!config.language) {
-      setConfig(prev => ({ ...prev, language: 'ja' }));
+      setConfig(prev => ({ ...prev, language: DEFAULT_CONFIG.LANGUAGE }));
     }
   }, []);
 
   // Check for first launch to show tutorial / 初回起動を確認してチュートリアルを表示
   useEffect(() => {
-    const hasSeenTutorial = localStorage.getItem('vrc_osc_has_seen_tutorial');
+    const hasSeenTutorial = localStorage.getItem(STORAGE_KEYS.HAS_SEEN_TUTORIAL);
     if (!hasSeenTutorial) {
       setIsTutorialOpen(true);
     } else {
@@ -47,17 +47,17 @@ const App = () => {
     }
   }, []);
 
-  const t = TRANSLATIONS[config.language || 'ja'];
+  const t = TRANSLATIONS[config.language || DEFAULT_CONFIG.LANGUAGE];
 
   const saveConfig = (newConfig: OscConfig) => {
     setConfig(newConfig);
-    localStorage.setItem('vrc_osc_config', JSON.stringify(newConfig));
+    localStorage.setItem(STORAGE_KEYS.OSC_CONFIG, JSON.stringify(newConfig));
   };
 
   const handleTutorialClose = () => {
     setIsTutorialOpen(false);
-    localStorage.setItem('vrc_osc_has_seen_tutorial', 'true');
-    setTimeout(() => textareaRef.current?.focus(), 100);
+    localStorage.setItem(STORAGE_KEYS.HAS_SEEN_TUTORIAL, 'true');
+    setTimeout(() => textareaRef.current?.focus(), TIMEOUTS.FOCUS_DELAY);
   };
 
   const handleOpenTutorialFromSettings = () => {
@@ -83,15 +83,15 @@ const App = () => {
       if (result.success) {
         setLastSent(textToSend);
         setInput(''); 
-        setTimeout(() => setLastSent(null), 3000);
+        setTimeout(() => setLastSent(null), TIMEOUTS.SENT_NOTIFICATION);
       } else {
         console.error("OSC Send Failed:", result.error);
         setError(result.error || t.status.error);
-        setTimeout(() => setError(null), 5000);
+        setTimeout(() => setError(null), TIMEOUTS.ERROR_NOTIFICATION);
       }
     } catch (e: any) {
       setError(e.message || t.status.error);
-      setTimeout(() => setError(null), 5000);
+      setTimeout(() => setError(null), TIMEOUTS.ERROR_NOTIFICATION);
     } finally {
       setIsSending(false);
       textareaRef.current?.focus();
@@ -132,7 +132,7 @@ const App = () => {
       <TutorialOverlay 
         isOpen={isTutorialOpen} 
         onClose={handleTutorialClose} 
-        language={config.language || 'ja'} 
+        language={config.language || DEFAULT_CONFIG.LANGUAGE} 
       />
 
       <div className="w-full max-w-5xl flex justify-between items-center mb-4 px-2 shrink-0 pt-4 md:pt-0">
@@ -198,7 +198,7 @@ const App = () => {
           mode={mode}
           onToggleMode={() => handleVirtualKey(toggleMode)}
           buffer={buffer}
-          language={config.language || 'ja'}
+          language={config.language || DEFAULT_CONFIG.LANGUAGE}
         />
       </div>
 

@@ -1,7 +1,8 @@
 import { useState, useEffect, FC } from 'react';
 import { Wifi, Keyboard, Send, CircleCheck } from 'lucide-react';
-import { TRANSLATIONS } from '../constants';
+import { TRANSLATIONS } from '../constants/index';
 import { Language } from '../types';
+import { useModalAnimation } from '../hooks/useModalAnimation';
 
 interface TutorialOverlayProps {
   isOpen: boolean;
@@ -10,17 +11,7 @@ interface TutorialOverlayProps {
 }
 
 const TutorialOverlay: FC<TutorialOverlayProps> = ({ isOpen, onClose, language }) => {
-  const [shouldRender, setShouldRender] = useState(false);
-
-  // Handle opening and closing animations / 開閉アニメーションの処理
-  useEffect(() => {
-    if (isOpen) {
-      setShouldRender(true);
-    } else {
-      const timer = setTimeout(() => setShouldRender(false), 200); // Match CSS animation duration / CSSアニメーションの期間に合わせる
-      return () => clearTimeout(timer);
-    }
-  }, [isOpen]);
+  const { shouldRender, animationClass, modalAnimationClass } = useModalAnimation(isOpen);
 
   if (!shouldRender) return null;
 
@@ -31,9 +22,6 @@ const TutorialOverlay: FC<TutorialOverlayProps> = ({ isOpen, onClose, language }
     { icon: <Keyboard className="text-cyan-400" size={32} />, title: t.step2Title, desc: t.step2Desc },
     { icon: <Send className="text-cyan-400" size={32} />, title: t.step3Title, desc: t.step3Desc },
   ];
-
-  const animationClass = isOpen ? 'animate-fade-in' : 'animate-fade-out';
-  const modalAnimationClass = isOpen ? 'animate-scale-in' : 'animate-scale-out';
   
   // When closing, we disable the stagger effect by forcing opacity:1 on children or just relying on container fade out / 閉じるときは、子要素の不透明度を1に強制するか、コンテナのフェードアウトに依存して、スタッガー効果を無効にする
   // The container fade/scale out is usually enough. / コンテナのフェード/スケールアウトで通常は十分

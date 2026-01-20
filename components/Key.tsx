@@ -1,5 +1,6 @@
 import { FC, useRef } from 'react';
 import { KeyConfig } from '../types';
+import { TIMEOUTS } from '../constants/index';
 
 interface KeyProps {
   config: KeyConfig;
@@ -26,7 +27,7 @@ const Key: FC<KeyProps> = ({ config, onPress, onLongPress, highlight = false, is
         onLongPress(config);
         isLongPressTriggeredRef.current = true;
         // Optional: Provide haptic/visual feedback here / オプション: ここでハプティック/視覚フィードバックを提供する
-      }, 500); // 0.5 second threshold / 0.5秒のしきい値
+      }, TIMEOUTS.LONG_PRESS_THRESHOLD);
     }
   };
 

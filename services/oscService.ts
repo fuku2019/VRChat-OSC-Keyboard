@@ -6,6 +6,8 @@
  * ブラウザはserver.js (ws://localhost:8080) に接続し、そこからnode-oscを使用してVRChatと通信します。
  */
 
+import { TIMEOUTS } from '../constants/index';
+
 interface OscResponse {
   success: boolean;
   error?: string;
@@ -26,7 +28,7 @@ export const sendOscMessage = async (text: string, bridgeUrl: string): Promise<O
       const timeout = setTimeout(() => {
         if (ws.readyState !== WebSocket.CLOSED) ws.close();
         resolve({ success: false, error: "Timeout: Is 'node server.js' running?" });
-      }, 2000);
+      }, TIMEOUTS.OSC_CONNECTION);
 
       ws.onopen = () => {
         // Send payload / ペイロードを送信

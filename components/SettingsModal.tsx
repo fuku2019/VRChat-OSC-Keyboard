@@ -1,7 +1,8 @@
 import { useState, useEffect, FC } from 'react';
 import { X, Save, Info, CircleHelp } from 'lucide-react';
 import { OscConfig, Language } from '../types';
-import { TRANSLATIONS } from '../constants';
+import { TRANSLATIONS, TIMEOUTS } from '../constants/index';
+import { useModalAnimation } from '../hooks/useModalAnimation';
 import packageJson from '../package.json';
 
 const APP_VERSION = packageJson.version;
@@ -17,17 +18,12 @@ interface SettingsModalProps {
 
 const SettingsModal: FC<SettingsModalProps> = ({ isOpen, onClose, config, onSave, onLanguageChange, onShowTutorial }) => {
   const [localConfig, setLocalConfig] = useState(config);
-  const [shouldRender, setShouldRender] = useState(false);
+  const { shouldRender, animationClass, modalAnimationClass } = useModalAnimation(isOpen);
 
-  // Handle opening and closing animations / 開閉アニメーションの処理
+  // Sync local state when opening / 開くときにローカル状態を同期する
   useEffect(() => {
     if (isOpen) {
-      setShouldRender(true);
-      // Sync local state when opening / 開くときにローカル状態を同期する
       setLocalConfig(config);
-    } else {
-      const timer = setTimeout(() => setShouldRender(false), 200); // Match CSS animation duration / CSSアニメーションの期間に合わせる
-      return () => clearTimeout(timer);
     }
   }, [isOpen, config]);
   
@@ -45,9 +41,6 @@ const SettingsModal: FC<SettingsModalProps> = ({ isOpen, onClose, config, onSave
     setLocalConfig({ ...localConfig, language: lang });
     onLanguageChange(lang); // Trigger immediate update in parent / 親コンポーネントで即時更新をトリガーする
   };
-
-  const animationClass = isOpen ? 'animate-fade-in' : 'animate-fade-out';
-  const modalAnimationClass = isOpen ? 'animate-scale-in' : 'animate-scale-out';
 
   return (
     <div className={`fixed inset-0 z-[110] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 ${animationClass}`}>
