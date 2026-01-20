@@ -6,7 +6,7 @@ export const TRANSLATIONS = {
       title: '設定',
       language: '言語 / Language',
       oscUrl: 'OSCブリッジ URL',
-      defaultUrl: 'デフォルト: ws://127.0.0.1:8080',
+      defaultUrl: '基本的に変更しないでください。デフォルト: ws://127.0.0.1:8080',
       instructionsTitle: 'ヘルプ',
       resetWelcome: 'チュートリアルを表示する',
       save: '保存して閉じる'
@@ -49,7 +49,7 @@ export const TRANSLATIONS = {
       title: 'Settings',
       language: 'Language',
       oscUrl: 'OSC Bridge URL',
-      defaultUrl: 'Default: ws://127.0.0.1:8080',
+      defaultUrl: 'DO NOT modify unless necessary: ws://127.0.0.1:8080',
       instructionsTitle: 'Help',
       resetWelcome: 'Show Tutorial Guide',
       save: 'Save & Close'
