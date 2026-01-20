@@ -3,6 +3,8 @@ VRChatのチャットボックスにソフトウェアキーボードや物理�
 OSC経由でメッセージを送信するツール
 
 [![made_with](https://img.shields.io/badge/MADE_WITH%E2%99%A1-A2A2FF)](https://antigravity.google)
+
+
 [![platform-windows](https://img.shields.io/badge/windows-platform?style=for-the-badge&label=platform&labelColor=D6E5F3&color=357EC7)](https://windows.com)
 
 ![not_a_fuku2019](https://counter.seku.su/cmoe?name=notAfuku2019&theme=mb)
