@@ -1,6 +1,6 @@
 # VRC-OSC-Keyboard
 VRChatのチャットボックスにソフトウェアキーボードや物理キーボードを使用して<br>
-OSC経由でメッセージを送信する実験的なツール
+OSC経由でメッセージを送信するツール
 
 ![logo](docs/test_logo_1.png)
 
