@@ -3,7 +3,7 @@ VRChatのチャットボックスにソフトウェアキーボードや物理�
 OSC経由でメッセージを送信するツール
 
 [**日本語**](./README.md) | [**English**](./docs/en/README.en.md)
-# 🔨 手動ビルド How to Build
+# 🔨 手動ビルド
 ```bash
 #ライブラリのインストール
 npm install
