@@ -19,26 +19,44 @@ const VirtualKeyboard: FC<VirtualKeyboardProps> = ({
   onChar, onBackspace, onClear, onSend, onSpace, mode, onToggleMode, buffer, language
 }) => {
   const [shift, setShift] = useState(false);
+  const [capsLock, setCapsLock] = useState(false);
   const tKeys = TRANSLATIONS[language].keys;
 
   const handleKeyPress = (key: KeyConfig) => {
     switch (key.action) {
-      case 'shift': setShift(!shift); return;
+      case 'shift': 
+        if (capsLock) {
+          setCapsLock(false);
+          setShift(false);
+        } else {
+          setShift(!shift);
+        }
+        return;
       case 'backspace': onBackspace(); return;
       case 'clear': onClear(); return;
       case 'send': onSend(); return;
       case 'space': onSpace(); return;
       case 'mode': onToggleMode(); return;
-      case 'tab': return;
+      case 'tab': onToggleMode(); return;
     }
 
     let char = key.value;
-    if (shift) {
+    const isShifted = shift || capsLock;
+    
+    if (isShifted) {
       if (key.shiftValue) char = key.shiftValue;
       else char = key.value.toUpperCase();
     }
     onChar(char);
-    if (shift) setShift(false);
+    
+    if (shift && !capsLock) {
+      setShift(false);
+    }
+  };
+
+  const handleShiftLongPress = () => {
+    setCapsLock(!capsLock);
+    setShift(false); // Reset temp shift logic
   };
 
   return (
@@ -72,13 +90,16 @@ const VirtualKeyboard: FC<VirtualKeyboardProps> = ({
              displayKey.label = mode === InputMode.ENGLISH ? 'ENG' : mode === InputMode.HIRAGANA ? 'あ' : 'ア';
           }
 
+          const isKeyShiftActive = shift || capsLock;
+
           return (
             <Key 
               key={index} 
               config={displayKey} 
               onPress={handleKeyPress}
-              highlight={key.action === 'shift' && shift}
-              isShiftActive={shift}
+              onLongPress={key.action === 'shift' ? handleShiftLongPress : undefined}
+              highlight={key.action === 'shift' && isKeyShiftActive}
+              isShiftActive={isKeyShiftActive}
             />
           );
         })}

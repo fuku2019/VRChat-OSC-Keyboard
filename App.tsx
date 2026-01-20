@@ -139,7 +139,7 @@ const App = () => {
         <div className="flex items-center gap-3">
           <div className="w-3 h-3 rounded-full bg-cyan-500 shadow-[0_0_10px_rgba(6,182,212,0.8)]"></div>
           <h1 className="text-xl md:text-2xl font-bold text-slate-100 tracking-wider drop-shadow-md">
-            VRC OSC <span className="text-cyan-400">{t.appTitle}</span>
+            {t.appTitlePrefix} <span className="text-cyan-400">{t.appTitle}</span>
           </h1>
         </div>
         <button 

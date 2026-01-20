@@ -1,16 +1,58 @@
-import { FC } from 'react';
+import { FC, useRef } from 'react';
 import { KeyConfig } from '../types';
 
 interface KeyProps {
   config: KeyConfig;
   onPress: (config: KeyConfig) => void;
+  onLongPress?: (config: KeyConfig) => void;
   highlight?: boolean;
   isShiftActive?: boolean;
 }
 
-const Key: FC<KeyProps> = ({ config, onPress, highlight = false, isShiftActive = false }) => {
+const Key: FC<KeyProps> = ({ config, onPress, onLongPress, highlight = false, isShiftActive = false }) => {
   const baseClasses = "rounded-lg font-bold text-xl transition-all duration-75 active:scale-95 select-none flex shadow-lg border-b-4 border-slate-700 active:border-b-0 active:translate-y-1 relative items-center justify-center";
   
+  const timerRef = useRef<number | null>(null);
+  const isLongPressTriggeredRef = useRef(false);
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    // Only left click or touch
+    if (e.button !== 0) return;
+    
+    isLongPressTriggeredRef.current = false;
+
+    if (onLongPress) {
+      timerRef.current = window.setTimeout(() => {
+        onLongPress(config);
+        isLongPressTriggeredRef.current = true;
+        // Optional: Provide haptic/visual feedback here
+      }, 500); // 0.5 second threshold
+    }
+  };
+
+  const handlePointerUp = () => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  };
+
+  const handlePointerLeave = () => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  };
+
+  const handleClick = (e: React.MouseEvent) => {
+    if (isLongPressTriggeredRef.current) {
+      // Prevent default click action if long press happened
+      e.stopPropagation();
+      return;
+    }
+    onPress(config);
+  };
+
   const colorClasses = highlight
     ? "bg-cyan-600 text-white hover:bg-cyan-500 border-cyan-800"
     : config.action === 'send'
@@ -45,7 +87,10 @@ const Key: FC<KeyProps> = ({ config, onPress, highlight = false, isShiftActive =
         gridRow: `span ${config.gridRows || 1}`,
         height: '100%' 
       }}
-      onClick={() => onPress(config)}
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
+      onPointerLeave={handlePointerLeave}
+      onClick={handleClick}
       type="button"
     >
       <span>{displayLabel}</span>

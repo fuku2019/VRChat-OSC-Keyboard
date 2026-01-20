@@ -28,6 +28,7 @@ export const TRANSLATIONS = {
       error: 'エラー'
     },
     appTitle: 'キーボード',
+    appTitlePrefix: 'VRC OSC',
     keys: {
       send: '送信',
       clear: 'クリア',
@@ -70,6 +71,7 @@ export const TRANSLATIONS = {
       error: 'ERROR'
     },
     appTitle: 'KEYBOARD',
+    appTitlePrefix: 'VRC OSC',
     keys: {
       send: 'Send',
       clear: 'Clear',
