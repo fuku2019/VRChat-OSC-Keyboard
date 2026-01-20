@@ -1,6 +1,9 @@
-# VRC-OSC-Keyboard
-VRChatのチャットボックスをソフトウェアキーボードや物理キーボードを使いOSC経由で送信するツール
-# 手動ビルド How to Build
+# ⌨ VRC-OSC-Keyboard
+VRChatのチャットボックスにソフトウェアキーボードや物理キーボードを使用して<br>
+OSC経由でメッセージを送信するツール
+
+[**日本語**](./README.md) | [**English**](./docs/en/README.en.md)
+# 🔨 手動ビルド How to Build
 ```bash
 #ライブラリのインストール
 npm install
