@@ -10,7 +10,7 @@ import { TRANSLATIONS, STORAGE_KEYS, DEFAULT_CONFIG, TIMEOUTS, CHATBOX } from '.
 
 const App = () => {
   const { 
-    input, buffer, mode, setMode, setInput, overwriteInput,
+    input, buffer, displayText, mode, setMode, setInput, overwriteInput,
     handleCharInput, handleBackspace, handleClear, handleSpace, commitBuffer 
   } = useIME(InputMode.HIRAGANA);
 
@@ -22,6 +22,7 @@ const App = () => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const preCompositionValue = useRef<string>(''); // Store value before IME composition / IME構成前の値を保存
   const isComposing = useRef<boolean>(false); // Track if IME is composing / IME構成中かどうかを追跡
+  const lastCursorPosition = useRef<number | null>(null); // Store cursor position before virtual key click / 仮想キークリック前のカーソル位置を保存
   
   const [config, setConfig] = useState<OscConfig>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.OSC_CONFIG);
@@ -127,8 +128,27 @@ const App = () => {
   };
 
   const handleVirtualKey = (action: () => void) => {
+    const savedPosition = lastCursorPosition.current;
+    const oldLength = displayText.length; // Save text length before action / アクション前のテキスト長を保存
     action();
-    setTimeout(() => textareaRef.current?.focus(), 0);
+    setTimeout(() => {
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+        if (savedPosition !== null) {
+          // Calculate cursor position based on text length change / テキスト長の変化に基づいてカーソル位置を計算
+          const newLength = textareaRef.current.value.length;
+          const newPos = Math.min(savedPosition + (newLength - oldLength), newLength);
+          textareaRef.current.selectionStart = newPos;
+          textareaRef.current.selectionEnd = newPos;
+          lastCursorPosition.current = newPos; // Update saved position / 保存位置を更新
+        } else {
+          // No saved position, move to end / 保存位置なし、末尾に移動
+          const len = textareaRef.current.value.length;
+          textareaRef.current.selectionStart = len;
+          textareaRef.current.selectionEnd = len;
+        }
+      }
+    }, 0);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -216,13 +236,13 @@ const App = () => {
           <div className="absolute top-2 right-4 flex gap-3 items-center pointer-events-none z-10">
             {/* Character Counter / 文字数カウンター */}
             <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded border transition-colors ${
-              (input + buffer).length >= CHATBOX.MAX_LENGTH
+              displayText.length >= CHATBOX.MAX_LENGTH
                 ? 'text-red-400 border-red-500/50 bg-red-900/20'
-                : (input + buffer).length > CHATBOX.WARNING_THRESHOLD
+                : displayText.length > CHATBOX.WARNING_THRESHOLD
                   ? 'text-amber-400 border-amber-500/50 bg-amber-900/20'
                   : 'text-slate-400 border-slate-600 bg-slate-800/50'
             }`}>
-              {(input + buffer).length}/{CHATBOX.MAX_LENGTH}
+              {displayText.length}/{CHATBOX.MAX_LENGTH}
             </span>
             {isSending && <span className="text-[10px] text-cyan-400 font-mono animate-pulse">{t.status.sending}</span>}
             {lastSent && <span className="text-[10px] text-green-400 font-mono">{t.status.sent}</span>}
@@ -245,12 +265,13 @@ const App = () => {
 
           <textarea
             ref={textareaRef}
-            value={input + buffer}
+            value={displayText}
             onChange={handleTextareaChange}
             onKeyDown={handleKeyDown}
             onCompositionStart={handleCompositionStart}
             onCompositionEnd={handleCompositionEnd}
             onBlur={() => { isComposing.current = false; }}
+            onSelect={(e) => { lastCursorPosition.current = e.currentTarget.selectionStart; }}
             maxLength={CHATBOX.MAX_LENGTH}
             className="w-full h-full bg-transparent text-2xl md:text-4xl text-white font-medium resize-none outline-none mt-6 leading-tight break-all font-sans"
             spellCheck="false"
@@ -261,11 +282,11 @@ const App = () => {
 
       <div className="w-full max-w-5xl shrink-0 px-1 pb-4">
         <VirtualKeyboard 
-          onChar={(c) => handleVirtualKey(() => handleCharInput(c))}
-          onBackspace={() => handleVirtualKey(handleBackspace)}
+          onChar={(c) => handleVirtualKey(() => handleCharInput(c, lastCursorPosition.current ?? undefined))}
+          onBackspace={() => handleVirtualKey(() => handleBackspace(lastCursorPosition.current ?? undefined))}
           onClear={() => handleVirtualKey(handleClear)}
           onSend={() => handleVirtualKey(handleSend)}
-          onSpace={() => handleVirtualKey(handleSpace)}
+          onSpace={() => handleVirtualKey(() => handleSpace(lastCursorPosition.current ?? undefined))}
           mode={mode}
           onToggleMode={() => handleVirtualKey(toggleMode)}
           buffer={buffer}

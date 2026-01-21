@@ -37,8 +37,7 @@ export const toKana = (
   }
 
   // If buffer gets too long (3 chars) and no match, flush first char / バッファが長すぎる（3文字）かつ一致がない場合、最初の文字をフラッシュする
-  // Also check if the buffer is a valid prefix for any romaji. If not, flush immediately.
-  // また、バッファがローマ字の有効な接頭辞であるかどうかも確認します。そうでない場合は、すぐにフラッシュします。
+  // Also check if the buffer is a valid prefix for any romaji. If not, flush immediately. / また、バッファがローマ字の有効な接頭辞であるかどうかも確認します。そうでない場合は、すぐにフラッシュします。
   const isPrefix = Object.keys(ROMAJI_MAP).some(key => key.startsWith(nextBuffer));
 
   if (!isPrefix && nextBuffer.length > 0) {
