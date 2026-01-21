@@ -24,17 +24,17 @@ const TutorialOverlay: FC<TutorialOverlayProps> = ({
 
   const steps = [
     {
-      icon: <Wifi className='text-cyan-400' size={32} />,
+      icon: <Wifi className='dark:text-cyan-400 text-cyan-600' size={32} />,
       title: t.step1Title,
       desc: t.step1Desc,
     },
     {
-      icon: <Keyboard className='text-cyan-400' size={32} />,
+      icon: <Keyboard className='dark:text-cyan-400 text-cyan-600' size={32} />,
       title: t.step2Title,
       desc: t.step2Desc,
     },
     {
-      icon: <Send className='text-cyan-400' size={32} />,
+      icon: <Send className='dark:text-cyan-400 text-cyan-600' size={32} />,
       title: t.step3Title,
       desc: t.step3Desc,
     },
@@ -45,19 +45,19 @@ const TutorialOverlay: FC<TutorialOverlayProps> = ({
 
   return (
     <div
-      className={`fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/95 backdrop-blur-md p-4 ${animationClass}`}
+      className={`fixed inset-0 z-[100] flex items-center justify-center dark:bg-slate-950/95 bg-white/95 backdrop-blur-md p-4 ${animationClass}`}
     >
       <div
-        className={`w-full max-w-2xl bg-slate-900 border border-slate-700 rounded-3xl shadow-2xl p-8 md:p-12 text-center overflow-y-auto max-h-full ${modalAnimationClass}`}
+        className={`w-full max-w-2xl dark:bg-slate-900 bg-white border dark:border-slate-700 border-slate-200 rounded-3xl shadow-2xl p-8 md:p-12 text-center overflow-y-auto max-h-full ${modalAnimationClass}`}
       >
         <h2
-          className='text-3xl md:text-4xl font-black text-white mb-2 tracking-tight opacity-0 animate-slide-up'
+          className='text-3xl md:text-4xl font-black dark:text-white text-slate-900 mb-2 tracking-tight opacity-0 animate-slide-up'
           style={{ animationDelay: isOpen ? '100ms' : '0ms' }}
         >
           {t.title}
         </h2>
         <p
-          className='text-slate-400 mb-10 text-lg opacity-0 animate-slide-up'
+          className='dark:text-slate-400 text-slate-600 mb-10 text-lg opacity-0 animate-slide-up'
           style={{ animationDelay: isOpen ? '200ms' : '0ms' }}
         >
           {t.subtitle}
@@ -67,14 +67,14 @@ const TutorialOverlay: FC<TutorialOverlayProps> = ({
           {steps.map((step, i) => (
             <div
               key={i}
-              className='bg-slate-800/50 p-6 rounded-2xl border border-slate-700/50 hover:border-cyan-500/30 transition-colors opacity-0 animate-slide-up'
+              className='dark:bg-slate-800/50 bg-slate-50 p-6 rounded-2xl border dark:border-slate-700/50 border-slate-200 hover:border-cyan-500/30 transition-colors opacity-0 animate-slide-up'
               style={{ animationDelay: isOpen ? `${300 + i * 150}ms` : '0ms' }}
             >
-              <div className='mb-4 bg-slate-900 w-12 h-12 rounded-xl flex items-center justify-center border border-slate-700'>
+              <div className='mb-4 dark:bg-slate-900 bg-white w-12 h-12 rounded-xl flex items-center justify-center border dark:border-slate-700 border-slate-200'>
                 {step.icon}
               </div>
-              <h3 className='text-white font-bold mb-2'>{step.title}</h3>
-              <p className='text-sm text-slate-400 leading-relaxed'>
+              <h3 className='dark:text-white text-slate-900 font-bold mb-2'>{step.title}</h3>
+              <p className='text-sm dark:text-slate-400 text-slate-600 leading-relaxed'>
                 {step.desc}
               </p>
             </div>

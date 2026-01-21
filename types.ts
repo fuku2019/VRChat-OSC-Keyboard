@@ -31,4 +31,5 @@ export interface OscConfig {
   oscPort: number; // VRChat OSC port (default: 9000) / VRChat OSCポート（デフォルト: 9000）
   autoSend: boolean;
   language: Language;
+  theme: 'light' | 'dark';
 }

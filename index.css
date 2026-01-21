@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
   --animate-fade-in: fadeIn 0.3s ease-out forwards;
@@ -32,9 +33,16 @@
 /* Custom Scrollbar & Global Settings migrated from index.html */
 @layer base {
   ::-webkit-scrollbar { width: 8px; }
-  ::-webkit-scrollbar-track { background: #1e293b; }
-  ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
-  ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+  
+  /* Light mode scrollbar */
+  ::-webkit-scrollbar-track { background: #f1f5f9; } /* slate-100 */
+  ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; } /* slate-300 */
+  ::-webkit-scrollbar-thumb:hover { background: #94a3b8; } /* slate-400 */
+
+  /* Dark mode scrollbar */
+  :root.dark ::-webkit-scrollbar-track { background: #1e293b; }
+  :root.dark ::-webkit-scrollbar-thumb { background: #475569; }
+  :root.dark ::-webkit-scrollbar-thumb:hover { background: #64748b; }
   
   html, body { 
     height: 100%; 
