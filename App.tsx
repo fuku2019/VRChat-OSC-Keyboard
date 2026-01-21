@@ -17,6 +17,7 @@ const App = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
   const [isToastDismissed, setIsToastDismissed] = useState(false); // Track if update toast is dismissed / 更新トーストが閉じられたか追跡
+  const [isToastClosing, setIsToastClosing] = useState(false); // Track toast closing animation / トースト終了アニメーション追跡
   const [lastSent, setLastSent] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSending, setIsSending] = useState(false);
@@ -140,6 +141,15 @@ const App = () => {
     checkUpdate();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Run only once on mount / マウント時に1回のみ実行
+
+  // Handle toast dismissal with animation / アニメーション付きでトーストを閉じる
+  const handleToastDismiss = () => {
+    setIsToastClosing(true);
+    setTimeout(() => {
+      setIsToastDismissed(true);
+      setIsToastClosing(false);
+    }, 200); // Match animation duration (0.2s)
+  };
 
   // Theme effect / テーマ反映
   useEffect(() => {
@@ -398,12 +408,18 @@ const App = () => {
         onLanguageChange={(lang) => saveConfig({ ...config, language: lang })}
         onShowTutorial={handleOpenTutorialFromSettings}
         updateAvailableVersion={updateAvailable?.version}
-        onUpdateAvailable={(version, url) => setUpdateAvailable({ version, url })}
+        onUpdateAvailable={(version, url) => {
+          if (version === null) {
+            setUpdateAvailable(null);
+          } else if (url) {
+            setUpdateAvailable({ version, url });
+          }
+        }}
       />
 
       {/* Update Notification Toast / アップデート通知トースト */}
       {updateAvailable && !isSettingsOpen && !isToastDismissed && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-bounce-in w-full max-w-lg px-4">
+        <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-full max-w-lg px-4 ${isToastClosing ? 'animate-fade-out' : 'animate-bounce-in'}`}>
           <div className="flex items-center justify-between gap-4 dark:bg-slate-800 bg-white p-4 rounded-xl shadow-2xl border dark:border-cyan-500/50 border-cyan-500 ring-1 ring-cyan-500/20 w-full">
             <div className="flex flex-col">
               <span className="text-sm font-bold dark:text-white text-slate-800 flex items-center gap-2">
@@ -423,7 +439,7 @@ const App = () => {
                 {t.settings.openReleasePage}
               </button>
               <button 
-                onClick={() => setIsToastDismissed(true)}
+                onClick={handleToastDismiss}
                 className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-slate-500 dark:text-slate-400 transition-colors"
               >
                 <X size={16} />

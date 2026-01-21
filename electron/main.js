@@ -101,27 +101,44 @@ ipcMain.handle('get-osc-port', () => {
   return { port: OSC_PORT };
 });
 
+// Helper for semantic version comparison / セマンティックバージョン比較用ヘルパー
+function compareVersions(v1, v2) {
+  const clean = (v) => v.replace(/^v/, '').split('.').map(Number);
+  const parts1 = clean(v1);
+  const parts2 = clean(v2);
+  const len = Math.max(parts1.length, parts2.length);
+
+  for (let i = 0; i < len; i++) {
+    const p1 = parts1[i] || 0;
+    const p2 = parts2[i] || 0;
+    if (p1 > p2) return 1;
+    if (p1 < p2) return -1;
+  }
+  return 0;
+}
+
 // Check for updates / 更新を確認
 ipcMain.handle('check-for-update', async () => {
   try {
-    const response = await fetch('https://api.github.com/repos/fuku2019/VRC-OSC-Keyboard/releases/latest');
+    // Disable cache to ensure fresh data / キャッシュを無効化して最新データを確保
+    const response = await fetch('https://api.github.com/repos/fuku2019/VRC-OSC-Keyboard/releases/latest', {
+      headers: {
+        'Cache-Control': 'no-cache'
+      }
+    });
+
     if (!response.ok) {
       console.error(`GitHub API Error: ${response.status} ${response.statusText}`);
       throw new Error(`GitHub API Error: ${response.status} ${response.statusText}`);
     }
+
     const data = await response.json();
     const latestVersion = data.tag_name;
     const currentVersion = `v${APP_VERSION}`; 
-    // Simple version comparison (assumes vX.Y.Z format) / 単純なバージョン比較（vX.Y.Z形式を仮定）
-    // Better to use semver compare if strict, but string compare might suffice for simple cases or strip 'v'
-    // For now, let's just compare strings. If latestVersion != currentVersion, it's an update (or rollback, but usually update)
-    // To be safer, let's strip 'v' and compare.
     
-    // However, APP_VERSION from package.json might not have 'v'. Let's check package.json content again.
-    // package.json says "version": "v1.1.2". So APP_VERSION has 'v'.
-    // GitHub tags usually have 'v'.
-    
-    const updateAvailable = latestVersion !== currentVersion && latestVersion !== APP_VERSION; // Check both with/without v if inconsistent
+    // Compare versions using semver logic / セマンティックバージョニングロジックで比較
+    // latest > current => update available
+    const updateAvailable = compareVersions(latestVersion, currentVersion) > 0;
 
     return { 
       success: true, 
