@@ -6,12 +6,12 @@ OSC経由でメッセージを送信するツール
 
 <div align="center">
 
-  [![made_with](https://img.shields.io/badge/MADE_WITH%E2%99%A1-A2A2FF)](https://antigravity.google)
+  [![made_with](https://img.shields.io/badge/MADE_WITH%E2%99%A1-A2A2FF?logo=google)](https://antigravity.google)
   [![dev](https://img.shields.io/badge/-@fuku_2019_vrc-e8439?label=&logo=X&logoColor=ffffff&color=6399AE&labelColor=00C2CB)](https://x.com/fuku_2019_vrc)
   
   
   [![platform-windows](https://img.shields.io/badge/windows-platform?label=platform&labelColor=333333&color=357EC7)](https://windows.com)
-  ![view_count](https://gitviews.com/repo/fuku2019/VRC-OSC-Keyboard.svg?label-color=333333)
+  ![view_count](https://gitviews.com/repo/fuku2019/VRC-OSC-Keyboard.svg?label-color=333333&style=flat)
 
 <!--
   ![cmoe_counter](https://counter.seku.su/cmoe?name=notAfuku2019&theme=mb)
