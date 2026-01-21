@@ -2,7 +2,7 @@
 VRChatのチャットボックスにソフトウェアキーボードや物理キーボードを使用して<br>
 OSC経由でメッセージを送信するツール
 
-![logo](docs/test_logo_1.png)
+![logo](/docs/test_logo_1.png)
 
 <div align="center">
 
@@ -14,20 +14,20 @@ OSC経由でメッセージを送信するツール
   ![view_count](https://gitviews.com/repo/fuku2019/VRC-OSC-Keyboard.svg?label-color=333333)
 
 
-  ![not_a_fuku2019](https://counter.seku.su/cmoe?name=notAfuku2019&theme=mb)
+  ![cmoe_counter](https://counter.seku.su/cmoe?name=notAfuku2019&theme=mb)
 
 [**日本語**](/README.md) | [English](/docs/en/README.en.md)
 
 </div>
 
 ## 機能
-+ 内蔵ソフトウェアキーボードによりVRから簡単に日本語チャットが可能
-+ 物理キーボードからソフトのテキストボックスに入力することで漢字変換も使用可
++ 内蔵のソフトウェアキーボードで、VRから簡単に日本語チャットが可能
++ 物理キーボードからソフトのテキストボックスに入力すると、漢字変換も使用できる
 
 ## 注意事項
-一般VRChatterがAntigravityを使用して適当に作った実験的なツールです。
+一般VRChatterがAntigravityを使って適当に作った実験的なツールです。
 <br>
-このソフトを使用したことで発生したトラブルについては自己責任でお願いします。
+このソフトの使用によって発生したトラブルについては、自己責任でお願いします。
 
 https://github.com/user-attachments/assets/988b4c58-d770-46fa-ad06-91ad71321da8
 
