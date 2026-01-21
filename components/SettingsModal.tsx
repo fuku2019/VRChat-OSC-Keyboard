@@ -14,7 +14,7 @@ interface SettingsModalProps {
   onSave: (config: OscConfig) => void;
   onLanguageChange: (lang: Language) => void;
   onShowTutorial: () => void;
-  onUpdateAvailable?: (version: string, url: string) => void;
+  onUpdateAvailable?: (version: string | null, url?: string) => void;
   updateAvailableVersion?: string;
 }
 
@@ -252,18 +252,7 @@ const SettingsModal: FC<SettingsModalProps> = ({
             </div>
             
             <div className='flex items-center justify-between'>
-               {updateUrl ? (
-                 <button
-                    onClick={() => {
-                      if (window.electronAPI && updateUrl) {
-                        window.electronAPI.openExternal(updateUrl);
-                      }
-                    }}
-                    className='text-sm px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg transition-colors font-medium shadow-cyan-900/20 shadow-lg'
-                 >
-                    {t.openReleasePage}
-                 </button>
-               ) : (
+               <div className='flex items-center gap-2'>
                  <button
                     onClick={async () => {
                        setCheckStatus(t.checking);
@@ -286,6 +275,10 @@ const SettingsModal: FC<SettingsModalProps> = ({
                                  setUpdateUrl('');
                                  // Clear persisted update info / 永続化された更新情報をクリア
                                  localStorage.removeItem(STORAGE_KEYS.UPDATE_AVAILABLE);
+                                 // Notify parent to clear state / 親に通知して状態をクリア
+                                 if (onUpdateAvailable) {
+                                   onUpdateAvailable(null);
+                                 }
                               }
                           } else {
                              setCheckStatus(t.updateError);
@@ -298,7 +291,19 @@ const SettingsModal: FC<SettingsModalProps> = ({
                  >
                     {t.checkNow}
                  </button>
-               )}
+                 {updateUrl && (
+                   <button
+                      onClick={() => {
+                        if (window.electronAPI && updateUrl) {
+                          window.electronAPI.openExternal(updateUrl);
+                        }
+                      }}
+                      className='text-sm px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg transition-colors font-medium shadow-cyan-900/20 shadow-lg'
+                   >
+                      {t.openReleasePage}
+                   </button>
+                 )}
+               </div>
                {checkStatus && (
                   <span className='text-sm text-cyan-600 dark:text-cyan-400 font-medium'>
                      {checkStatus}
@@ -308,7 +313,7 @@ const SettingsModal: FC<SettingsModalProps> = ({
           </section>
 
           {/* Version Info / バージョン情報 */}
-          <section className='pt-2 text-center'>
+          <section className='text-center'>
             <p className='text-xs text-slate-500'>Version: {APP_VERSION}</p>
           </section>
         </div>
