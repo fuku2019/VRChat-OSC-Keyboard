@@ -1,7 +1,7 @@
 import { useState, useEffect, FC } from 'react';
 import { X, Save, Info, CircleHelp } from 'lucide-react';
 import { OscConfig, Language } from '../types';
-import { TRANSLATIONS } from '../constants';
+import { TRANSLATIONS, DEFAULT_CONFIG } from '../constants';
 import { useModalAnimation } from '../hooks/useModalAnimation';
 import packageJson from '../package.json';
 
@@ -40,7 +40,18 @@ const SettingsModal: FC<SettingsModalProps> = ({
   // Use localConfig for translations to ensure immediate UI update within modal / モーダル内で即時UI更新を保証するために翻訳にlocalConfigを使用する
   const t = TRANSLATIONS[localConfig.language || 'ja'].settings;
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    // Update OSC port via Electron IPC if available / 利用可能な場合はElectron IPC経由でOSCポートを更新
+    if (window.electronAPI && localConfig.oscPort !== config.oscPort) {
+      try {
+        const result = await window.electronAPI.updateOscPort(localConfig.oscPort);
+        if (!result.success) {
+          console.error('Failed to update OSC port:', result.error);
+        }
+      } catch (e) {
+        console.error('Error updating OSC port:', e);
+      }
+    }
     onSave(localConfig);
     onClose();
   };
@@ -48,6 +59,16 @@ const SettingsModal: FC<SettingsModalProps> = ({
   const handleLanguageChange = (lang: Language) => {
     setLocalConfig({ ...localConfig, language: lang });
     onLanguageChange(lang); // Trigger immediate update in parent / 親コンポーネントで即時更新をトリガーする
+  };
+
+  const handleOscPortChange = (value: string) => {
+    const portNum = parseInt(value, 10);
+    if (!isNaN(portNum) && portNum >= 1 && portNum <= 65535) {
+      setLocalConfig({ ...localConfig, oscPort: portNum });
+    } else if (value === '') {
+      // Allow empty for typing / 入力中は空を許可
+      setLocalConfig({ ...localConfig, oscPort: DEFAULT_CONFIG.OSC_PORT });
+    }
   };
 
   return (
@@ -89,6 +110,44 @@ const SettingsModal: FC<SettingsModalProps> = ({
             </div>
           </section>
 
+          {/* Tutorial Trigger / チュートリアル表示 */}
+          <section className='pt-4 border-t border-slate-700/50'>
+            <button
+              onClick={onShowTutorial}
+              className='w-full flex items-center justify-between p-4 bg-slate-700/30 hover:bg-slate-700/50 rounded-xl border border-slate-600/50 text-slate-300 hover:text-white transition-all group'
+            >
+              <div className='flex items-center gap-3'>
+                <CircleHelp size={20} className='text-cyan-500' />
+                <span className='font-medium text-sm'>{t.resetWelcome}</span>
+              </div>
+              <span className='text-slate-500 group-hover:translate-x-1 transition-transform'>
+                →
+              </span>
+            </button>
+          </section>
+
+          {/* OSC Port Config / OSCポート設定 */}
+          <section className='pt-4 border-t border-slate-700/50'>
+            <label className='block text-slate-300 mb-3 text-sm font-semibold uppercase tracking-wider'>
+              {t.oscPort}
+            </label>
+            <div className='relative group'>
+              <input
+                type='number'
+                min={1}
+                max={65535}
+                value={localConfig.oscPort}
+                onChange={(e) => handleOscPortChange(e.target.value)}
+                className='w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 focus:outline-none font-mono text-sm transition-all'
+                placeholder='9000'
+              />
+            </div>
+            <p className='text-xs text-slate-500 mt-3 flex items-start gap-2 px-1 whitespace-pre-line'>
+              <Info size={14} className='text-slate-400 mt-0.5 flex-shrink-0' />
+              <span>{t.oscPortDesc}</span>
+            </p>
+          </section>
+
           {/* URL Config / URL設定 */}
           <section>
             <label className='block text-slate-300 mb-3 text-sm font-semibold uppercase tracking-wider'>
@@ -109,22 +168,6 @@ const SettingsModal: FC<SettingsModalProps> = ({
               <Info size={14} className='text-slate-400' />
               {t.defaultUrl}
             </p>
-          </section>
-
-          {/* Tutorial Trigger / チュートリアル表示 */}
-          <section className='pt-4 border-t border-slate-700/50'>
-            <button
-              onClick={onShowTutorial}
-              className='w-full flex items-center justify-between p-4 bg-slate-700/30 hover:bg-slate-700/50 rounded-xl border border-slate-600/50 text-slate-300 hover:text-white transition-all group'
-            >
-              <div className='flex items-center gap-3'>
-                <CircleHelp size={20} className='text-cyan-500' />
-                <span className='font-medium text-sm'>{t.resetWelcome}</span>
-              </div>
-              <span className='text-slate-500 group-hover:translate-x-1 transition-transform'>
-                →
-              </span>
-            </button>
           </section>
 
           {/* Version Info / バージョン情報 */}

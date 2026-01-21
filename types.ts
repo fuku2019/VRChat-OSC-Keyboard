@@ -28,6 +28,7 @@ export interface KeyConfig {
 
 export interface OscConfig {
   bridgeUrl: string;
+  oscPort: number; // VRChat OSC port (default: 9000) / VRChat OSCポート（デフォルト: 9000）
   autoSend: boolean;
   language: Language;
 }

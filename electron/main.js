@@ -1,4 +1,4 @@
-import { app, BrowserWindow, screen } from 'electron';
+import { app, BrowserWindow, screen, ipcMain } from 'electron';
 import { WebSocketServer } from 'ws';
 import { Client } from 'node-osc';
 import path from 'path';
@@ -19,12 +19,31 @@ let mainWindow;
 
 // --- OSC Bridge Logic (Integrated) --- / OSCブリッジロジック（統合済み）
 const OSC_IP = '127.0.0.1';
-const OSC_PORT = 9000;
+let OSC_PORT = 9000; // Now mutable via IPC / IPCで変更可能
 const WS_PORT = 8080;
 const WS_HOST = '127.0.0.1'; // Explicitly bind to localhost for security / セキュリティのためにlocalhostに明示的にバインドする
 
 let oscClient;
 let wss;
+
+// Recreate OSC client with new port / 新しいポートでOSCクライアントを再作成
+function updateOscClient(newPort) {
+  console.log(`⚡ Updating OSC port from ${OSC_PORT} to ${newPort}`);
+  OSC_PORT = newPort;
+  
+  // Close existing client / 既存のクライアントを閉じる
+  if (oscClient) {
+    try {
+      oscClient.close();
+    } catch (e) {
+      console.error('[OSC] Error closing old client:', e);
+    }
+  }
+  
+  // Create new client with updated port / 更新されたポートで新しいクライアントを作成
+  oscClient = new Client(OSC_IP, OSC_PORT);
+  console.log(`➡️  Now forwarding to VRChat at ${OSC_IP}:${OSC_PORT}`);
+}
 
 function startBridge() {
   console.log('⚡ Starting OSC Bridge in Electron Main Process...');
@@ -64,6 +83,23 @@ function startBridge() {
     console.error('Failed to start bridge:', err);
   }
 }
+
+// --- IPC Handlers for OSC Port --- / OSCポート用のIPCハンドラ
+
+// Handle OSC port update from renderer / レンダラーからのOSCポート更新を処理
+ipcMain.handle('update-osc-port', (event, port) => {
+  const portNum = parseInt(port, 10);
+  if (isNaN(portNum) || portNum < 1 || portNum > 65535) {
+    return { success: false, error: 'Invalid port number' };
+  }
+  updateOscClient(portNum);
+  return { success: true, port: portNum };
+});
+
+// Get current OSC port / 現在のOSCポートを取得
+ipcMain.handle('get-osc-port', () => {
+  return { port: OSC_PORT };
+});
 
 // --- Electron Window Logic --- / Electronウィンドウロジック
 
@@ -123,6 +159,7 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
+      preload: path.join(__dirname, 'preload.js'), // Add preload script / プリロードスクリプトを追加
       devTools: !app.isPackaged,
     },
   };

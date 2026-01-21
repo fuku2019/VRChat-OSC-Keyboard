@@ -5,6 +5,8 @@ export interface TranslationStrings {
   settings: {
     title: string;
     language: string;
+    oscPort: string;
+    oscPortDesc: string;
     oscUrl: string;
     defaultUrl: string;
     instructionsTitle: string;
@@ -52,8 +54,10 @@ export const TRANSLATIONS: TranslationsMap = {
     settings: {
       title: '設定',
       language: '言語 / Language',
+      oscPort: 'VRChat OSC ポート',
+      oscPortDesc: 'VRChatにOSCメッセージを送信するポート（デフォルト: 9000）\n 注意:OSCポートが間違っていても、エラーは表示されずVRChatにはチャットが送信されません。',
       oscUrl: 'OSCブリッジ URL',
-      defaultUrl: '基本的に変更しないでください。デフォルト: ws://127.0.0.1:8080',
+      defaultUrl: '基本的に変更しないでください。(デフォルト: ws://127.0.0.1:8080)',
       instructionsTitle: 'ヘルプ',
       resetWelcome: 'チュートリアルを表示する',
       save: '保存して閉じる'
@@ -64,9 +68,9 @@ export const TRANSLATIONS: TranslationsMap = {
       step1Title: 'OSCの有効化',
       step1Desc: 'VRChat内のアクションメニューからOSC設定を開きOSCを有効にしてください。',
       step2Title: '入力モード',
-      step2Desc: 'Tabキーや画面ボタンで入力モードを切り替えられます。物理キーボードでの直接入力にも対応しています。',
+      step2Desc: 'Tabキーや画面ボタンで入力モードを切り替えられます。また、物理キーボードでの直接入力にも対応しています。',
       step3Title: '送信',
-      step3Desc: 'Enterキー、または送信ボタンでVRChatへメッセージを飛ばします。',
+      step3Desc: 'Enterキー、または送信ボタンでVRChatへチャットを送信します。',
       startButton: 'はじめる'
     },
     status: {
@@ -95,27 +99,29 @@ export const TRANSLATIONS: TranslationsMap = {
     settings: {
       title: 'Settings',
       language: 'Language',
+      oscPort: 'VRChat OSC Port',
+      oscPortDesc: 'VRChat OSC Send Port (Default: 9000) \n Note: Incorrect port settings will not trigger an error, but chat will not be sent.',
       oscUrl: 'OSC Bridge URL',
-      defaultUrl: 'DO NOT modify unless necessary: ws://127.0.0.1:8080',
+      defaultUrl: 'Do not change unless necessary. (Default: ws://127.0.0.1:8080)',
       instructionsTitle: 'Help',
-      resetWelcome: 'Show Tutorial Guide',
+      resetWelcome: 'Show Tutorial',
       save: 'Save & Close'
     },
     tutorial: {
       title: 'Welcome to VRC OSC Keyboard',
       subtitle: 'This tool helps you send text to the VRChat chatbox easily.',
-      step1Title: 'Prepare OSC',
+      step1Title: 'Enable OSC',
       step1Desc: 'Enable OSC in VRChat via Action Menu > OSC > Enable.',
       step2Title: 'Input Modes',
-      step2Desc: 'Switch Input modes using Tab or the UI button. You can also type directly using your physical keyboard.',
+      step2Desc: 'Switch input modes via the Tab key or the on-screen button. Physical keyboard input is also supported.',
       step3Title: 'Send Message',
-      step3Desc: 'Press Enter or the Send button to display your text in-game.',
+      step3Desc: 'Send chat to VRChat using Enter or the Send button.',
       startButton: 'Get Started'
     },
     status: {
-      sending: 'SENDING...',
-      sent: 'SENT OK',
-      error: 'ERROR'
+      sending: 'Sending...',
+      sent: 'Sent',
+      error: 'Error'
     },
     appTitle: 'Keyboard',
     appTitlePrefix: 'VRC OSC',

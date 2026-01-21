@@ -27,6 +27,7 @@ const App = () => {
     const saved = localStorage.getItem(STORAGE_KEYS.OSC_CONFIG);
     return saved ? JSON.parse(saved) : {
       bridgeUrl: DEFAULT_CONFIG.BRIDGE_URL,
+      oscPort: DEFAULT_CONFIG.OSC_PORT,
       autoSend: DEFAULT_CONFIG.AUTO_SEND,
       language: DEFAULT_CONFIG.LANGUAGE
     };
@@ -34,8 +35,25 @@ const App = () => {
 
   // Ensure config has language if loaded from old state / 古い状態からロードされた場合にconfigが言語設定を持っていることを確認
   useEffect(() => {
+    let needsUpdate = false;
+    let newConfig = { ...config };
+    
     if (!config.language) {
-      setConfig(prev => ({ ...prev, language: DEFAULT_CONFIG.LANGUAGE }));
+      newConfig.language = DEFAULT_CONFIG.LANGUAGE;
+      needsUpdate = true;
+    }
+    if (!config.oscPort) {
+      newConfig.oscPort = DEFAULT_CONFIG.OSC_PORT;
+      needsUpdate = true;
+    }
+    
+    if (needsUpdate) {
+      setConfig(newConfig);
+    }
+    
+    // Sync OSC port with Electron on app load / アプリ読み込み時にElectronとOSCポートを同期
+    if (window.electronAPI && config.oscPort) {
+      window.electronAPI.updateOscPort(config.oscPort);
     }
   }, []);
 
@@ -149,14 +167,21 @@ const App = () => {
     }
   };
 
-  // Handle textarea onChange - skip during IME composition / textareaのonChange処理 - IME構成中はスキップ
+  // Handle textarea onChange - allow during IME composition for proper display / textareaのonChange処理 - IME表示のため構成中も許可
   const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    // Skip state updates during IME composition to prevent overwrite issues
-    // IME構成中は上書き問題を防ぐために状態更新をスキップ
+    const newValue = e.target.value;
+    
+    // During IME composition, allow all input (limit check happens in handleCompositionEnd)
+    // IME構成中はすべての入力を許可（制限チェックはhandleCompositionEndで行う）
     if (isComposing.current) {
+      overwriteInput(newValue);
       return;
     }
-    overwriteInput(e.target.value);
+    
+    // For non-IME input, apply character limit / 非IME入力は文字数制限を適用
+    if (newValue.length <= CHATBOX.MAX_LENGTH) {
+      overwriteInput(newValue);
+    }
   };
 
   return (
