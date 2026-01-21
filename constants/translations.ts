@@ -12,6 +12,9 @@ export interface TranslationStrings {
     instructionsTitle: string;
     resetWelcome: string;
     save: string;
+    theme: string;
+    themeLight: string;
+    themeDark: string;
   };
   tutorial: {
     title: string;
@@ -60,7 +63,10 @@ export const TRANSLATIONS: TranslationsMap = {
       defaultUrl: '基本的に変更しないでください。(デフォルト: ws://127.0.0.1:8080)',
       instructionsTitle: 'ヘルプ',
       resetWelcome: 'チュートリアルを表示する',
-      save: '保存して閉じる'
+      save: '閉じる',
+      theme: 'テーマ',
+      themeLight: 'ライト',
+      themeDark: 'ダーク'
     },
     tutorial: {
       title: 'VRChat OSC Keyboardへようこそ',
@@ -105,7 +111,10 @@ export const TRANSLATIONS: TranslationsMap = {
       defaultUrl: 'Do not change unless necessary. (Default: ws://127.0.0.1:8080)',
       instructionsTitle: 'Help',
       resetWelcome: 'Show Tutorial',
-      save: 'Save & Close'
+      save: 'Close',
+      theme: 'Theme',
+      themeLight: 'Light',
+      themeDark: 'Dark'
     },
     tutorial: {
       title: 'Welcome to VRC OSC Keyboard',

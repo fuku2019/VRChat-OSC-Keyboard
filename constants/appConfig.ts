@@ -13,6 +13,7 @@ export const DEFAULT_CONFIG = {
   OSC_PORT: 9000, // VRChat default OSC port / VRChatデフォルトOSCポート
   AUTO_SEND: false,
   LANGUAGE: 'ja' as const,
+  THEME: 'dark' as const,
 } as const;
 
 // Timeout values (in milliseconds) / タイムアウト値（ミリ秒）

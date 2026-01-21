@@ -81,10 +81,10 @@ const VirtualKeyboard: FC<VirtualKeyboardProps> = ({
   };
 
   return (
-    <div className='flex flex-col w-full max-w-5xl mx-auto p-2 bg-slate-900/90 rounded-2xl shadow-2xl border border-slate-700 select-none backdrop-blur-sm'>
-      <div className='h-8 mb-2 px-4 flex items-center text-cyan-300 font-mono text-lg overflow-hidden'>
+    <div className='flex flex-col w-full max-w-5xl mx-auto p-2 dark:bg-slate-900/90 bg-slate-100/90 rounded-2xl shadow-2xl border dark:border-slate-700 border-slate-300 select-none backdrop-blur-sm transition-colors duration-300'>
+      <div className='h-8 mb-2 px-4 flex items-center dark:text-cyan-300 text-cyan-700 font-mono text-lg overflow-hidden'>
         {buffer && (
-          <span className='border-b-2 border-cyan-500 animate-pulse bg-cyan-900/30 px-1 rounded'>
+          <span className='border-b-2 border-cyan-500 animate-pulse dark:bg-cyan-900/30 bg-cyan-100 px-1 rounded'>
             {buffer}
           </span>
         )}

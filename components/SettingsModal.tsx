@@ -1,5 +1,5 @@
 import { useState, useEffect, FC } from 'react';
-import { X, Save, Info, CircleHelp } from 'lucide-react';
+import { X, Info, CircleHelp } from 'lucide-react';
 import { OscConfig, Language } from '../types';
 import { TRANSLATIONS, DEFAULT_CONFIG } from '../constants';
 import { useModalAnimation } from '../hooks/useModalAnimation';
@@ -40,11 +40,15 @@ const SettingsModal: FC<SettingsModalProps> = ({
   // Use localConfig for translations to ensure immediate UI update within modal / モーダル内で即時UI更新を保証するために翻訳にlocalConfigを使用する
   const t = TRANSLATIONS[localConfig.language || 'ja'].settings;
 
-  const handleSave = async () => {
-    // Update OSC port via Electron IPC if available / 利用可能な場合はElectron IPC経由でOSCポートを更新
-    if (window.electronAPI && localConfig.oscPort !== config.oscPort) {
+  // Save config immediately and update OSC port if needed / 設定を即時保存し、必要に応じてOSCポートを更新
+  const saveConfigImmediately = async (newConfig: OscConfig) => {
+    setLocalConfig(newConfig);
+    onSave(newConfig);
+    
+    // Update OSC port via Electron IPC if changed / 変更された場合はElectron IPC経由でOSCポートを更新
+    if (window.electronAPI && newConfig.oscPort !== config.oscPort) {
       try {
-        const result = await window.electronAPI.updateOscPort(localConfig.oscPort);
+        const result = await window.electronAPI.updateOscPort(newConfig.oscPort);
         if (!result.success) {
           console.error('Failed to update OSC port:', result.error);
         }
@@ -52,23 +56,38 @@ const SettingsModal: FC<SettingsModalProps> = ({
         console.error('Error updating OSC port:', e);
       }
     }
-    onSave(localConfig);
+  };
+
+  const handleClose = () => {
     onClose();
   };
 
   const handleLanguageChange = (lang: Language) => {
-    setLocalConfig({ ...localConfig, language: lang });
+    const newConfig = { ...localConfig, language: lang };
+    saveConfigImmediately(newConfig);
     onLanguageChange(lang); // Trigger immediate update in parent / 親コンポーネントで即時更新をトリガーする
+  };
+
+  const handleThemeChange = (theme: 'light' | 'dark') => {
+    const newConfig = { ...localConfig, theme };
+    saveConfigImmediately(newConfig);
   };
 
   const handleOscPortChange = (value: string) => {
     const portNum = parseInt(value, 10);
     if (!isNaN(portNum) && portNum >= 1 && portNum <= 65535) {
-      setLocalConfig({ ...localConfig, oscPort: portNum });
+      const newConfig = { ...localConfig, oscPort: portNum };
+      saveConfigImmediately(newConfig);
     } else if (value === '') {
       // Allow empty for typing / 入力中は空を許可
-      setLocalConfig({ ...localConfig, oscPort: DEFAULT_CONFIG.OSC_PORT });
+      const newConfig = { ...localConfig, oscPort: DEFAULT_CONFIG.OSC_PORT };
+      saveConfigImmediately(newConfig);
     }
+  };
+
+  const handleBridgeUrlChange = (value: string) => {
+    const newConfig = { ...localConfig, bridgeUrl: value };
+    saveConfigImmediately(newConfig);
   };
 
   return (
@@ -76,13 +95,13 @@ const SettingsModal: FC<SettingsModalProps> = ({
       className={`fixed inset-0 z-[110] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 ${animationClass}`}
     >
       <div
-        className={`bg-slate-800 w-full max-w-lg max-h-[90vh] flex flex-col rounded-2xl border border-slate-600 shadow-2xl overflow-hidden ${modalAnimationClass}`}
+        className={`dark:bg-slate-800 bg-white w-full max-w-lg max-h-[90vh] flex flex-col rounded-2xl border dark:border-slate-600 border-slate-200 shadow-2xl overflow-hidden ${modalAnimationClass}`}
       >
-        <div className='flex justify-between items-center p-6 border-b border-slate-700 bg-slate-800'>
-          <h2 className='text-2xl font-bold text-cyan-400'>{t.title}</h2>
+        <div className='flex justify-between items-center p-6 border-b dark:border-slate-700 border-slate-200 dark:bg-slate-800 bg-white'>
+          <h2 className='text-2xl font-bold dark:text-cyan-400 text-cyan-600'>{t.title}</h2>
           <button
             onClick={onClose}
-            className='p-2 hover:bg-slate-700 rounded-full text-slate-400 hover:text-white transition-colors'
+            className='p-2 dark:hover:bg-slate-700 hover:bg-slate-100 rounded-full dark:text-slate-400 text-slate-500 dark:hover:text-white hover:text-slate-900 transition-colors'
           >
             <X size={24} />
           </button>
@@ -91,30 +110,51 @@ const SettingsModal: FC<SettingsModalProps> = ({
         <div className='flex-1 overflow-y-auto p-6 space-y-8'>
           {/* Language Selection / 言語選択 */}
           <section>
-            <label className='block text-slate-300 mb-3 text-sm font-semibold uppercase tracking-wider'>
+            <label className='block dark:text-slate-300 text-slate-600 mb-3 text-sm font-semibold uppercase tracking-wider'>
               {t.language}
             </label>
             <div className='flex gap-2'>
               <button
                 onClick={() => handleLanguageChange('ja')}
-                className={`flex-1 py-3 px-4 rounded-xl border transition-all ${localConfig.language === 'ja' ? 'bg-cyan-900/40 border-cyan-500 text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.15)]' : 'bg-slate-900 border-slate-700 text-slate-400 hover:border-slate-500'}`}
+                className={`flex-1 py-3 px-4 rounded-xl border transition-all ${localConfig.language === 'ja' ? 'dark:bg-cyan-900/40 bg-cyan-50 border-cyan-500 dark:text-cyan-300 text-cyan-700 shadow-[0_0_15px_rgba(6,182,212,0.15)]' : 'dark:bg-slate-900 bg-slate-50 dark:border-slate-700 border-slate-300 dark:text-slate-400 text-slate-500 hover:border-slate-400 dark:hover:border-slate-500'}`}
               >
                 日本語
               </button>
               <button
                 onClick={() => handleLanguageChange('en')}
-                className={`flex-1 py-3 px-4 rounded-xl border transition-all ${localConfig.language === 'en' ? 'bg-cyan-900/40 border-cyan-500 text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.15)]' : 'bg-slate-900 border-slate-700 text-slate-400 hover:border-slate-500'}`}
+                className={`flex-1 py-3 px-4 rounded-xl border transition-all ${localConfig.language === 'en' ? 'dark:bg-cyan-900/40 bg-cyan-50 border-cyan-500 dark:text-cyan-300 text-cyan-700 shadow-[0_0_15px_rgba(6,182,212,0.15)]' : 'dark:bg-slate-900 bg-slate-50 dark:border-slate-700 border-slate-300 dark:text-slate-400 text-slate-500 hover:border-slate-400 dark:hover:border-slate-500'}`}
               >
                 English
               </button>
             </div>
           </section>
 
+          {/* Theme Selection / テーマ選択 */}
+          <section>
+            <label className='block dark:text-slate-300 text-slate-600 mb-3 text-sm font-semibold uppercase tracking-wider'>
+              {t.theme}
+            </label>
+            <div className='flex gap-2'>
+              <button
+                onClick={() => handleThemeChange('dark')}
+                className={`flex-1 py-3 px-4 rounded-xl border transition-all ${localConfig.theme === 'dark' ? 'dark:bg-cyan-900/40 bg-cyan-50 border-cyan-500 dark:text-cyan-300 text-cyan-700 shadow-[0_0_15px_rgba(6,182,212,0.15)]' : 'dark:bg-slate-900 bg-slate-50 dark:border-slate-700 border-slate-300 dark:text-slate-400 text-slate-500 hover:border-slate-400 dark:hover:border-slate-500'}`}
+              >
+                {t.themeDark}
+              </button>
+              <button
+                onClick={() => handleThemeChange('light')}
+                className={`flex-1 py-3 px-4 rounded-xl border transition-all ${localConfig.theme === 'light' ? 'dark:bg-cyan-900/40 bg-cyan-50 border-cyan-500 dark:text-cyan-300 text-cyan-700 shadow-[0_0_15px_rgba(6,182,212,0.15)]' : 'dark:bg-slate-900 bg-slate-50 dark:border-slate-700 border-slate-300 dark:text-slate-400 text-slate-500 hover:border-slate-400 dark:hover:border-slate-500'}`}
+              >
+                {t.themeLight}
+              </button>
+            </div>
+          </section>
+
           {/* Tutorial Trigger / チュートリアル表示 */}
-          <section className='pt-4 border-t border-slate-700/50'>
+          <section className='pt-4 border-t dark:border-slate-700/50 border-slate-200'>
             <button
               onClick={onShowTutorial}
-              className='w-full flex items-center justify-between p-4 bg-slate-700/30 hover:bg-slate-700/50 rounded-xl border border-slate-600/50 text-slate-300 hover:text-white transition-all group'
+              className='w-full flex items-center justify-between p-4 dark:bg-slate-700/30 bg-slate-100 hover:bg-slate-200 dark:hover:bg-slate-700/50 rounded-xl border dark:border-slate-600/50 border-slate-200 dark:text-slate-300 text-slate-700 dark:hover:text-white hover:text-slate-900 transition-all group'
             >
               <div className='flex items-center gap-3'>
                 <CircleHelp size={20} className='text-cyan-500' />
@@ -127,8 +167,8 @@ const SettingsModal: FC<SettingsModalProps> = ({
           </section>
 
           {/* OSC Port Config / OSCポート設定 */}
-          <section className='pt-4 border-t border-slate-700/50'>
-            <label className='block text-slate-300 mb-3 text-sm font-semibold uppercase tracking-wider'>
+          <section className='pt-4 border-t dark:border-slate-700/50 border-slate-200'>
+            <label className='block dark:text-slate-300 text-slate-600 mb-3 text-sm font-semibold uppercase tracking-wider'>
               {t.oscPort}
             </label>
             <div className='relative group'>
@@ -138,7 +178,7 @@ const SettingsModal: FC<SettingsModalProps> = ({
                 max={65535}
                 value={localConfig.oscPort}
                 onChange={(e) => handleOscPortChange(e.target.value)}
-                className='w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 focus:outline-none font-mono text-sm transition-all'
+                className='w-full dark:bg-slate-900 bg-slate-50 border dark:border-slate-700 border-slate-300 rounded-xl p-4 dark:text-white text-slate-900 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 focus:outline-none font-mono text-sm transition-all'
                 placeholder='9000'
               />
             </div>
@@ -150,17 +190,15 @@ const SettingsModal: FC<SettingsModalProps> = ({
 
           {/* URL Config / URL設定 */}
           <section>
-            <label className='block text-slate-300 mb-3 text-sm font-semibold uppercase tracking-wider'>
+            <label className='block dark:text-slate-300 text-slate-600 mb-3 text-sm font-semibold uppercase tracking-wider'>
               {t.oscUrl}
             </label>
             <div className='relative group'>
               <input
                 type='text'
                 value={localConfig.bridgeUrl}
-                onChange={(e) =>
-                  setLocalConfig({ ...localConfig, bridgeUrl: e.target.value })
-                }
-                className='w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 focus:outline-none font-mono text-sm transition-all'
+                onChange={(e) => handleBridgeUrlChange(e.target.value)}
+                className='w-full dark:bg-slate-900 bg-slate-50 border dark:border-slate-700 border-slate-300 rounded-xl p-4 dark:text-white text-slate-900 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 focus:outline-none font-mono text-sm transition-all'
                 placeholder='ws://127.0.0.1:8080'
               />
             </div>
@@ -176,12 +214,12 @@ const SettingsModal: FC<SettingsModalProps> = ({
           </section>
         </div>
 
-        <div className='p-6 border-t border-slate-700 bg-slate-800/50'>
+        <div className='p-6 border-t dark:border-slate-700 border-slate-200 dark:bg-slate-800/50 bg-slate-50'>
           <button
-            onClick={handleSave}
+            onClick={handleClose}
             className='flex items-center gap-2 bg-cyan-600 hover:bg-cyan-500 text-white px-8 py-4 rounded-xl font-bold shadow-lg shadow-cyan-900/30 active:scale-95 transition-all w-full justify-center'
           >
-            <Save size={20} />
+            <X size={20} />
             {t.save}
           </button>
         </div>
