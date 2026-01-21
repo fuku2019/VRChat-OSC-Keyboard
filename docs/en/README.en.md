@@ -27,7 +27,7 @@ over OSC using either a software or physical keyboard.
 Allows for easy Japanese chatting directly from VR via a built-in virtual keyboard.
 Supports Kanji conversion when inputting text via a physical keyboard.
 
-# Notes
+## Notes
 This is just an experimental tool thrown together by an average VRChatter using Antigravity.
 Use at your own risk. The author assumes no responsibility for any trouble caused by this software.
 
@@ -35,7 +35,7 @@ https://github.com/user-attachments/assets/988b4c58-d770-46fa-ad06-91ad71321da8
 
 https://github.com/user-attachments/assets/fc8e216b-8f50-4271-896b-cee8c70a5dd8
 
-# How to Build
+## How to Build
 ```bash
 # Installing the library
 npm install
@@ -43,4 +43,5 @@ npm install
 npm run dist
 
 ```
+
 
