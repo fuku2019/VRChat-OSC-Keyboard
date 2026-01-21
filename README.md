@@ -13,8 +13,9 @@ OSC経由でメッセージを送信するツール
   [![platform-windows](https://img.shields.io/badge/windows-platform?label=platform&labelColor=333333&color=357EC7)](https://windows.com)
   ![view_count](https://gitviews.com/repo/fuku2019/VRC-OSC-Keyboard.svg?label-color=333333)
 
-
+<!--
   ![cmoe_counter](https://counter.seku.su/cmoe?name=notAfuku2019&theme=mb)
+-->
 
 [**日本語**](/README.md) | [English](/docs/en/README.en.md)
 
