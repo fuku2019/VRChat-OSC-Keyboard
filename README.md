@@ -8,7 +8,7 @@ OSC経由でメッセージを送信するツール
 [![dev](https://img.shields.io/badge/-@fuku_2019_vrc-e8439?label=&logo=X&logoColor=ffffff&color=6399AE&labelColor=00C2CB)](https://x.com/fuku_2019_vrc)
 
 
-[![platform-windows](https://img.shields.io/badge/windows-platform?style=for-the-badge&label=platform&labelColor=333333&color=357EC7)](https://windows.com)
+[![platform-windows](https://img.shields.io/badge/windows-platform?label=platform&labelColor=333333&color=357EC7)](https://windows.com)
 ![view_count](https://gitviews.com/repo/fuku2019/VRC-OSC-Keyboard.svg?label-color=333333)
 
 
