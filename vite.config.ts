@@ -1,4 +1,6 @@
 import { defineConfig } from 'vite';
+import { readFileSync } from 'node:fs';
+
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { WebSocketServer } from 'ws';
@@ -73,7 +75,14 @@ const oscBridgePlugin = () => {
   };
 };
 
+
+const packageJson = JSON.parse(readFileSync('./package.json', 'utf-8'));
+
 export default defineConfig({
+  define: {
+    APP_VERSION: JSON.stringify(packageJson.version),
+  },
+
   base: './', // Crucial for Electron apps loading via file:// / Electronアプリがfile://経由で読み込むために重要
   plugins: [react(), tailwindcss(), oscBridgePlugin()],
   server: {

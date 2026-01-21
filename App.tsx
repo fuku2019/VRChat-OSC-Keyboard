@@ -8,6 +8,8 @@ import { sendOscMessage } from './services/oscService';
 import { useIME } from './hooks/useIME';
 import { TRANSLATIONS, STORAGE_KEYS, DEFAULT_CONFIG, TIMEOUTS, CHATBOX } from './constants';
 
+declare const APP_VERSION: string;
+
 const App = () => {
   const { 
     input, buffer, displayText, mode, setMode, setInput, overwriteInput,
@@ -74,7 +76,18 @@ const App = () => {
     const saved = localStorage.getItem(STORAGE_KEYS.UPDATE_AVAILABLE);
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        // Check if the persisted update matches current version (already updated) / 保存された更新が現在のバージョンと一致するか確認（更新済み）
+        // Normalize versions to handle 'v' prefix logic / 'v'プレフィックスを処理するためにバージョンを正規化
+        const normalize = (v: string) => v.replace(/^v/, '');
+        
+        // APP_VERSION is defined in vite config
+        if (parsed.version && normalize(parsed.version) === normalize(APP_VERSION)) {
+           // Already updated to this version, clear persistence / 既にこのバージョンに更新済みなので、永続化情報をクリア
+           localStorage.removeItem(STORAGE_KEYS.UPDATE_AVAILABLE);
+           return null;
+        }
+        return parsed;
       } catch {
         return null;
       }

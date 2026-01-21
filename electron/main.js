@@ -103,7 +103,14 @@ ipcMain.handle('get-osc-port', () => {
 
 // Helper for semantic version comparison / セマンティックバージョン比較用ヘルパー
 function compareVersions(v1, v2) {
-  const clean = (v) => v.replace(/^v/, '').split('.').map(Number);
+  // Handle non-string inputs / 文字列以外が渡された場合の対処
+  if (typeof v1 !== 'string' || typeof v2 !== 'string') return 0;
+
+  const clean = (v) => v.replace(/^v/, '').split('.').map(part => {
+    const num = parseInt(part, 10);
+    return isNaN(num) ? 0 : num; // Treat non-numeric parts as 0 / 数値以外は0として扱う
+  });
+  
   const parts1 = clean(v1);
   const parts2 = clean(v2);
   const len = Math.max(parts1.length, parts2.length);
@@ -123,7 +130,8 @@ ipcMain.handle('check-for-update', async () => {
     // Disable cache to ensure fresh data / キャッシュを無効化して最新データを確保
     const response = await fetch('https://api.github.com/repos/fuku2019/VRC-OSC-Keyboard/releases/latest', {
       headers: {
-        'Cache-Control': 'no-cache'
+        'Cache-Control': 'no-cache',
+        'User-Agent': `VRC-OSC-Keyboard/${APP_VERSION}` // Add User-Agent as per GitHub API requirements
       }
     });
 
@@ -134,7 +142,13 @@ ipcMain.handle('check-for-update', async () => {
 
     const data = await response.json();
     const latestVersion = data.tag_name;
-    const currentVersion = `v${APP_VERSION}`; 
+    
+    // Validate response data / レスポンスデータの検証
+    if (!latestVersion) {
+        throw new Error('Invalid response from GitHub: tag_name missing');
+    }
+
+    const currentVersion = APP_VERSION.startsWith('v') ? APP_VERSION : `v${APP_VERSION}`; 
     
     // Compare versions using semver logic / セマンティックバージョニングロジックで比較
     // latest > current => update available

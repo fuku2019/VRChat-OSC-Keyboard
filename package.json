@@ -1,7 +1,7 @@
 {
   "name": "vrchat-osc-keyboard",
   "productName": "VRChat OSC Keyboard",
-  "version": "v1.2.1",
+  "version": "v1.2.2",
   "description": "A Japanese/English virtual keyboard and chatbox interface designed for SteamVR overlays to send text to VRChat via OSC.",
   "author": {
     "name": "fuku_2019"
