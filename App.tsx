@@ -231,7 +231,7 @@ const App = () => {
         <div className="flex items-center gap-3">
           <div className="w-3 h-3 rounded-full bg-cyan-500 shadow-[0_0_10px_rgba(6,182,212,0.8)]"></div>
           <h1 className="text-xl md:text-2xl font-bold dark:text-slate-100 text-slate-800 tracking-wider drop-shadow-md">
-            {t.appTitlePrefix} <span className="text-cyan-400">{t.appTitle}</span>
+            {t.appTitlePrefix}<span className="ml-0 px-1.5 py-1 bg-[#06b6d4]/40 dark:bg-[#034445]/80 rounded-md border border-[#06b6d4]/60 dark:border-[#06b6d4]/30 shadow-lg backdrop-blur-sm">{t.appTitle}</span>
           </h1>
         </div>
         <button 
