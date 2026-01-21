@@ -2,6 +2,7 @@ import { useState, FC } from 'react';
 import { KEYBOARD_LAYOUT, TRANSLATIONS, KEYBOARD_GRID } from '../constants';
 import { KeyConfig, InputMode, Language } from '../types';
 import Key from './Key';
+import packageJson from '../package.json';
 
 interface VirtualKeyboardProps {
   onChar: (char: string) => void;
@@ -136,7 +137,7 @@ const VirtualKeyboard: FC<VirtualKeyboardProps> = ({
 
       <div className='mt-2 flex justify-between px-4 text-slate-500 text-xs'>
         <span>JIS Layout (Standard)</span>
-        <span>VRChat OSC Keyboard</span>
+        <span>VRChat OSC Keyboard {packageJson.version}</span>
       </div>
     </div>
   );
