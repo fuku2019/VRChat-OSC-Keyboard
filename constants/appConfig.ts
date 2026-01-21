@@ -5,6 +5,8 @@ export const STORAGE_KEYS = {
   OSC_CONFIG: 'vrc_osc_config',
   HAS_SEEN_TUTORIAL: 'vrc_osc_has_seen_tutorial',
   WINDOW_POSITION: 'vrc_osc_window_position', // Window position (x, y) / ウィンドウ位置（x, y）
+  LAST_UPDATE_CHECK: 'vrc_osc_last_update_check',
+  UPDATE_AVAILABLE: 'vrc_osc_update_available', // Stores {version, url} or null / 更新情報を保存
 } as const;
 
 // Default configuration values / デフォルト設定値
@@ -14,6 +16,7 @@ export const DEFAULT_CONFIG = {
   AUTO_SEND: false,
   LANGUAGE: 'ja' as const,
   THEME: 'dark' as const,
+  UPDATE_CHECK_INTERVAL: 'weekly' as const,
 } as const;
 
 // Timeout values (in milliseconds) / タイムアウト値（ミリ秒）

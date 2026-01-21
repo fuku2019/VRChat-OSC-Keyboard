@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Settings, WifiOff } from 'lucide-react';
+import { Settings, WifiOff, X } from 'lucide-react';
 import VirtualKeyboard from './components/VirtualKeyboard';
 import SettingsModal from './components/SettingsModal';
 import TutorialOverlay from './components/TutorialOverlay';
@@ -16,6 +16,7 @@ const App = () => {
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
+  const [isToastDismissed, setIsToastDismissed] = useState(false); // Track if update toast is dismissed / 更新トーストが閉じられたか追跡
   const [lastSent, setLastSent] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSending, setIsSending] = useState(false);
@@ -52,6 +53,10 @@ const App = () => {
       newConfig.theme = DEFAULT_CONFIG.THEME;
       needsUpdate = true;
     }
+    if (!config.updateCheckInterval) {
+      newConfig.updateCheckInterval = DEFAULT_CONFIG.UPDATE_CHECK_INTERVAL;
+      needsUpdate = true;
+    }
     
     if (needsUpdate) {
       setConfig(newConfig);
@@ -62,6 +67,79 @@ const App = () => {
       window.electronAPI.updateOscPort(config.oscPort);
     }
   }, []);
+
+  // Load persisted update info on mount / マウント時に永続化された更新情報を読み込む
+  const [updateAvailable, setUpdateAvailable] = useState<{ version: string; url: string } | null>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.UPDATE_AVAILABLE);
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  });
+
+  // Update Check Logic - runs only once on mount / 更新確認ロジック - マウント時に1回のみ実行
+  useEffect(() => {
+    const checkUpdate = async () => {
+      if (!window.electronAPI) return;
+      
+      // Get current interval from localStorage to ensure we use the latest value / 最新の値を使用するためlocalStorageから取得
+      const savedConfig = localStorage.getItem(STORAGE_KEYS.OSC_CONFIG);
+      const currentInterval = savedConfig ? JSON.parse(savedConfig).updateCheckInterval : config.updateCheckInterval;
+      
+      if (!currentInterval || currentInterval === 'manual') return;
+
+      const lastCheck = localStorage.getItem(STORAGE_KEYS.LAST_UPDATE_CHECK);
+      const now = Date.now();
+      let shouldCheck = false;
+
+      if (currentInterval === 'startup') {
+        shouldCheck = true;
+      } else if (currentInterval === 'daily') {
+        // Check if 24 hours passed / 24時間経過したか確認
+        if (!lastCheck || now - parseInt(lastCheck) > 24 * 60 * 60 * 1000) {
+          shouldCheck = true;
+        }
+      } else if (currentInterval === 'weekly') {
+        // Check if 7 days passed / 7日経過したか確認
+        if (!lastCheck || now - parseInt(lastCheck) > 7 * 24 * 60 * 60 * 1000) {
+          shouldCheck = true;
+        }
+      }
+
+      if (shouldCheck) {
+        try {
+          const result = await window.electronAPI.checkForUpdate();
+          localStorage.setItem(STORAGE_KEYS.LAST_UPDATE_CHECK, now.toString());
+          
+          
+          if (result.success && result.updateAvailable && result.latestVersion) {
+            const updateInfo = {
+              version: result.latestVersion,
+              url: result.url || 'https://github.com/fuku2019/VRC-OSC-Keyboard/releases'
+            };
+            setUpdateAvailable(updateInfo);
+            // Reset toast dismissed state to show toast for new update / 新しい更新のためにトースト非表示状態をリセット
+            setIsToastDismissed(false);
+            // Persist to localStorage / localStorageに永続化
+            localStorage.setItem(STORAGE_KEYS.UPDATE_AVAILABLE, JSON.stringify(updateInfo));
+          } else if (result.success && !result.updateAvailable) {
+            // No update available, clear persisted info / 更新なし、保存情報をクリア
+            setUpdateAvailable(null);
+            localStorage.removeItem(STORAGE_KEYS.UPDATE_AVAILABLE);
+          }
+        } catch (e) {
+          console.error("Auto update check failed:", e);
+        }
+      }
+    };
+
+    checkUpdate();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run only once on mount / マウント時に1回のみ実行
 
   // Theme effect / テーマ反映
   useEffect(() => {
@@ -236,9 +314,12 @@ const App = () => {
         </div>
         <button 
           onClick={() => setIsSettingsOpen(true)}
-          className="p-2 dark:bg-slate-800/80 bg-white/80 rounded-full dark:hover:bg-slate-700 hover:bg-slate-100 dark:text-slate-300 text-slate-500 transition-colors border dark:border-slate-700 border-slate-200 shadow-sm"
+          className="relative p-2 dark:bg-slate-800/80 bg-white/80 rounded-full dark:hover:bg-slate-700 hover:bg-slate-100 dark:text-slate-300 text-slate-500 transition-colors border dark:border-slate-700 border-slate-200 shadow-sm"
         >
           <Settings size={20} />
+          {updateAvailable && (
+            <span className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full border-2 dark:border-slate-900 border-white animate-pulse" />
+          )}
         </button>
       </div>
 
@@ -316,9 +397,44 @@ const App = () => {
         onSave={saveConfig}
         onLanguageChange={(lang) => saveConfig({ ...config, language: lang })}
         onShowTutorial={handleOpenTutorialFromSettings}
+        updateAvailableVersion={updateAvailable?.version}
+        onUpdateAvailable={(version, url) => setUpdateAvailable({ version, url })}
       />
+
+      {/* Update Notification Toast / アップデート通知トースト */}
+      {updateAvailable && !isSettingsOpen && !isToastDismissed && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-bounce-in w-full max-w-lg px-4">
+          <div className="flex items-center justify-between gap-4 dark:bg-slate-800 bg-white p-4 rounded-xl shadow-2xl border dark:border-cyan-500/50 border-cyan-500 ring-1 ring-cyan-500/20 w-full">
+            <div className="flex flex-col">
+              <span className="text-sm font-bold dark:text-white text-slate-800 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse"></span>
+                {t.settings.updateAvailable.replace('{version}', updateAvailable.version)}
+              </span>
+            </div>
+            <div className="flex gap-2">
+               <button 
+                onClick={() => {
+                  if (window.electronAPI && updateAvailable.url) {
+                    window.electronAPI.openExternal(updateAvailable.url);
+                  }
+                }}
+                className="px-3 py-1.5 text-xs font-bold bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg transition-colors"
+              >
+                {t.settings.openReleasePage}
+              </button>
+              <button 
+                onClick={() => setIsToastDismissed(true)}
+                className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-slate-500 dark:text-slate-400 transition-colors"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+
 
 export default App;

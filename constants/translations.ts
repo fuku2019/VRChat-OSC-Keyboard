@@ -15,6 +15,17 @@ export interface TranslationStrings {
     theme: string;
     themeLight: string;
     themeDark: string;
+    checkInterval: string;
+    checkNow: string;
+    intervalStartup: string;
+    intervalDaily: string;
+    intervalWeekly: string;
+    intervalManual: string;
+    updateAvailable: string;
+    openReleasePage: string;
+    latestVersion: string;
+    checking: string;
+    updateError: string;
   };
   tutorial: {
     title: string;
@@ -66,7 +77,18 @@ export const TRANSLATIONS: TranslationsMap = {
       save: '閉じる',
       theme: 'テーマ',
       themeLight: 'ライト',
-      themeDark: 'ダーク'
+      themeDark: 'ダーク',
+      checkInterval: '更新確認頻度',
+      checkNow: '今すぐ確認',
+      intervalStartup: '起動時',
+      intervalDaily: '毎日',
+      intervalWeekly: '毎週',
+      intervalManual: '手動のみ',
+      updateAvailable: 'アップデートがあります: {version}',
+      openReleasePage: 'リリースページを開く',
+      latestVersion: '最新です',
+      checking: '確認中...',
+      updateError: '確認エラー'
     },
     tutorial: {
       title: 'VRChat OSC Keyboardへようこそ',
@@ -114,7 +136,18 @@ export const TRANSLATIONS: TranslationsMap = {
       save: 'Close',
       theme: 'Theme',
       themeLight: 'Light',
-      themeDark: 'Dark'
+      themeDark: 'Dark',
+      checkInterval: 'Update Check Interval',
+      checkNow: 'Check Now',
+      intervalStartup: 'Every Startup',
+      intervalDaily: 'Daily',
+      intervalWeekly: 'Weekly',
+      intervalManual: 'Manual Only',
+      updateAvailable: 'Update Available: {version}',
+      openReleasePage: 'Open Release Page',
+      latestVersion: 'Latest',
+      checking: 'Checking...',
+      updateError: 'Check Error'
     },
     tutorial: {
       title: 'Welcome to VRC OSC Keyboard',

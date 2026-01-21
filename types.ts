@@ -32,4 +32,5 @@ export interface OscConfig {
   autoSend: boolean;
   language: Language;
   theme: 'light' | 'dark';
+  updateCheckInterval: 'startup' | 'daily' | 'weekly' | 'manual';
 }
