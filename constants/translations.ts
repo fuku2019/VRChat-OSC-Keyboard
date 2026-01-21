@@ -84,8 +84,8 @@ export const TRANSLATIONS: TranslationsMap = {
       sent: '送信完了',
       error: 'エラー'
     },
-    appTitle: 'Keyboard',
-    appTitlePrefix: 'VRC OSC',
+    appTitle: 'OSC Keyboard',
+    appTitlePrefix: 'VRChat',
     keys: {
       send: '送信',
       clear: 'クリア',
@@ -132,8 +132,8 @@ export const TRANSLATIONS: TranslationsMap = {
       sent: 'Sent',
       error: 'Error'
     },
-    appTitle: 'Keyboard',
-    appTitlePrefix: 'VRC OSC',
+    appTitle: 'OSC Keyboard',
+    appTitlePrefix: 'VRChat',
     keys: {
       send: 'Send',
       clear: 'Clear',
