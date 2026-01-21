@@ -11,9 +11,19 @@ interface GetOscPortResult {
   port: number;
 }
 
+interface CheckUpdateResult {
+  success: boolean;
+  updateAvailable: boolean;
+  latestVersion?: string;
+  url?: string;
+  error?: string;
+}
+
 interface ElectronAPI {
   updateOscPort: (port: number) => Promise<UpdateOscPortResult>;
   getOscPort: () => Promise<GetOscPortResult>;
+  checkForUpdate: () => Promise<CheckUpdateResult>;
+  openExternal: (url: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 declare global {

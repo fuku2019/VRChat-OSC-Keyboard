@@ -1,7 +1,7 @@
 import { useState, useEffect, FC } from 'react';
 import { X, Info, CircleHelp } from 'lucide-react';
 import { OscConfig, Language } from '../types';
-import { TRANSLATIONS, DEFAULT_CONFIG } from '../constants';
+import { TRANSLATIONS, DEFAULT_CONFIG, STORAGE_KEYS } from '../constants';
 import { useModalAnimation } from '../hooks/useModalAnimation';
 import packageJson from '../package.json';
 
@@ -14,6 +14,8 @@ interface SettingsModalProps {
   onSave: (config: OscConfig) => void;
   onLanguageChange: (lang: Language) => void;
   onShowTutorial: () => void;
+  onUpdateAvailable?: (version: string, url: string) => void;
+  updateAvailableVersion?: string;
 }
 
 const SettingsModal: FC<SettingsModalProps> = ({
@@ -23,8 +25,12 @@ const SettingsModal: FC<SettingsModalProps> = ({
   onSave,
   onLanguageChange,
   onShowTutorial,
+  onUpdateAvailable,
+  updateAvailableVersion,
 }) => {
   const [localConfig, setLocalConfig] = useState(config);
+  const [checkStatus, setCheckStatus] = useState<string>(''); // For update check status
+  const [updateUrl, setUpdateUrl] = useState<string>(''); // Store update URL locally
   const { shouldRender, animationClass, modalAnimationClass } =
     useModalAnimation(isOpen);
 
@@ -32,8 +38,16 @@ const SettingsModal: FC<SettingsModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       setLocalConfig(config);
+      // Initialize check status if update is already available from parent
+      if (updateAvailableVersion) {
+        setCheckStatus(TRANSLATIONS[config.language || 'ja'].settings.updateAvailable.replace('{version}', updateAvailableVersion));
+        setUpdateUrl('https://github.com/fuku2019/VRC-OSC-Keyboard/releases');
+      } else {
+        setCheckStatus('');
+        setUpdateUrl('');
+      }
     }
-  }, [isOpen, config]);
+  }, [isOpen, config, updateAvailableVersion]);
 
   if (!shouldRender) return null;
 
@@ -206,6 +220,91 @@ const SettingsModal: FC<SettingsModalProps> = ({
               <Info size={14} className='text-slate-400' />
               {t.defaultUrl}
             </p>
+          </section>
+
+          {/* Update Check Config / 更新確認設定 */}
+          <section className='pt-4 border-t dark:border-slate-700/50 border-slate-200'>
+            <label className='block dark:text-slate-300 text-slate-600 mb-3 text-sm font-semibold uppercase tracking-wider'>
+              {t.checkInterval}
+            </label>
+            <div className='bg-gray-100 dark:bg-slate-900 rounded-xl p-1 mb-3 flex gap-1 overflow-x-auto'>
+              {[
+                  { id: 'startup', label: t.intervalStartup },
+                  { id: 'daily', label: t.intervalDaily },
+                  { id: 'weekly', label: t.intervalWeekly },
+                  { id: 'manual', label: t.intervalManual },
+              ].map((option) => (
+                <button
+                  key={option.id}
+                  onClick={() => {
+                    const newConfig = { ...localConfig, updateCheckInterval: option.id as any };
+                    saveConfigImmediately(newConfig);
+                  }}
+                  className={`flex-1 py-2 px-2 text-xs rounded-lg transition-all whitespace-nowrap ${
+                    localConfig.updateCheckInterval === option.id
+                     ? 'bg-white dark:bg-cyan-900/40 text-cyan-600 dark:text-cyan-300 shadow-sm'
+                     : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+            
+            <div className='flex items-center justify-between'>
+               {updateUrl ? (
+                 <button
+                    onClick={() => {
+                      if (window.electronAPI && updateUrl) {
+                        window.electronAPI.openExternal(updateUrl);
+                      }
+                    }}
+                    className='text-sm px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg transition-colors font-medium shadow-cyan-900/20 shadow-lg'
+                 >
+                    {t.openReleasePage}
+                 </button>
+               ) : (
+                 <button
+                    onClick={async () => {
+                       setCheckStatus(t.checking);
+                       try {
+                          const result = await window.electronAPI.checkForUpdate();
+                          if (result.success) {
+                             if (result.updateAvailable) {
+                                const msg = t.updateAvailable.replace('{version}', result.latestVersion || '');
+                                setCheckStatus(msg);
+                                const url = result.url || 'https://github.com/fuku2019/VRC-OSC-Keyboard/releases';
+                                 setUpdateUrl(url);
+                                 // Persist to localStorage / localStorageに永続化
+                                 localStorage.setItem(STORAGE_KEYS.UPDATE_AVAILABLE, JSON.stringify({ version: result.latestVersion, url }));
+                                 // Notify parent to show toast/badge / 親に通知してトースト/バッジを表示
+                                if (onUpdateAvailable && result.latestVersion) {
+                                  onUpdateAvailable(result.latestVersion, url);
+                                }
+                              } else {
+                                 setCheckStatus(t.latestVersion);
+                                 setUpdateUrl('');
+                                 // Clear persisted update info / 永続化された更新情報をクリア
+                                 localStorage.removeItem(STORAGE_KEYS.UPDATE_AVAILABLE);
+                              }
+                          } else {
+                             setCheckStatus(t.updateError);
+                          }
+                       } catch (e) {
+                          setCheckStatus(t.updateError);
+                       }
+                    }}
+                    className='text-sm px-4 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 dark:text-white text-slate-900 rounded-lg transition-colors font-medium'
+                 >
+                    {t.checkNow}
+                 </button>
+               )}
+               {checkStatus && (
+                  <span className='text-sm text-cyan-600 dark:text-cyan-400 font-medium'>
+                     {checkStatus}
+                  </span>
+               )}
+            </div>
           </section>
 
           {/* Version Info / バージョン情報 */}

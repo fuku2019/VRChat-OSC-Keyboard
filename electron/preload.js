@@ -9,4 +9,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   
   // Get current OSC port / 現在のOSCポートを取得
   getOscPort: () => ipcRenderer.invoke('get-osc-port'),
+
+  // Check for updates / 更新を確認
+  checkForUpdate: () => ipcRenderer.invoke('check-for-update'),
+
+  // Open external URL / 外部URLを開く
+  openExternal: (url) => ipcRenderer.invoke('open-external', url),
 });

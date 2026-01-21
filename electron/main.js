@@ -1,4 +1,4 @@
-import { app, BrowserWindow, screen, ipcMain } from 'electron';
+import { app, BrowserWindow, screen, ipcMain, shell } from 'electron';
 import { WebSocketServer } from 'ws';
 import { Client } from 'node-osc';
 import path from 'path';
@@ -101,6 +101,51 @@ ipcMain.handle('get-osc-port', () => {
   return { port: OSC_PORT };
 });
 
+// Check for updates / 更新を確認
+ipcMain.handle('check-for-update', async () => {
+  try {
+    const response = await fetch('https://api.github.com/repos/fuku2019/VRC-OSC-Keyboard/releases/latest');
+    if (!response.ok) {
+      console.error(`GitHub API Error: ${response.status} ${response.statusText}`);
+      throw new Error(`GitHub API Error: ${response.status} ${response.statusText}`);
+    }
+    const data = await response.json();
+    const latestVersion = data.tag_name;
+    const currentVersion = `v${APP_VERSION}`; 
+    // Simple version comparison (assumes vX.Y.Z format) / 単純なバージョン比較（vX.Y.Z形式を仮定）
+    // Better to use semver compare if strict, but string compare might suffice for simple cases or strip 'v'
+    // For now, let's just compare strings. If latestVersion != currentVersion, it's an update (or rollback, but usually update)
+    // To be safer, let's strip 'v' and compare.
+    
+    // However, APP_VERSION from package.json might not have 'v'. Let's check package.json content again.
+    // package.json says "version": "v1.1.2". So APP_VERSION has 'v'.
+    // GitHub tags usually have 'v'.
+    
+    const updateAvailable = latestVersion !== currentVersion && latestVersion !== APP_VERSION; // Check both with/without v if inconsistent
+
+    return { 
+      success: true, 
+      updateAvailable, 
+      latestVersion, 
+      url: data.html_url 
+    };
+  } catch (error) {
+    console.error('Failed to check for updates:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// Open external URL / 外部URLを開く
+ipcMain.handle('open-external', async (event, url) => {
+  try {
+    await shell.openExternal(url);
+    return { success: true };
+  } catch (error) {
+    console.error('Failed to open external URL:', error);
+    return { success: false, error: error.message };
+  }
+});
+
 // --- Electron Window Logic --- / Electronウィンドウロジック
 
 // Initialize electron-store for window position persistence / ウィンドウ位置の永続化用にelectron-storeを初期化
@@ -188,7 +233,7 @@ function createWindow() {
   // In development, load from Vite server. In production, load built file. / 開発中はViteサーバーからロードする。本番環境ではビルドされたファイルをロードする。
   if (!app.isPackaged) {
     mainWindow.loadURL('http://localhost:5173');
-    mainWindow.webContents.openDevTools();
+    // mainWindow.webContents.openDevTools(); // Open DevTools in debug mode. / デバックモード中にDevToolsを開く
   } else {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
   }
