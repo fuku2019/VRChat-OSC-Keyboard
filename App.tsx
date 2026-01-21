@@ -6,7 +6,7 @@ import TutorialOverlay from './components/TutorialOverlay';
 import { InputMode, OscConfig } from './types';
 import { sendOscMessage } from './services/oscService';
 import { useIME } from './hooks/useIME';
-import { TRANSLATIONS, STORAGE_KEYS, DEFAULT_CONFIG, TIMEOUTS } from './constants';
+import { TRANSLATIONS, STORAGE_KEYS, DEFAULT_CONFIG, TIMEOUTS, CHATBOX } from './constants';
 
 const App = () => {
   const { 
@@ -20,6 +20,8 @@ const App = () => {
   const [error, setError] = useState<string | null>(null);
   const [isSending, setIsSending] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const preCompositionValue = useRef<string>(''); // Store value before IME composition / IME構成前の値を保存
+  const isComposing = useRef<boolean>(false); // Track if IME is composing / IME構成中かどうかを追跡
   
   const [config, setConfig] = useState<OscConfig>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.OSC_CONFIG);
@@ -127,6 +129,36 @@ const App = () => {
     }
   };
 
+  // Store current value when IME composition starts / IME構成開始時に現在の値を保存
+  const handleCompositionStart = () => {
+    isComposing.current = true;
+    preCompositionValue.current = input + buffer;
+  };
+
+  // When IME composition ends, apply the value with limit check / IME構成終了時に制限チェックして値を適用
+  const handleCompositionEnd = (e: React.CompositionEvent<HTMLTextAreaElement>) => {
+    isComposing.current = false;
+    const newValue = e.currentTarget.value;
+    
+    if (newValue.length > CHATBOX.MAX_LENGTH) {
+      // Revert to pre-composition value if over limit / 制限を超えたら構成前の値に戻す
+      overwriteInput(preCompositionValue.current);
+    } else {
+      // Apply the new value / 新しい値を適用
+      overwriteInput(newValue);
+    }
+  };
+
+  // Handle textarea onChange - skip during IME composition / textareaのonChange処理 - IME構成中はスキップ
+  const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    // Skip state updates during IME composition to prevent overwrite issues
+    // IME構成中は上書き問題を防ぐために状態更新をスキップ
+    if (isComposing.current) {
+      return;
+    }
+    overwriteInput(e.target.value);
+  };
+
   return (
     <div className="h-full min-h-screen w-full bg-slate-950/90 flex flex-col items-center justify-center p-4 overflow-y-auto overflow-x-hidden">
       <TutorialOverlay 
@@ -156,7 +188,17 @@ const App = () => {
           flex flex-col px-6 py-2 shadow-inner backdrop-blur transition-colors
           ${error ? 'border-red-500/50' : 'border-slate-700 focus-within:border-cyan-500/50'}
         `}>
-          <div className="absolute top-2 right-4 flex gap-2 items-center pointer-events-none z-10">
+          <div className="absolute top-2 right-4 flex gap-3 items-center pointer-events-none z-10">
+            {/* Character Counter / 文字数カウンター */}
+            <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded border transition-colors ${
+              (input + buffer).length >= CHATBOX.MAX_LENGTH
+                ? 'text-red-400 border-red-500/50 bg-red-900/20'
+                : (input + buffer).length > CHATBOX.WARNING_THRESHOLD
+                  ? 'text-amber-400 border-amber-500/50 bg-amber-900/20'
+                  : 'text-slate-400 border-slate-600 bg-slate-800/50'
+            }`}>
+              {(input + buffer).length}/{CHATBOX.MAX_LENGTH}
+            </span>
             {isSending && <span className="text-[10px] text-cyan-400 font-mono animate-pulse">{t.status.sending}</span>}
             {lastSent && <span className="text-[10px] text-green-400 font-mono">{t.status.sent}</span>}
             {error && (
@@ -179,8 +221,12 @@ const App = () => {
           <textarea
             ref={textareaRef}
             value={input + buffer}
-            onChange={(e) => overwriteInput(e.target.value)}
+            onChange={handleTextareaChange}
             onKeyDown={handleKeyDown}
+            onCompositionStart={handleCompositionStart}
+            onCompositionEnd={handleCompositionEnd}
+            onBlur={() => { isComposing.current = false; }}
+            maxLength={CHATBOX.MAX_LENGTH}
             className="w-full h-full bg-transparent text-2xl md:text-4xl text-white font-medium resize-none outline-none mt-6 leading-tight break-all font-sans"
             spellCheck="false"
             autoFocus

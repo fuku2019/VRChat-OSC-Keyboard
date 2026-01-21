@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { InputMode } from '../types';
 import { toKana, convertToKatakana } from '../utils/ime';
+import { CHATBOX } from '../constants';
 
 interface UseIMEReturn {
   input: string; // Committed text / 確定したテキスト
@@ -18,6 +19,7 @@ interface UseIMEReturn {
 
 export const useIME = (
   initialMode: InputMode = InputMode.HIRAGANA,
+  maxLength: number = CHATBOX.MAX_LENGTH,
 ): UseIMEReturn => {
   const [input, setInput] = useState('');
   const [buffer, setBuffer] = useState('');
@@ -32,13 +34,28 @@ export const useIME = (
 
   // Called when typing directly into the textarea (Physical Keyboard / Native IME) / テキストエリアに直接入力するときに呼び出される（物理キーボード / ネイティブIME）
   const overwriteInput = useCallback((text: string) => {
-    setInput(text);
+    const currentValue = input + buffer;
+    
+    // If already at max and trying to add more characters, block completely (no slice)
+    // 既に最大長に達していて文字を追加しようとしている場合は完全にブロック（sliceしない）
+    if (currentValue.length >= maxLength && text.length > currentValue.length) {
+      return; // Reject input entirely / 入力を完全に拒否
+    }
+    
+    // Truncate to maxLength if exceeded (for paste operations etc.)
+    // maxLengthを超えた場合は切り捨て（ペースト操作などの場合）
+    const truncated = text.length > maxLength ? text.slice(0, maxLength) : text;
+    setInput(truncated);
     setBuffer(''); // Clear local buffer as native IME handles composition / ネイティブIMEが構成を処理するため、ローカルバッファをクリアする
-  }, []);
+  }, [input, buffer, maxLength]);
 
   // Called by Virtual Keyboard buttons / バーチャルキーボードのボタンから呼び出される
   const handleCharInput = useCallback(
     (char: string) => {
+      // Check if adding this char would exceed maxLength / この文字を追加するとmaxLengthを超えるかチェック
+      const currentLength = input.length + buffer.length;
+      if (currentLength >= maxLength) return; // Block input if at limit / 制限に達したら入力をブロック
+
       if (mode === InputMode.ENGLISH) {
         commitBuffer(); // Ensure buffer is empty before adding direct chars / 直接文字を追加する前にバッファが空であることを確認する
         setInput((prev) => prev + char);
@@ -75,7 +92,7 @@ export const useIME = (
       }
       setBuffer(res.newBuffer);
     },
-    [buffer, mode, commitBuffer],
+    [buffer, mode, commitBuffer, input, maxLength],
   );
 
   const handleBackspace = useCallback(() => {
@@ -92,12 +109,20 @@ export const useIME = (
   }, []);
 
   const handleSpace = useCallback(() => {
+    // Check if adding space would exceed maxLength / スペース追加がmaxLengthを超えるかチェック
+    const currentLength = input.length + buffer.length;
+    if (currentLength >= maxLength) {
+      // Just commit buffer without adding space / スペースを追加せずにバッファのみ確定
+      commitBuffer();
+      return;
+    }
+
     if (buffer.length > 0) {
       // Simple behavior: just commit current buffer as is / 単純な動作: 現在のバッファをそのまま確定する
       commitBuffer();
     }
     setInput((prev) => prev + ' ');
-  }, [buffer, commitBuffer]);
+  }, [buffer, commitBuffer, input, maxLength]);
 
   return {
     input,
