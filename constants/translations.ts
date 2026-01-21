@@ -55,7 +55,7 @@ export const TRANSLATIONS: TranslationsMap = {
       title: '設定',
       language: '言語 / Language',
       oscPort: 'VRChat OSC ポート',
-      oscPortDesc: 'VRChatにOSCメッセージを送信するポート（デフォルト: 9000）\n 注意:OSCポートが間違っていても、エラーは表示されずVRChatにはチャットが送信されません。',
+      oscPortDesc: 'VRChatにOSCメッセージを送信するポート（デフォルト: 9000）\n 注意:間違ったOSCポートを設定しても、エラーは表示されずVRChatにはチャットが送信されません。',
       oscUrl: 'OSCブリッジ URL',
       defaultUrl: '基本的に変更しないでください。(デフォルト: ws://127.0.0.1:8080)',
       instructionsTitle: 'ヘルプ',
