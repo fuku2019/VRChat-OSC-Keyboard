@@ -4,6 +4,7 @@
 export const STORAGE_KEYS = {
   OSC_CONFIG: 'vrc_osc_config',
   HAS_SEEN_TUTORIAL: 'vrc_osc_has_seen_tutorial',
+  WINDOW_POSITION: 'vrc_osc_window_position', // Window position (x, y) / ウィンドウ位置（x, y）
 } as const;
 
 // Default configuration values / デフォルト設定値

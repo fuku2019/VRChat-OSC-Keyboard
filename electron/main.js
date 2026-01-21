@@ -1,9 +1,10 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, screen } from 'electron';
 import { WebSocketServer } from 'ws';
 import { Client } from 'node-osc';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import Store from 'electron-store';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -66,8 +67,50 @@ function startBridge() {
 
 // --- Electron Window Logic --- / Electronウィンドウロジック
 
+// Initialize electron-store for window position persistence / ウィンドウ位置の永続化用にelectron-storeを初期化
+const store = new Store({
+  name: 'window-state',
+  defaults: {
+    windowPosition: null, // { x: number, y: number } or null
+  },
+});
+
+// Check if position is visible on any screen / 位置がいずれかの画面に表示されるかチェック
+function isPositionOnScreen(x, y) {
+  const displays = screen.getAllDisplays();
+  return displays.some((display) => {
+    const { x: dx, y: dy, width, height } = display.bounds;
+    // Check if position is within display bounds with some margin / 位置がディスプレイ境界内にあるかマージン付きでチェック
+    return x >= dx - 100 && x < dx + width && y >= dy - 100 && y < dy + height;
+  });
+}
+
+// Save window position / ウィンドウ位置を保存
+function saveWindowPosition() {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    const bounds = mainWindow.getBounds();
+    store.set('windowPosition', { x: bounds.x, y: bounds.y });
+  }
+}
+
+// Get saved window position or null / 保存されたウィンドウ位置を取得（存在しない場合はnull）
+function getSavedWindowPosition() {
+  const position = store.get('windowPosition');
+  if (position && typeof position.x === 'number' && typeof position.y === 'number') {
+    // Validate position is on a visible screen / 位置が表示可能な画面上にあるか検証
+    if (isPositionOnScreen(position.x, position.y)) {
+      return position;
+    }
+  }
+  return null;
+}
+
+
 function createWindow() {
-  mainWindow = new BrowserWindow({
+  // Get saved window position / 保存されたウィンドウ位置を取得
+  const savedPosition = getSavedWindowPosition();
+
+  const windowOptions = {
     title: APP_TITLE,
     width: 1100,
     height: 700,
@@ -82,7 +125,15 @@ function createWindow() {
       contextIsolation: true,
       devTools: !app.isPackaged,
     },
-  });
+  };
+
+  // Apply saved position if available / 保存された位置があれば適用
+  if (savedPosition) {
+    windowOptions.x = savedPosition.x;
+    windowOptions.y = savedPosition.y;
+  }
+
+  mainWindow = new BrowserWindow(windowOptions);
 
   // Hide menu bar for cleaner look / 見た目をすっきりさせるためにメニューバーを隠す
   mainWindow.setMenuBarVisibility(false);
@@ -90,6 +141,11 @@ function createWindow() {
   // Prevent window title overwrite by HTML title tag / HTMLのtitleタグによるウィンドウタイトルの上書きを防ぐ
   mainWindow.on('page-title-updated', (event) => {
     event.preventDefault();
+  });
+
+  // Save window position when moved / ウィンドウ移動時に位置を保存
+  mainWindow.on('move', () => {
+    saveWindowPosition();
   });
 
   // In development, load from Vite server. In production, load built file. / 開発中はViteサーバーからロードする。本番環境ではビルドされたファイルをロードする。
