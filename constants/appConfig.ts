@@ -28,3 +28,9 @@ export const KEYBOARD_GRID = {
   COLUMNS: 30,
   ROW_HEIGHT: '3.5rem',
 } as const;
+
+// VRChat chatbox limits / VRChatチャットボックスの制限
+export const CHATBOX = {
+  MAX_LENGTH: 144, // Maximum characters allowed in VRChat chatbox / VRChatチャットボックスで許可される最大文字数
+  WARNING_THRESHOLD: 120, // Show warning when approaching limit / 制限に近づいたときに警告を表示
+} as const;
