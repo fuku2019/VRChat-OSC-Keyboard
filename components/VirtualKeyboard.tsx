@@ -137,7 +137,7 @@ const VirtualKeyboard: FC<VirtualKeyboardProps> = ({
 
       <div className='mt-2 flex justify-between px-4 text-slate-500 text-xs'>
         <span>JIS Layout (Standard)</span>
-        <span>VRChat OSC Keyboard {packageJson.version}</span>
+        <span>VRChat OSC Keyboard v{packageJson.version}</span>
       </div>
     </div>
   );

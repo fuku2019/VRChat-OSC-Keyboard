@@ -13,7 +13,7 @@ const __dirname = path.dirname(__filename);
 const packageJsonPath = path.join(__dirname, '../package.json');
 const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
 const APP_VERSION = packageJson.version;
-const APP_TITLE = `VRChat OSC Keyboard ${APP_VERSION}`;
+const APP_TITLE = `VRChat OSC Keyboard v${APP_VERSION}`;
 
 let mainWindow;
 
