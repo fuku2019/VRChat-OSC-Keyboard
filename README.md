@@ -37,6 +37,12 @@ https://github.com/user-attachments/assets/988b4c58-d770-46fa-ad06-91ad71321da8
 
 https://github.com/user-attachments/assets/fc8e216b-8f50-4271-896b-cee8c70a5dd8
 
+<details>
+  <summary>イメージ</summary>
+  
+  ![waao](/docs/waao.jpg)
+</details>
+
 ## 手動ビルド
 ```bash
 # ライブラリのインストール
