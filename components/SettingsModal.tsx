@@ -314,7 +314,7 @@ const SettingsModal: FC<SettingsModalProps> = ({
 
           {/* Version Info / バージョン情報 */}
           <section className='text-center'>
-            <p className='text-xs text-slate-500'>Version: {APP_VERSION}</p>
+            <p className='text-xs text-slate-500'>Version: v{APP_VERSION}</p>
           </section>
         </div>
 
