@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { STORAGE_KEYS, DEFAULT_CONFIG } from '../constants';
-import { OscConfig } from '../types';
+import { STORAGE_KEYS } from '../constants';
+import { useConfigStore } from '../stores/configStore';
 
 declare const APP_VERSION: string;
 
@@ -9,17 +9,14 @@ export interface UpdateInfo {
   url: string;
 }
 
-interface UseUpdateCheckerProps {
-  config: OscConfig;
-}
-
 interface UseUpdateCheckerReturn {
   updateAvailable: UpdateInfo | null;
   setUpdateAvailable: (info: UpdateInfo | null) => void;
 }
 
 // Hook for checking updates / アップデート確認用フック
-export const useUpdateChecker = ({ config }: UseUpdateCheckerProps): UseUpdateCheckerReturn => {
+export const useUpdateChecker = (): UseUpdateCheckerReturn => {
+  const config = useConfigStore((state) => state.config);
   // Load persisted update info on mount / マウント時に永続化された更新情報を読み込む
   const [updateAvailable, setUpdateAvailable] = useState<UpdateInfo | null>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.UPDATE_AVAILABLE);
