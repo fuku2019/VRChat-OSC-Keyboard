@@ -177,6 +177,16 @@ ipcMain.handle('open-external', async (event, url) => {
   }
 });
 
+// Log config change / 設定変更をログ出力
+ipcMain.handle('log-config-change', (event, { key, oldValue, newValue }) => {
+  const timestamp = new Date().toLocaleTimeString();
+  console.log(`[${timestamp}] ⚙️ Config Changed: ${key}`);
+  console.log(`    Old: ${JSON.stringify(oldValue)}`);
+  console.log(`    New: ${JSON.stringify(newValue)}`);
+  console.log('----------------------------------------');
+  return { success: true };
+});
+
 // --- Electron Window Logic --- / Electronウィンドウロジック
 
 // Initialize electron-store for window position persistence / ウィンドウ位置の永続化用にelectron-storeを初期化
@@ -270,22 +280,37 @@ function createWindow() {
   }
 }
 
-app.whenReady().then(() => {
-  startBridge();
-  createWindow();
 
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
+const gotTheLock = app.requestSingleInstanceLock();
+
+if (!gotTheLock) {
+  app.quit();
+} else {
+  app.on('second-instance', (event, commandLine, workingDirectory) => {
+    // Someone tried to run a second instance, we should focus our window.
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
     }
   });
-});
 
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    // Close bridge connections / ブリッジ接続を閉じる
-    if (wss) wss.close();
-    if (oscClient) oscClient.close();
-    app.quit();
-  }
-});
+  app.whenReady().then(() => {
+    startBridge();
+    createWindow();
+
+    app.on('activate', () => {
+      if (BrowserWindow.getAllWindows().length === 0) {
+        createWindow();
+      }
+    });
+  });
+
+  app.on('window-all-closed', () => {
+    if (process.platform !== 'darwin') {
+      // Close bridge connections / ブリッジ接続を閉じる
+      if (wss) wss.close();
+      if (oscClient) oscClient.close();
+      app.quit();
+    }
+  });
+}

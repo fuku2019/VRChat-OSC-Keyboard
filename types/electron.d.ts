@@ -24,6 +24,7 @@ interface ElectronAPI {
   getOscPort: () => Promise<GetOscPortResult>;
   checkForUpdate: () => Promise<CheckUpdateResult>;
   openExternal: (url: string) => Promise<{ success: boolean; error?: string }>;
+  logConfigChange: (key: string, oldValue: any, newValue: any) => Promise<void>;
 }
 
 declare global {

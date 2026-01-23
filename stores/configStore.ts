@@ -57,6 +57,17 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
   // Set entire config / 設定全体を設定
   setConfig: (config) => {
     const currentConfig = get().config;
+    
+    // Check for changes and log them / 変更を確認してログ出力
+    if (window.electronAPI?.logConfigChange) {
+      Object.keys(config).forEach((key) => {
+        const k = key as keyof OscConfig;
+        if (config[k] !== currentConfig[k]) {
+          window.electronAPI!.logConfigChange(k, currentConfig[k], config[k]);
+        }
+      });
+    }
+
     saveConfigToStorage(config);
     set({ config });
     
@@ -72,6 +83,11 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
     
     // Check if value actually changed / 値が実際に変更されたか確認
     if (currentConfig[key] === value) return;
+
+    // Log change / 変更をログ出力
+    if (window.electronAPI?.logConfigChange) {
+      window.electronAPI.logConfigChange(key, currentConfig[key], value);
+    }
 
     const newConfig = { ...currentConfig, [key]: value };
     saveConfigToStorage(newConfig);

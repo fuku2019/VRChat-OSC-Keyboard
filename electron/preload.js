@@ -15,4 +15,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Open external URL / 外部URLを開く
   openExternal: (url) => ipcRenderer.invoke('open-external', url),
+
+  // Log config change / 設定変更をログ出力
+  logConfigChange: (key, oldValue, newValue) => ipcRenderer.invoke('log-config-change', { key, oldValue, newValue }),
 });
