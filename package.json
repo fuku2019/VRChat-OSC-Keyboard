@@ -21,7 +21,8 @@
   "dependencies": {
     "electron-store": "^11.0.2",
     "node-osc": "^11.0.0",
-    "ws": "^8.19.0"
+    "ws": "^8.19.0",
+    "zustand": "^5.0.10"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.0.0",

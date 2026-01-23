@@ -5,19 +5,20 @@ import SettingsModal from './components/SettingsModal';
 import TutorialOverlay from './components/TutorialOverlay';
 import NotificationToast from './components/NotificationToast';
 import StatusDisplay from './components/StatusDisplay';
-import { InputMode, OscConfig } from './types';
+import { InputMode } from './types';
 import { sendOscMessage } from './services/oscService';
 import { useIME } from './hooks/useIME';
 import { useUpdateChecker } from './hooks/useUpdateChecker';
+import { useConfigStore } from './stores/configStore';
 import {
   TRANSLATIONS,
   STORAGE_KEYS,
-  DEFAULT_CONFIG,
   TIMEOUTS,
   CHATBOX,
 } from './constants';
 
 const App = () => {
+  const config = useConfigStore((state) => state.config);
   const {
     input,
     buffer,
@@ -44,53 +45,10 @@ const App = () => {
   const isComposing = useRef<boolean>(false); // Track if IME is composing / IME構成中かどうかを追跡
   const lastCursorPosition = useRef<number | null>(null); // Store cursor position before virtual key click / 仮想キークリック前のカーソル位置を保存
 
-  const [config, setConfig] = useState<OscConfig>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.OSC_CONFIG);
-    return saved
-      ? JSON.parse(saved)
-      : {
-          bridgeUrl: DEFAULT_CONFIG.BRIDGE_URL,
-          oscPort: DEFAULT_CONFIG.OSC_PORT,
-          autoSend: DEFAULT_CONFIG.AUTO_SEND,
-          language: DEFAULT_CONFIG.LANGUAGE,
-          theme: DEFAULT_CONFIG.THEME,
-        };
-  });
-
   // Use update checker hook / アップデート確認フックを使用
-  const { updateAvailable, setUpdateAvailable } = useUpdateChecker({ config });
+  const { updateAvailable, setUpdateAvailable } = useUpdateChecker();
 
-  // Ensure config has language if loaded from old state / 古い状態からロードされた場合にconfigが言語設定を持っていることを確認
-  useEffect(() => {
-    let needsUpdate = false;
-    let newConfig = { ...config };
 
-    if (!config.language) {
-      newConfig.language = DEFAULT_CONFIG.LANGUAGE;
-      needsUpdate = true;
-    }
-    if (!config.oscPort) {
-      newConfig.oscPort = DEFAULT_CONFIG.OSC_PORT;
-      needsUpdate = true;
-    }
-    if (!config.theme) {
-      newConfig.theme = DEFAULT_CONFIG.THEME;
-      needsUpdate = true;
-    }
-    if (!config.updateCheckInterval) {
-      newConfig.updateCheckInterval = DEFAULT_CONFIG.UPDATE_CHECK_INTERVAL;
-      needsUpdate = true;
-    }
-
-    if (needsUpdate) {
-      setConfig(newConfig);
-    }
-
-    // Sync OSC port with Electron on app load / アプリ読み込み時にElectronとOSCポートを同期
-    if (window.electronAPI && config.oscPort) {
-      window.electronAPI.updateOscPort(config.oscPort);
-    }
-  }, []);
 
   // Theme effect / テーマ反映
   useEffect(() => {
@@ -114,12 +72,9 @@ const App = () => {
     }
   }, []);
 
-  const t = TRANSLATIONS[config.language || DEFAULT_CONFIG.LANGUAGE];
+  const t = TRANSLATIONS[config.language];
 
-  const saveConfig = (newConfig: OscConfig) => {
-    setConfig(newConfig);
-    localStorage.setItem(STORAGE_KEYS.OSC_CONFIG, JSON.stringify(newConfig));
-  };
+
 
   const handleTutorialClose = () => {
     setIsTutorialOpen(false);
@@ -260,7 +215,7 @@ const App = () => {
       <TutorialOverlay
         isOpen={isTutorialOpen}
         onClose={handleTutorialClose}
-        language={config.language || DEFAULT_CONFIG.LANGUAGE}
+        language={config.language}
       />
 
       <div className='w-full max-w-5xl flex justify-between items-center mb-4 px-2 shrink-0 pt-4 md:pt-0'>
@@ -354,16 +309,13 @@ const App = () => {
           mode={mode}
           onToggleMode={() => handleVirtualKey(toggleMode)}
           buffer={buffer}
-          language={config.language || DEFAULT_CONFIG.LANGUAGE}
+          language={config.language}
         />
       </div>
 
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
-        config={config}
-        onSave={saveConfig}
-        onLanguageChange={(lang) => saveConfig({ ...config, language: lang })}
         onShowTutorial={handleOpenTutorialFromSettings}
         updateAvailableVersion={updateAvailable?.version}
         onUpdateAvailable={(version, url) => {
@@ -379,7 +331,7 @@ const App = () => {
       {updateAvailable && !isSettingsOpen && !isToastDismissed && (
         <NotificationToast
           updateAvailable={updateAvailable}
-          language={config.language || DEFAULT_CONFIG.LANGUAGE}
+          language={config.language}
           onClose={() => setIsToastDismissed(true)}
         />
       )}

@@ -1,8 +1,9 @@
 import { useState, useEffect, FC } from 'react';
 import { X, Info, CircleHelp } from 'lucide-react';
-import { OscConfig, Language } from '../types';
-import { TRANSLATIONS, DEFAULT_CONFIG, STORAGE_KEYS } from '../constants';
+import { Language } from '../types';
+import { TRANSLATIONS, STORAGE_KEYS } from '../constants';
 import { useModalAnimation } from '../hooks/useModalAnimation';
+import { useConfigStore } from '../stores/configStore';
 import packageJson from '../package.json';
 
 const APP_VERSION = packageJson.version;
@@ -10,9 +11,6 @@ const APP_VERSION = packageJson.version;
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  config: OscConfig;
-  onSave: (config: OscConfig) => void;
-  onLanguageChange: (lang: Language) => void;
   onShowTutorial: () => void;
   onUpdateAvailable?: (version: string | null, url?: string) => void;
   updateAvailableVersion?: string;
@@ -21,13 +19,12 @@ interface SettingsModalProps {
 const SettingsModal: FC<SettingsModalProps> = ({
   isOpen,
   onClose,
-  config,
-  onSave,
-  onLanguageChange,
   onShowTutorial,
   onUpdateAvailable,
   updateAvailableVersion,
 }) => {
+  const config = useConfigStore((state) => state.config);
+  const setConfig = useConfigStore((state) => state.setConfig);
   const [localConfig, setLocalConfig] = useState(config);
   const [checkStatus, setCheckStatus] = useState<string>(''); // For update check status
   const [updateUrl, setUpdateUrl] = useState<string>(''); // Store update URL locally
@@ -54,22 +51,10 @@ const SettingsModal: FC<SettingsModalProps> = ({
   // Use localConfig for translations to ensure immediate UI update within modal / モーダル内で即時UI更新を保証するために翻訳にlocalConfigを使用する
   const t = TRANSLATIONS[localConfig.language || 'ja'].settings;
 
-  // Save config immediately and update OSC port if needed / 設定を即時保存し、必要に応じてOSCポートを更新
-  const saveConfigImmediately = async (newConfig: OscConfig) => {
+  // Save config immediately / 設定を即時保存
+  const saveConfigImmediately = (newConfig: typeof config) => {
     setLocalConfig(newConfig);
-    onSave(newConfig);
-    
-    // Update OSC port via Electron IPC if changed / 変更された場合はElectron IPC経由でOSCポートを更新
-    if (window.electronAPI && newConfig.oscPort !== config.oscPort) {
-      try {
-        const result = await window.electronAPI.updateOscPort(newConfig.oscPort);
-        if (!result.success) {
-          console.error('Failed to update OSC port:', result.error);
-        }
-      } catch (e) {
-        console.error('Error updating OSC port:', e);
-      }
-    }
+    setConfig(newConfig); // Store handles localStorage and Electron sync / ストアがlocalStorageとElectron同期を処理
   };
 
   const handleClose = () => {
@@ -79,7 +64,6 @@ const SettingsModal: FC<SettingsModalProps> = ({
   const handleLanguageChange = (lang: Language) => {
     const newConfig = { ...localConfig, language: lang };
     saveConfigImmediately(newConfig);
-    onLanguageChange(lang); // Trigger immediate update in parent / 親コンポーネントで即時更新をトリガーする
   };
 
   const handleThemeChange = (theme: 'light' | 'dark') => {
@@ -92,11 +76,8 @@ const SettingsModal: FC<SettingsModalProps> = ({
     if (!isNaN(portNum) && portNum >= 1 && portNum <= 65535) {
       const newConfig = { ...localConfig, oscPort: portNum };
       saveConfigImmediately(newConfig);
-    } else if (value === '') {
-      // Allow empty for typing / 入力中は空を許可
-      const newConfig = { ...localConfig, oscPort: DEFAULT_CONFIG.OSC_PORT };
-      saveConfigImmediately(newConfig);
     }
+    // Allow empty for typing, but don't save / 入力中は空を許可するが保存しない
   };
 
   const handleBridgeUrlChange = (value: string) => {
