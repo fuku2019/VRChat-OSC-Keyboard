@@ -12,7 +12,7 @@ const __dirname = path.dirname(__filename);
 const version = packageJson.version;
 const releaseDir = path.join(__dirname, '../release');
 const oldPath = path.join(releaseDir, 'win-unpacked');
-const newFolderName = `VRChat-OSC-Keyboard-${version}`;
+const newFolderName = `VRChat-OSC-Keyboard-v${version}`;
 const newPath = path.join(releaseDir, newFolderName);
 
 // Wait function with retry / リトライ付きの待機関数
@@ -57,7 +57,7 @@ async function main() {
 
       // Rename executable / 実行可能ファイルの名前変更
       const exeName = `VRChat-OSC-Keyboard.exe`;
-      const newExeName = `VRChat-OSC-Keyboard-${version}.exe`;
+      const newExeName = `VRChat-OSC-Keyboard-v${version}.exe`;
       const oldExePath = path.join(newPath, exeName);
       const newExePath = path.join(newPath, newExeName);
 
@@ -69,6 +69,23 @@ async function main() {
       } else {
         console.warn(
           `Executable '${exeName}' not found in '${newPath}'. Check package.json executableName.`,
+        );
+      }
+
+      // Rename installer / インストーラーの名前変更
+      const installerName = `VRChat OSC Keyboard Setup ${version}.exe`;
+      const newInstallerName = `VRChat OSC Keyboard Setup v${version}.exe`;
+      const oldInstallerPath = path.join(releaseDir, installerName);
+      const newInstallerPath = path.join(releaseDir, newInstallerName);
+
+      if (fs.existsSync(oldInstallerPath)) {
+        await retryOperation(() => {
+          fs.renameSync(oldInstallerPath, newInstallerPath);
+        });
+        console.log(`Successfully renamed installer to '${newInstallerName}'`);
+      } else {
+        console.warn(
+          `Installer '${installerName}' not found. It may not have been generated.`,
         );
       }
     } catch (error) {
