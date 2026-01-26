@@ -66,7 +66,7 @@ const SettingsModal: FC<SettingsModalProps> = ({
     saveConfigImmediately(newConfig);
   };
 
-  const handleThemeChange = (theme: 'light' | 'dark') => {
+  const handleThemeChange = (theme: 'light' | 'dark' | 'pure-black') => {
     const newConfig = { ...localConfig, theme };
     saveConfigImmediately(newConfig);
   };
@@ -90,9 +90,9 @@ const SettingsModal: FC<SettingsModalProps> = ({
       className={`fixed inset-0 z-[110] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 ${animationClass}`}
     >
       <div
-        className={`dark:bg-slate-800 bg-white w-full max-w-lg max-h-[90vh] flex flex-col rounded-2xl border dark:border-slate-600 border-slate-200 shadow-2xl overflow-hidden ${modalAnimationClass}`}
+        className={`dark:bg-slate-800 pure-black:bg-black bg-white w-full max-w-lg max-h-[90vh] flex flex-col rounded-2xl border dark:border-slate-600 pure-black:border-slate-800 border-slate-200 shadow-2xl overflow-hidden transition-colors duration-300 ${modalAnimationClass}`}
       >
-        <div className='flex justify-between items-center p-6 border-b dark:border-slate-700 border-slate-200 dark:bg-slate-800 bg-white'>
+        <div className='flex justify-between items-center p-6 border-b dark:border-slate-700 pure-black:border-slate-800 border-slate-200 dark:bg-slate-800 pure-black:bg-black bg-white transition-colors duration-300'>
           <h2 className='text-2xl font-bold dark:text-cyan-400 text-cyan-600'>{t.title}</h2>
           <button
             onClick={onClose}
@@ -130,6 +130,12 @@ const SettingsModal: FC<SettingsModalProps> = ({
               {t.theme}
             </label>
             <div className='flex gap-2'>
+              <button
+                onClick={() => handleThemeChange('pure-black')}
+                className={`flex-1 py-3 px-4 rounded-xl border transition-all ${localConfig.theme === 'pure-black' ? 'dark:bg-cyan-900/40 bg-cyan-50 border-cyan-500 dark:text-cyan-300 text-cyan-700 shadow-[0_0_15px_rgba(6,182,212,0.15)]' : 'dark:bg-slate-900 bg-slate-50 dark:border-slate-700 border-slate-300 dark:text-slate-400 text-slate-500 hover:border-slate-400 dark:hover:border-slate-500'}`}
+              >
+                {t.themePureBlack}
+              </button>
               <button
                 onClick={() => handleThemeChange('dark')}
                 className={`flex-1 py-3 px-4 rounded-xl border transition-all ${localConfig.theme === 'dark' ? 'dark:bg-cyan-900/40 bg-cyan-50 border-cyan-500 dark:text-cyan-300 text-cyan-700 shadow-[0_0_15px_rgba(6,182,212,0.15)]' : 'dark:bg-slate-900 bg-slate-50 dark:border-slate-700 border-slate-300 dark:text-slate-400 text-slate-500 hover:border-slate-400 dark:hover:border-slate-500'}`}
@@ -299,7 +305,7 @@ const SettingsModal: FC<SettingsModalProps> = ({
           </section>
         </div>
 
-        <div className='p-6 border-t dark:border-slate-700 border-slate-200 dark:bg-slate-800/50 bg-slate-50'>
+        <div className='p-6 border-t dark:border-slate-700 pure-black:border-slate-800 border-slate-200 dark:bg-slate-800/50 pure-black:bg-black bg-slate-50 transition-colors duration-300'>
           <button
             onClick={handleClose}
             className='flex items-center gap-2 bg-cyan-600 hover:bg-cyan-500 text-white px-8 py-4 rounded-xl font-bold shadow-lg shadow-cyan-900/30 active:scale-95 transition-all w-full justify-center'

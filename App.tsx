@@ -55,8 +55,13 @@ const App = () => {
     const root = window.document.documentElement;
     if (config.theme === 'dark') {
       root.classList.add('dark');
+      root.classList.remove('pure-black');
+    } else if (config.theme === 'pure-black') {
+      root.classList.add('dark');
+      root.classList.add('pure-black');
     } else {
       root.classList.remove('dark');
+      root.classList.remove('pure-black');
     }
   }, [config.theme]);
 
@@ -211,7 +216,7 @@ const App = () => {
   };
 
   return (
-    <div className='h-full min-h-screen w-full dark:bg-slate-950/90 bg-slate-50 flex flex-col items-center justify-center p-4 overflow-y-auto overflow-x-hidden transition-colors duration-300'>
+    <div className='h-full min-h-screen w-full dark:bg-slate-950/90 pure-black:bg-black bg-slate-50 flex flex-col items-center justify-center p-4 overflow-y-auto overflow-x-hidden transition-colors duration-300'>
       <TutorialOverlay
         isOpen={isTutorialOpen}
         onClose={handleTutorialClose}
