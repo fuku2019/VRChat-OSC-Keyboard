@@ -16,6 +16,7 @@ export const DEFAULT_CONFIG = {
   AUTO_SEND: false,
   LANGUAGE: 'ja' as const,
   THEME: 'dark' as const,
+  ACCENT_COLOR: 'cyan',
   UPDATE_CHECK_INTERVAL: 'weekly' as const,
 } as const;
 

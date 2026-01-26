@@ -71,6 +71,11 @@ const SettingsModal: FC<SettingsModalProps> = ({
     saveConfigImmediately(newConfig);
   };
 
+  const handleAccentColorChange = (color: string) => {
+    const newConfig = { ...localConfig, accentColor: color };
+    saveConfigImmediately(newConfig);
+  };
+
   const handleOscPortChange = (value: string) => {
     const portNum = parseInt(value, 10);
     if (!isNaN(portNum) && portNum >= 1 && portNum <= 65535) {
@@ -93,10 +98,10 @@ const SettingsModal: FC<SettingsModalProps> = ({
         className={`dark:bg-slate-800 pure-black:bg-black bg-white w-full max-w-lg max-h-[90vh] flex flex-col rounded-2xl border dark:border-slate-600 pure-black:border-slate-800 border-slate-200 shadow-2xl overflow-hidden transition-colors duration-300 ${modalAnimationClass}`}
       >
         <div className='flex justify-between items-center p-6 border-b dark:border-slate-700 pure-black:border-slate-800 border-slate-200 dark:bg-slate-800 pure-black:bg-black bg-white transition-colors duration-300'>
-          <h2 className='text-2xl font-bold dark:text-cyan-400 text-cyan-600'>{t.title}</h2>
+          <h2 className='text-2xl font-bold dark:text-primary-400 text-primary-600'>{t.title}</h2>
           <button
             onClick={onClose}
-            className='p-2 dark:hover:bg-slate-700 hover:bg-slate-100 rounded-full dark:text-slate-400 text-slate-500 dark:hover:text-white hover:text-slate-900 transition-colors'
+            className='p-2 dark:hover:bg-slate-700 hover:bg-slate-100 rounded-full dark:text-slate-400 text-slate-500 dark:hover:text-[rgb(var(--rgb-on-primary))] hover:text-slate-900 transition-colors'
           >
             <X size={24} />
           </button>
@@ -111,13 +116,13 @@ const SettingsModal: FC<SettingsModalProps> = ({
             <div className='flex gap-2'>
               <button
                 onClick={() => handleLanguageChange('ja')}
-                className={`flex-1 py-3 px-4 rounded-xl border transition-all ${localConfig.language === 'ja' ? 'dark:bg-cyan-900/40 bg-cyan-50 border-cyan-500 dark:text-cyan-300 text-cyan-700 shadow-[0_0_15px_rgba(6,182,212,0.15)]' : 'dark:bg-slate-900 bg-slate-50 dark:border-slate-700 border-slate-300 dark:text-slate-400 text-slate-500 hover:border-slate-400 dark:hover:border-slate-500'}`}
+                className={`flex-1 py-3 px-4 rounded-xl border transition-all ${localConfig.language === 'ja' ? 'dark:bg-primary-900/40 bg-primary-50 border-primary-500 dark:text-primary-300 text-primary-700 shadow-[0_0_15px_rgb(var(--color-primary-500)_/_0.15)]' : 'dark:bg-slate-900 bg-slate-50 dark:border-slate-700 border-slate-300 dark:text-slate-400 text-slate-500 hover:border-slate-400 dark:hover:border-slate-500'}`}
               >
                 日本語
               </button>
               <button
                 onClick={() => handleLanguageChange('en')}
-                className={`flex-1 py-3 px-4 rounded-xl border transition-all ${localConfig.language === 'en' ? 'dark:bg-cyan-900/40 bg-cyan-50 border-cyan-500 dark:text-cyan-300 text-cyan-700 shadow-[0_0_15px_rgba(6,182,212,0.15)]' : 'dark:bg-slate-900 bg-slate-50 dark:border-slate-700 border-slate-300 dark:text-slate-400 text-slate-500 hover:border-slate-400 dark:hover:border-slate-500'}`}
+                className={`flex-1 py-3 px-4 rounded-xl border transition-all ${localConfig.language === 'en' ? 'dark:bg-primary-900/40 bg-primary-50 border-primary-500 dark:text-primary-300 text-primary-700 shadow-[0_0_15px_rgb(var(--color-primary-500)_/_0.15)]' : 'dark:bg-slate-900 bg-slate-50 dark:border-slate-700 border-slate-300 dark:text-slate-400 text-slate-500 hover:border-slate-400 dark:hover:border-slate-500'}`}
               >
                 English
               </button>
@@ -132,22 +137,74 @@ const SettingsModal: FC<SettingsModalProps> = ({
             <div className='flex gap-2'>
               <button
                 onClick={() => handleThemeChange('pure-black')}
-                className={`flex-1 py-3 px-4 rounded-xl border transition-all ${localConfig.theme === 'pure-black' ? 'dark:bg-cyan-900/40 bg-cyan-50 border-cyan-500 dark:text-cyan-300 text-cyan-700 shadow-[0_0_15px_rgba(6,182,212,0.15)]' : 'dark:bg-slate-900 bg-slate-50 dark:border-slate-700 border-slate-300 dark:text-slate-400 text-slate-500 hover:border-slate-400 dark:hover:border-slate-500'}`}
+                className={`flex-1 py-3 px-4 rounded-xl border transition-all ${localConfig.theme === 'pure-black' ? 'dark:bg-primary-900/40 bg-primary-50 border-primary-500 dark:text-primary-300 text-primary-700 shadow-[0_0_15px_rgb(var(--color-primary-500)_/_0.15)]' : 'dark:bg-slate-900 bg-slate-50 dark:border-slate-700 border-slate-300 dark:text-slate-400 text-slate-500 hover:border-slate-400 dark:hover:border-slate-500'}`}
               >
                 {t.themePureBlack}
               </button>
               <button
                 onClick={() => handleThemeChange('dark')}
-                className={`flex-1 py-3 px-4 rounded-xl border transition-all ${localConfig.theme === 'dark' ? 'dark:bg-cyan-900/40 bg-cyan-50 border-cyan-500 dark:text-cyan-300 text-cyan-700 shadow-[0_0_15px_rgba(6,182,212,0.15)]' : 'dark:bg-slate-900 bg-slate-50 dark:border-slate-700 border-slate-300 dark:text-slate-400 text-slate-500 hover:border-slate-400 dark:hover:border-slate-500'}`}
+                className={`flex-1 py-3 px-4 rounded-xl border transition-all ${localConfig.theme === 'dark' ? 'dark:bg-primary-900/40 bg-primary-50 border-primary-500 dark:text-primary-300 text-primary-700 shadow-[0_0_15px_rgb(var(--color-primary-500)_/_0.15)]' : 'dark:bg-slate-900 bg-slate-50 dark:border-slate-700 border-slate-300 dark:text-slate-400 text-slate-500 hover:border-slate-400 dark:hover:border-slate-500'}`}
               >
                 {t.themeDark}
               </button>
               <button
                 onClick={() => handleThemeChange('light')}
-                className={`flex-1 py-3 px-4 rounded-xl border transition-all ${localConfig.theme === 'light' ? 'dark:bg-cyan-900/40 bg-cyan-50 border-cyan-500 dark:text-cyan-300 text-cyan-700 shadow-[0_0_15px_rgba(6,182,212,0.15)]' : 'dark:bg-slate-900 bg-slate-50 dark:border-slate-700 border-slate-300 dark:text-slate-400 text-slate-500 hover:border-slate-400 dark:hover:border-slate-500'}`}
+                className={`flex-1 py-3 px-4 rounded-xl border transition-all ${localConfig.theme === 'light' ? 'dark:bg-primary-900/40 bg-primary-50 border-primary-500 dark:text-primary-300 text-primary-700 shadow-[0_0_15px_rgb(var(--color-primary-500)_/_0.15)]' : 'dark:bg-slate-900 bg-slate-50 dark:border-slate-700 border-slate-300 dark:text-slate-400 text-slate-500 hover:border-slate-400 dark:hover:border-slate-500'}`}
               >
                 {t.themeLight}
               </button>
+            </div>
+          </section>
+
+          {/* Accent Color Selection / アクセントカラー選択 */}
+          <section className='pt-4 border-t dark:border-slate-700/50 border-slate-200'>
+            <label className='block dark:text-slate-300 text-slate-600 mb-3 text-sm font-semibold uppercase tracking-wider'>
+              {t.accentColor}
+            </label>
+            <div className='flex gap-2'>
+              <button
+                onClick={() => handleAccentColorChange('cyan')}
+                className={`flex-1 py-3 px-4 rounded-xl border transition-all flex items-center justify-center gap-2 ${
+                  (localConfig.accentColor === 'cyan' || !localConfig.accentColor) 
+                  ? 'dark:bg-primary-900/40 bg-primary-50 border-primary-500 dark:text-primary-300 text-primary-700 shadow-[0_0_15px_rgb(var(--color-primary-500)_/_0.15)]' 
+                  : 'dark:bg-slate-900 bg-slate-50 dark:border-slate-700 border-slate-300 dark:text-slate-400 text-slate-500 hover:border-slate-400 dark:hover:border-slate-500'
+                }`}
+              >
+                <div className="w-3 h-3 rounded-full bg-[#06b6d4]" />
+                <span className="text-xs md:text-sm whitespace-nowrap">{t.accentColorCyan}</span>
+              </button>
+              <button
+                onClick={() => handleAccentColorChange('purple')}
+                 className={`flex-1 py-3 px-4 rounded-xl border transition-all flex items-center justify-center gap-2 ${
+                   localConfig.accentColor === 'purple'
+                   ? 'dark:bg-primary-900/40 bg-primary-50 border-primary-500 dark:text-primary-300 text-primary-700 shadow-[0_0_15px_rgb(var(--color-primary-500)_/_0.15)]' 
+                   : 'dark:bg-slate-900 bg-slate-50 dark:border-slate-700 border-slate-300 dark:text-slate-400 text-slate-500 hover:border-slate-400 dark:hover:border-slate-500'
+                }`}
+              >
+                <div className="w-3 h-3 rounded-full bg-[#a855f7]" />
+                <span className="text-xs md:text-sm whitespace-nowrap">{t.accentColorPurple}</span>
+              </button>
+              
+              <div className="flex-1 relative">
+                  <input
+                    id="custom-color-picker"
+                    type="color"
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                    onChange={(e) => handleAccentColorChange(e.target.value)}
+                    value={(localConfig.accentColor !== 'cyan' && localConfig.accentColor !== 'purple') ? localConfig.accentColor : '#ff0000'}
+                  />
+                  <div className={`w-full h-full py-3 px-4 rounded-xl border transition-all flex items-center justify-center gap-2 ${
+                     (localConfig.accentColor && localConfig.accentColor !== 'cyan' && localConfig.accentColor !== 'purple')
+                     ? 'dark:bg-primary-900/40 bg-primary-50 border-primary-500 dark:text-primary-300 text-primary-700 shadow-[0_0_15px_rgb(var(--color-primary-500)_/_0.15)]' 
+                     : 'dark:bg-slate-900 bg-slate-50 dark:border-slate-700 border-slate-300 dark:text-slate-400 text-slate-500 hover:border-slate-400 dark:hover:border-slate-500'
+                  }`}>
+                     <div 
+                       className="w-3 h-3 rounded-full border border-slate-300 dark:border-slate-600"
+                       style={{ background: (localConfig.accentColor !== 'cyan' && localConfig.accentColor !== 'purple') ? localConfig.accentColor : 'linear-gradient(135deg, #f00, #0f0, #00f)' }}
+                     />
+                     <span className="text-xs md:text-sm whitespace-nowrap">{t.accentColorCustom}</span>
+                  </div>
+              </div>
             </div>
           </section>
 
@@ -155,10 +212,10 @@ const SettingsModal: FC<SettingsModalProps> = ({
           <section className='pt-4 border-t dark:border-slate-700/50 border-slate-200'>
             <button
               onClick={onShowTutorial}
-              className='w-full flex items-center justify-between p-4 dark:bg-slate-700/30 bg-slate-100 hover:bg-slate-200 dark:hover:bg-slate-700/50 rounded-xl border dark:border-slate-600/50 border-slate-200 dark:text-slate-300 text-slate-700 dark:hover:text-white hover:text-slate-900 transition-all group'
+              className='w-full flex items-center justify-between p-4 dark:bg-slate-700/30 bg-slate-100 hover:bg-slate-200 dark:hover:bg-slate-700/50 rounded-xl border dark:border-slate-600/50 border-slate-200 dark:text-slate-300 text-slate-700 dark:hover:text-[rgb(var(--rgb-on-primary))] hover:text-slate-900 transition-all group'
             >
               <div className='flex items-center gap-3'>
-                <CircleHelp size={20} className='text-cyan-500' />
+                <CircleHelp size={20} className='text-primary-500' />
                 <span className='font-medium text-sm'>{t.resetWelcome}</span>
               </div>
               <span className='text-slate-500 group-hover:translate-x-1 transition-transform'>
@@ -179,7 +236,7 @@ const SettingsModal: FC<SettingsModalProps> = ({
                 max={65535}
                 value={localConfig.oscPort}
                 onChange={(e) => handleOscPortChange(e.target.value)}
-                className='w-full dark:bg-slate-900 bg-slate-50 border dark:border-slate-700 border-slate-300 rounded-xl p-4 dark:text-white text-slate-900 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 focus:outline-none font-mono text-sm transition-all'
+                className='w-full dark:bg-slate-900 bg-slate-50 border dark:border-slate-700 border-slate-300 rounded-xl p-4 dark:text-white text-slate-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500/30 focus:outline-none font-mono text-sm transition-all'
                 placeholder='9000'
               />
             </div>
@@ -199,7 +256,7 @@ const SettingsModal: FC<SettingsModalProps> = ({
                 type='text'
                 value={localConfig.bridgeUrl}
                 onChange={(e) => handleBridgeUrlChange(e.target.value)}
-                className='w-full dark:bg-slate-900 bg-slate-50 border dark:border-slate-700 border-slate-300 rounded-xl p-4 dark:text-white text-slate-900 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 focus:outline-none font-mono text-sm transition-all'
+                className='w-full dark:bg-slate-900 bg-slate-50 border dark:border-slate-700 border-slate-300 rounded-xl p-4 dark:text-white text-slate-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500/30 focus:outline-none font-mono text-sm transition-all'
                 placeholder='ws://127.0.0.1:8080'
               />
             </div>
@@ -229,7 +286,7 @@ const SettingsModal: FC<SettingsModalProps> = ({
                   }}
                   className={`flex-1 py-2 px-2 text-xs rounded-lg transition-all whitespace-nowrap ${
                     localConfig.updateCheckInterval === option.id
-                     ? 'bg-white dark:bg-cyan-900/40 text-cyan-600 dark:text-cyan-300 shadow-sm'
+                     ? 'bg-white dark:bg-primary-900/40 text-primary-600 dark:text-primary-300 shadow-sm'
                      : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
                   }`}
                 >
@@ -285,14 +342,14 @@ const SettingsModal: FC<SettingsModalProps> = ({
                           window.electronAPI.openExternal(updateUrl);
                         }
                       }}
-                      className='text-sm px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg transition-colors font-medium shadow-cyan-900/20 shadow-lg'
+                      className='text-sm px-4 py-2 bg-primary-600 hover:bg-primary-500 text-[rgb(var(--rgb-on-primary))] rounded-lg transition-colors font-medium shadow-primary-900/20 shadow-lg'
                    >
                       {t.openReleasePage}
                    </button>
                  )}
                </div>
                {checkStatus && (
-                  <span className='text-sm text-cyan-600 dark:text-cyan-400 font-medium'>
+                  <span className='text-sm text-primary-600 dark:text-primary-400 font-medium'>
                      {checkStatus}
                   </span>
                )}
@@ -308,7 +365,7 @@ const SettingsModal: FC<SettingsModalProps> = ({
         <div className='p-6 border-t dark:border-slate-700 pure-black:border-slate-800 border-slate-200 dark:bg-slate-800/50 pure-black:bg-black bg-slate-50 transition-colors duration-300'>
           <button
             onClick={handleClose}
-            className='flex items-center gap-2 bg-cyan-600 hover:bg-cyan-500 text-white px-8 py-4 rounded-xl font-bold shadow-lg shadow-cyan-900/30 active:scale-95 transition-all w-full justify-center'
+            className='flex items-center gap-2 bg-primary-600 hover:bg-primary-500 text-[rgb(var(--rgb-on-primary))] px-8 py-4 rounded-xl font-bold shadow-lg shadow-primary-900/30 active:scale-95 transition-all w-full justify-center'
           >
             <X size={20} />
             {t.save}

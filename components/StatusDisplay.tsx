@@ -34,7 +34,7 @@ const StatusDisplay = ({
         {displayTextLength}/{CHATBOX.MAX_LENGTH}
       </span>
       {isSending && (
-        <span className='text-[10px] text-cyan-400 font-mono animate-pulse'>
+        <span className='text-[10px] text-primary-400 font-mono animate-pulse'>
           {sendingText}
         </span>
       )}

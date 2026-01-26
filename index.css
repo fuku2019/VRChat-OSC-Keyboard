@@ -9,6 +9,17 @@
   --animate-scale-out: scaleOut 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   --animate-slide-up: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 
+  --color-primary-50: rgb(var(--rgb-primary-50));
+  --color-primary-100: rgb(var(--rgb-primary-100));
+  --color-primary-200: rgb(var(--rgb-primary-200));
+  --color-primary-300: rgb(var(--rgb-primary-300));
+  --color-primary-400: rgb(var(--rgb-primary-400));
+  --color-primary-500: rgb(var(--rgb-primary-500));
+  --color-primary-600: rgb(var(--rgb-primary-600));
+  --color-primary-700: rgb(var(--rgb-primary-700));
+  --color-primary-800: rgb(var(--rgb-primary-800));
+  --color-primary-900: rgb(var(--rgb-primary-900));
+
   @keyframes fadeIn {
     0% { opacity: 0; }
     100% { opacity: 1; }
@@ -29,6 +40,23 @@
     0% { opacity: 0; transform: translateY(20px); }
     100% { opacity: 1; transform: translateY(0); }
   }
+}
+
+:root {
+  /* Default Cyan RGB values */
+  --rgb-primary-50: 236 254 255;
+  --rgb-primary-100: 207 250 254;
+  --rgb-primary-200: 165 243 252;
+  --rgb-primary-300: 103 232 249;
+  --rgb-primary-400: 34 211 238;
+  --rgb-primary-500: 6 182 212;
+  --rgb-primary-600: 8 145 178;
+  --rgb-primary-700: 14 116 144;
+  --rgb-primary-800: 21 94 117;
+  --rgb-primary-900: 22 78 99;
+  
+  --rgb-on-primary: 255 255 255;
+  --color-on-primary: rgb(var(--rgb-on-primary));
 }
 
 /* Custom Scrollbar & Global Settings migrated from index.html */
