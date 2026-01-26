@@ -15,6 +15,7 @@ export interface TranslationStrings {
     theme: string;
     themeLight: string;
     themeDark: string;
+    themePureBlack: string;
     checkInterval: string;
     checkNow: string;
     intervalStartup: string;
@@ -78,6 +79,7 @@ export const TRANSLATIONS: TranslationsMap = {
       theme: 'テーマ',
       themeLight: 'ライト',
       themeDark: 'ダーク',
+      themePureBlack: 'ピュアブラック',
       checkInterval: '更新確認頻度',
       checkNow: '今すぐ確認',
       intervalStartup: '起動時',
@@ -137,6 +139,7 @@ export const TRANSLATIONS: TranslationsMap = {
       theme: 'Theme',
       themeLight: 'Light',
       themeDark: 'Dark',
+      themePureBlack: 'Pure Black',
       checkInterval: 'Update Check Interval',
       checkNow: 'Check Now',
       intervalStartup: 'Every Startup',
