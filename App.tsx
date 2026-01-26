@@ -16,6 +16,8 @@ import {
   TIMEOUTS,
   CHATBOX,
 } from './constants';
+import { generatePalette, PRESET_PALETTES, hexToRgb, getLuminance } from './utils/colorUtils';
+import { DEFAULT_CONFIG } from './constants/appConfig';
 
 const App = () => {
   const config = useConfigStore((state) => state.config);
@@ -48,7 +50,39 @@ const App = () => {
   // Use update checker hook / アップデート確認フックを使用
   const { updateAvailable, setUpdateAvailable } = useUpdateChecker();
 
+  // Accent Color Effect / アクセントカラー反映
+  useEffect(() => {
+    const root = window.document.documentElement;
+    const accentColor = config.accentColor || DEFAULT_CONFIG.ACCENT_COLOR;
+    
+    let palette;
+    if (accentColor === 'cyan') {
+      palette = PRESET_PALETTES.cyan;
+    } else if (accentColor === 'purple') {
+      palette = PRESET_PALETTES.purple;
+    } else {
+      palette = generatePalette(accentColor, config.theme as any);
+    }
 
+    Object.entries(palette).forEach(([shade, hex]) => {
+      const rgb = hexToRgb(hex as string);
+      if (rgb) {
+        root.style.setProperty(`--rgb-primary-${shade}`, `${rgb.r} ${rgb.g} ${rgb.b}`);
+      }
+    });
+
+    // Calculate on-primary color (text color on primary background)
+    // We check shade 600 as it's often used for buttons
+    const primary600 = palette[600]; 
+    if (primary600) {
+        const lum = getLuminance(primary600);
+        // If luminance is high (bright), text should be black. Otherwise white.
+        // Threshold around 0.5-0.6 usually works.
+        const onPrimary = lum > 0.6 ? '0 0 0' : '255 255 255';
+        root.style.setProperty('--rgb-on-primary', onPrimary);
+    }
+
+  }, [config.accentColor, config.theme]);
 
   // Theme effect / テーマ反映
   useEffect(() => {
@@ -225,10 +259,10 @@ const App = () => {
 
       <div className='w-full max-w-5xl flex justify-between items-center mb-4 px-2 shrink-0 pt-4 md:pt-0'>
         <div className='flex items-center gap-3'>
-          <div className='w-3 h-3 rounded-full bg-cyan-500 shadow-[0_0_10px_rgba(6,182,212,0.8)]'></div>
+          <div className='w-3 h-3 rounded-full bg-primary-500 shadow-[0_0_10px_rgb(var(--color-primary-500)_/_0.8)]'></div>
           <h1 className='text-xl md:text-2xl font-bold dark:text-slate-100 text-slate-800 tracking-wider drop-shadow-md'>
             {t.appTitlePrefix}
-            <span className='ml-0 px-1.5 py-1 bg-[#06b6d4]/40 dark:bg-[#034445]/80 rounded-md border border-[#06b6d4]/60 dark:border-[#06b6d4]/30 shadow-lg backdrop-blur-sm'>
+            <span className='ml-0 px-1.5 py-1 bg-primary-500/40 dark:bg-primary-900/80 rounded-md border border-primary-500/60 dark:border-primary-500/30 shadow-lg backdrop-blur-sm'>
               {t.appTitle}
             </span>
           </h1>
@@ -249,7 +283,7 @@ const App = () => {
           className={`
           relative w-full h-24 md:h-32 dark:bg-slate-900/80 bg-white/80 rounded-2xl border-2 
           flex flex-col px-6 py-2 shadow-inner backdrop-blur transition-colors
-          ${error ? 'border-red-500/50' : 'dark:border-slate-700 border-slate-200 focus-within:border-cyan-500/50'}
+          ${error ? 'border-red-500/50' : 'dark:border-slate-700 border-slate-200 focus-within:border-primary-500/50'}
         `}
         >
           <StatusDisplay
@@ -263,7 +297,7 @@ const App = () => {
 
           <div className='absolute top-2 left-4 z-10'>
             <button
-              className='cursor-pointer text-[10px] font-bold dark:bg-slate-800 bg-slate-100 px-2 py-0.5 rounded dark:text-slate-400 text-slate-500 border dark:border-slate-700 border-slate-200 hover:text-cyan-600 dark:hover:text-white hover:border-cyan-500 transition-colors'
+              className='cursor-pointer text-[10px] font-bold dark:bg-slate-800 bg-slate-100 px-2 py-0.5 rounded dark:text-slate-400 text-slate-500 border dark:border-slate-700 border-slate-200 hover:text-primary-600 dark:hover:text-[rgb(var(--rgb-on-primary))] hover:border-primary-500 transition-colors'
               onClick={toggleMode}
               tabIndex={-1}
             >

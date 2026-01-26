@@ -62,7 +62,7 @@ const Key: FC<KeyProps> = ({
   };
 
   const colorClasses = highlight
-    ? 'bg-cyan-600 text-white hover:bg-cyan-500 border-cyan-800'
+    ? 'bg-primary-600 text-[rgb(var(--rgb-on-primary))] hover:bg-primary-500 border-primary-800'
     : config.action === 'send'
       ? 'bg-green-600 text-white hover:bg-green-500 border-green-800'
       : config.action === 'backspace' || config.action === 'clear'

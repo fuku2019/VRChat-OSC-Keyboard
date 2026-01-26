@@ -24,17 +24,17 @@ const TutorialOverlay: FC<TutorialOverlayProps> = ({
 
   const steps = [
     {
-      icon: <Wifi className='dark:text-cyan-400 text-cyan-600' size={32} />,
+      icon: <Wifi className='dark:text-primary-400 text-primary-600' size={32} />,
       title: t.step1Title,
       desc: t.step1Desc,
     },
     {
-      icon: <Keyboard className='dark:text-cyan-400 text-cyan-600' size={32} />,
+      icon: <Keyboard className='dark:text-primary-400 text-primary-600' size={32} />,
       title: t.step2Title,
       desc: t.step2Desc,
     },
     {
-      icon: <Send className='dark:text-cyan-400 text-cyan-600' size={32} />,
+      icon: <Send className='dark:text-primary-400 text-primary-600' size={32} />,
       title: t.step3Title,
       desc: t.step3Desc,
     },
@@ -65,9 +65,9 @@ const TutorialOverlay: FC<TutorialOverlayProps> = ({
 
         <div className='grid grid-cols-1 md:grid-cols-3 gap-6 mb-12 text-left'>
           {steps.map((step, i) => (
-            <div
+             <div
               key={i}
-              className='dark:bg-slate-800/50 bg-slate-50 p-6 rounded-2xl border dark:border-slate-700/50 border-slate-200 hover:border-cyan-500/30 transition-colors opacity-0 animate-slide-up'
+              className='dark:bg-slate-800/50 bg-slate-50 p-6 rounded-2xl border dark:border-slate-700/50 border-slate-200 hover:border-primary-500/30 transition-colors opacity-0 animate-slide-up'
               style={{ animationDelay: isOpen ? `${300 + i * 150}ms` : '0ms' }}
             >
               <div className='mb-4 dark:bg-slate-900 bg-white w-12 h-12 rounded-xl flex items-center justify-center border dark:border-slate-700 border-slate-200'>
@@ -83,7 +83,7 @@ const TutorialOverlay: FC<TutorialOverlayProps> = ({
 
         <button
           onClick={onClose}
-          className='group relative inline-flex items-center justify-center px-10 py-4 font-bold text-white transition-all duration-200 bg-cyan-600 font-pj rounded-2xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-600 hover:bg-cyan-500 active:scale-95 shadow-[0_0_20px_rgba(8,145,178,0.3)] opacity-0 animate-slide-up'
+          className='group relative inline-flex items-center justify-center px-10 py-4 font-bold text-[rgb(var(--rgb-on-primary))] transition-all duration-200 bg-primary-600 font-pj rounded-2xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-600 hover:bg-primary-500 active:scale-95 shadow-[0_0_20px_rgb(var(--color-primary-600)_/_0.3)] opacity-0 animate-slide-up'
           style={{ animationDelay: isOpen ? '750ms' : '0ms' }}
         >
           <CircleCheck className='mr-2' size={20} />

@@ -23,6 +23,7 @@ const loadConfigFromStorage = (): OscConfig => {
         autoSend: parsed.autoSend ?? DEFAULT_CONFIG.AUTO_SEND,
         language: parsed.language || DEFAULT_CONFIG.LANGUAGE,
         theme: parsed.theme || DEFAULT_CONFIG.THEME,
+        accentColor: parsed.accentColor || DEFAULT_CONFIG.ACCENT_COLOR,
         updateCheckInterval: parsed.updateCheckInterval || DEFAULT_CONFIG.UPDATE_CHECK_INTERVAL,
       };
     }
@@ -37,6 +38,7 @@ const loadConfigFromStorage = (): OscConfig => {
     autoSend: DEFAULT_CONFIG.AUTO_SEND,
     language: DEFAULT_CONFIG.LANGUAGE,
     theme: DEFAULT_CONFIG.THEME,
+    accentColor: DEFAULT_CONFIG.ACCENT_COLOR,
     updateCheckInterval: DEFAULT_CONFIG.UPDATE_CHECK_INTERVAL,
   };
 };

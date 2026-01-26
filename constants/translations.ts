@@ -16,6 +16,10 @@ export interface TranslationStrings {
     themeLight: string;
     themeDark: string;
     themePureBlack: string;
+    accentColor: string;
+    accentColorCyan: string;
+    accentColorPurple: string;
+    accentColorCustom: string;
     checkInterval: string;
     checkNow: string;
     intervalStartup: string;
@@ -80,6 +84,10 @@ export const TRANSLATIONS: TranslationsMap = {
       themeLight: 'ライト',
       themeDark: 'ダーク',
       themePureBlack: 'ピュアブラック',
+      accentColor: 'アクセントカラー',
+      accentColorCyan: '水色 (デフォルト)',
+      accentColorPurple: '紫',
+      accentColorCustom: 'カスタム',
       checkInterval: '更新確認頻度',
       checkNow: '今すぐ確認',
       intervalStartup: '起動時',
@@ -140,6 +148,10 @@ export const TRANSLATIONS: TranslationsMap = {
       themeLight: 'Light',
       themeDark: 'Dark',
       themePureBlack: 'Pure Black',
+      accentColor: 'Accent Color',
+      accentColorCyan: 'Cyan (Default)',
+      accentColorPurple: 'Purple',
+      accentColorCustom: 'Custom',
       checkInterval: 'Update Check Interval',
       checkNow: 'Check Now',
       intervalStartup: 'Every Startup',
