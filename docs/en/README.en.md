@@ -24,8 +24,15 @@ over OSC using either a software or physical keyboard.
 </div>
 
 ## Features
-Allows for easy Japanese chatting directly from VR via a built-in virtual keyboard.
-Supports Kanji conversion when inputting text via a physical keyboard.
+- **In-VR Input:** Built-in software keyboard for typing Hiragana, Katakana, and alphanumeric characters.
+- **IME Support:** Use IME conversion when typing via a physical keyboard.
+- Fluid UI animations.
+- Customizable UI themes.
+- Modern aesthetic.
+
+## Roadmap
+- Kanji conversion.
+- Custom keyboard layouts.
 
 ## Notes
 This is just an experimental tool thrown together by an average VRChatter using Antigravity.
@@ -43,5 +50,6 @@ npm install
 npm run dist
 
 ```
+
 
 
