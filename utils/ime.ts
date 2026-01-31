@@ -36,15 +36,19 @@ export const toKana = (
     return { output: 'っ', newBuffer: nextBuffer.substring(1) };
   }
 
-  // If buffer gets too long (3 chars) and no match, flush first char / バッファが長すぎる（3文字）かつ一致がない場合、最初の文字をフラッシュする
+  // If buffer gets too long and no match, flush first char / バッファが長すぎてマッチしない場合、最初の文字をフラッシュする
   // Also check if the buffer is a valid prefix for any romaji. If not, flush immediately. / また、バッファがローマ字の有効な接頭辞であるかどうかも確認します。そうでない場合は、すぐにフラッシュします。
-  const isPrefix = Object.keys(ROMAJI_MAP).some(key => key.startsWith(nextBuffer));
+  const isPrefix = Object.keys(ROMAJI_MAP).some((key) =>
+    key.startsWith(nextBuffer),
+  );
 
   if (!isPrefix && nextBuffer.length > 0) {
     return { output: nextBuffer[0], newBuffer: nextBuffer.slice(1) };
   }
 
-  if (nextBuffer.length > 3) {
+  // Maximum buffer length check - handles edge cases like 'ttya' (4+ chars) / 最大バッファ長チェック - 'ttya'（4文字以上）のようなエッジケースに対応
+  // If buffer exceeds 4 chars and still no match, flush aggressively / バッファが4文字を超えてもマッチしない場合、積極的にフラッシュ
+  if (nextBuffer.length > 4) {
     return { output: nextBuffer[0], newBuffer: nextBuffer.slice(1) };
   }
 
@@ -52,8 +56,21 @@ export const toKana = (
 };
 
 export const convertToKatakana = (text: string): string => {
-  return text
-    .split('')
-    .map((char) => HIRAGANA_TO_KATAKANA[char] || char)
-    .join('');
+  // First try to convert multi-character sequences, then single characters
+  // まず複数文字のシーケンスを変換し、次に単一文字を変換
+  let result = text;
+
+  // Sort keys by length (longest first) to handle multi-char sequences properly
+  // 複数文字シーケンスを適切に処理するため、キーを長さ順（最長優先）でソート
+  const sortedKeys = Object.keys(HIRAGANA_TO_KATAKANA).sort(
+    (a, b) => b.length - a.length,
+  );
+
+  for (const key of sortedKeys) {
+    if (result.includes(key)) {
+      result = result.split(key).join(HIRAGANA_TO_KATAKANA[key]);
+    }
+  }
+
+  return result;
 };

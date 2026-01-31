@@ -2,8 +2,6 @@ import { useState, useEffect } from 'react';
 import { STORAGE_KEYS } from '../constants';
 import { useConfigStore } from '../stores/configStore';
 
-declare const APP_VERSION: string;
-
 export interface UpdateInfo {
   version: string;
   url: string;
@@ -18,38 +16,52 @@ interface UseUpdateCheckerReturn {
 export const useUpdateChecker = (): UseUpdateCheckerReturn => {
   const config = useConfigStore((state) => state.config);
   // Load persisted update info on mount / マウント時に永続化された更新情報を読み込む
-  const [updateAvailable, setUpdateAvailable] = useState<UpdateInfo | null>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.UPDATE_AVAILABLE);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        // Check if the persisted update matches current version (already updated) / 保存された更新が現在のバージョンと一致するか確認（更新済み）
-        // Normalize versions to handle 'v' prefix logic / 'v'プレフィックスを処理するためにバージョンを正規化
-        const normalize = (v: string) => v.replace(/^v/, '');
-        
-        // APP_VERSION is defined in vite config
-        if (parsed.version && normalize(parsed.version) === normalize(APP_VERSION)) {
-           // Already updated to this version, clear persistence / 既にこのバージョンに更新済みなので、永続化情報をクリア
-           localStorage.removeItem(STORAGE_KEYS.UPDATE_AVAILABLE);
-           return null;
+  const [updateAvailable, setUpdateAvailable] = useState<UpdateInfo | null>(
+    () => {
+      const saved = localStorage.getItem(STORAGE_KEYS.UPDATE_AVAILABLE);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          // Check if the persisted update matches current version (already updated) / 保存された更新が現在のバージョンと一致するか確認（更新済み）
+          // Normalize versions to handle 'v' prefix logic / 'v'プレフィックスを処理するためにバージョンを正規化
+          const normalize = (v: string) => v.replace(/^v/, '');
+
+          // APP_VERSION is defined in vite config
+          if (
+            parsed.version &&
+            normalize(parsed.version) === normalize(APP_VERSION)
+          ) {
+            // Already updated to this version, clear persistence / 既にこのバージョンに更新済みなので、永続化情報をクリア
+            localStorage.removeItem(STORAGE_KEYS.UPDATE_AVAILABLE);
+            return null;
+          }
+          return parsed;
+        } catch {
+          return null;
         }
-        return parsed;
-      } catch {
-        return null;
       }
-    }
-    return null;
-  });
+      return null;
+    },
+  );
 
   // Update Check Logic - runs only once on mount / 更新確認ロジック - マウント時に1回のみ実行
   useEffect(() => {
     const checkUpdate = async () => {
       if (!window.electronAPI) return;
-      
+
       // Get current interval from localStorage to ensure we use the latest value / 最新の値を使用するためlocalStorageから取得
       const savedConfig = localStorage.getItem(STORAGE_KEYS.OSC_CONFIG);
-      const currentInterval = savedConfig ? JSON.parse(savedConfig).updateCheckInterval : config.updateCheckInterval;
-      
+      let currentInterval = config.updateCheckInterval;
+      if (savedConfig) {
+        try {
+          currentInterval =
+            JSON.parse(savedConfig).updateCheckInterval || currentInterval;
+        } catch (e) {
+          // Ignore parse error - use default / パースエラーを無視 - デフォルトを使用
+          console.warn('[UpdateChecker] Failed to parse saved config:', e);
+        }
+      }
+
       if (!currentInterval || currentInterval === 'manual') return;
 
       const lastCheck = localStorage.getItem(STORAGE_KEYS.LAST_UPDATE_CHECK);
@@ -74,29 +86,41 @@ export const useUpdateChecker = (): UseUpdateCheckerReturn => {
         try {
           const result = await window.electronAPI.checkForUpdate();
           localStorage.setItem(STORAGE_KEYS.LAST_UPDATE_CHECK, now.toString());
-          
-          
-          if (result.success && result.updateAvailable && result.latestVersion) {
+
+          if (
+            result.success &&
+            result.updateAvailable &&
+            result.latestVersion
+          ) {
             const updateInfo: UpdateInfo = {
               version: result.latestVersion,
-              url: result.url || 'https://github.com/fuku2019/VRC-OSC-Keyboard/releases'
+              url:
+                result.url ||
+                'https://github.com/fuku2019/VRC-OSC-Keyboard/releases',
             };
             setUpdateAvailable(updateInfo);
             // Persist to localStorage / localStorageに永続化
-            localStorage.setItem(STORAGE_KEYS.UPDATE_AVAILABLE, JSON.stringify(updateInfo));
+            localStorage.setItem(
+              STORAGE_KEYS.UPDATE_AVAILABLE,
+              JSON.stringify(updateInfo),
+            );
           } else if (result.success && !result.updateAvailable) {
             // No update available, clear persisted info / 更新なし、保存情報をクリア
             setUpdateAvailable(null);
             localStorage.removeItem(STORAGE_KEYS.UPDATE_AVAILABLE);
           }
         } catch (e) {
-          console.error("Auto update check failed:", e);
+          console.error('Auto update check failed:', e);
         }
       }
     };
 
     checkUpdate();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Intentionally run only once on mount to check update on app startup.
+    // config.updateCheckInterval changes don't trigger recheck - app restart required.
+    // マウント時に一度だけ実行するため、意図的に依存配列を空にしている。
+    // config.updateCheckIntervalの変更は再チェックをトリガーしない - アプリの再起動が必要。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Run only once on mount / マウント時に1回のみ実行
 
   return {

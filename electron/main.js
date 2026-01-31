@@ -30,16 +30,20 @@ let wss;
 function updateOscClient(newPort) {
   console.log(`⚡ Updating OSC port from ${OSC_PORT} to ${newPort}`);
   OSC_PORT = newPort;
-  
+
   // Close existing client / 既存のクライアントを閉じる
-  if (oscClient) {
+  if (oscClient && oscClient._socket) {
     try {
       oscClient.close();
     } catch (e) {
-      console.error('[OSC] Error closing old client:', e);
+      // Log warning but continue - old client may already be closed / 警告をログに出力するが続行 - 古いクライアントは既に閉じている可能性がある
+      console.warn(
+        '[OSC] Warning closing old client (may already be closed):',
+        e.message,
+      );
     }
   }
-  
+
   // Create new client with updated port / 更新されたポートで新しいクライアントを作成
   oscClient = new Client(OSC_IP, OSC_PORT);
   console.log(`➡️  Now forwarding to VRChat at ${OSC_IP}:${OSC_PORT}`);
@@ -106,11 +110,15 @@ function compareVersions(v1, v2) {
   // Handle non-string inputs / 文字列以外が渡された場合の対処
   if (typeof v1 !== 'string' || typeof v2 !== 'string') return 0;
 
-  const clean = (v) => v.replace(/^v/, '').split('.').map(part => {
-    const num = parseInt(part, 10);
-    return isNaN(num) ? 0 : num; // Treat non-numeric parts as 0 / 数値以外は0として扱う
-  });
-  
+  const clean = (v) =>
+    v
+      .replace(/^v/, '')
+      .split('.')
+      .map((part) => {
+        const num = parseInt(part, 10);
+        return isNaN(num) ? 0 : num; // Treat non-numeric parts as 0 / 数値以外は0として扱う
+      });
+
   const parts1 = clean(v1);
   const parts2 = clean(v2);
   const len = Math.max(parts1.length, parts2.length);
@@ -128,37 +136,46 @@ function compareVersions(v1, v2) {
 ipcMain.handle('check-for-update', async () => {
   try {
     // Disable cache to ensure fresh data / キャッシュを無効化して最新データを確保
-    const response = await fetch('https://api.github.com/repos/fuku2019/VRC-OSC-Keyboard/releases/latest', {
-      headers: {
-        'Cache-Control': 'no-cache',
-        'User-Agent': `VRC-OSC-Keyboard/${APP_VERSION}` // Add User-Agent as per GitHub API requirements
-      }
-    });
+    const response = await fetch(
+      'https://api.github.com/repos/fuku2019/VRC-OSC-Keyboard/releases/latest',
+      {
+        headers: {
+          'Cache-Control': 'no-cache',
+          'User-Agent': `VRC-OSC-Keyboard/${APP_VERSION}`, // Add User-Agent as per GitHub API requirements
+        },
+      },
+    );
 
     if (!response.ok) {
-      console.error(`GitHub API Error: ${response.status} ${response.statusText}`);
-      throw new Error(`GitHub API Error: ${response.status} ${response.statusText}`);
+      console.error(
+        `GitHub API Error: ${response.status} ${response.statusText}`,
+      );
+      throw new Error(
+        `GitHub API Error: ${response.status} ${response.statusText}`,
+      );
     }
 
     const data = await response.json();
     const latestVersion = data.tag_name;
-    
+
     // Validate response data / レスポンスデータの検証
     if (!latestVersion) {
-        throw new Error('Invalid response from GitHub: tag_name missing');
+      throw new Error('Invalid response from GitHub: tag_name missing');
     }
 
-    const currentVersion = APP_VERSION.startsWith('v') ? APP_VERSION : `v${APP_VERSION}`; 
-    
+    const currentVersion = APP_VERSION.startsWith('v')
+      ? APP_VERSION
+      : `v${APP_VERSION}`;
+
     // Compare versions using semver logic / セマンティックバージョニングロジックで比較
     // latest > current => update available
     const updateAvailable = compareVersions(latestVersion, currentVersion) > 0;
 
-    return { 
-      success: true, 
-      updateAvailable, 
-      latestVersion, 
-      url: data.html_url 
+    return {
+      success: true,
+      updateAvailable,
+      latestVersion,
+      url: data.html_url,
     };
   } catch (error) {
     console.error('Failed to check for updates:', error);
@@ -218,7 +235,11 @@ function saveWindowPosition() {
 // Get saved window position or null / 保存されたウィンドウ位置を取得（存在しない場合はnull）
 function getSavedWindowPosition() {
   const position = store.get('windowPosition');
-  if (position && typeof position.x === 'number' && typeof position.y === 'number') {
+  if (
+    position &&
+    typeof position.x === 'number' &&
+    typeof position.y === 'number'
+  ) {
     // Validate position is on a visible screen / 位置が表示可能な画面上にあるか検証
     if (isPositionOnScreen(position.x, position.y)) {
       return position;
@@ -226,7 +247,6 @@ function getSavedWindowPosition() {
   }
   return null;
 }
-
 
 function createWindow() {
   // Get saved window position / 保存されたウィンドウ位置を取得
@@ -280,7 +300,6 @@ function createWindow() {
   }
 }
 
-
 const gotTheLock = app.requestSingleInstanceLock();
 
 if (!gotTheLock) {
@@ -309,7 +328,14 @@ if (!gotTheLock) {
     if (process.platform !== 'darwin') {
       // Close bridge connections / ブリッジ接続を閉じる
       if (wss) wss.close();
-      if (oscClient) oscClient.close();
+      if (oscClient && oscClient._socket) {
+        try {
+          oscClient.close();
+        } catch (e) {
+          // Ignore close error - client may already be closed / 閉じる際のエラーを無視 - クライアントは既に閉じている可能性がある
+          console.warn('[OSC] Warning closing client on exit:', e.message);
+        }
+      }
       app.quit();
     }
   });

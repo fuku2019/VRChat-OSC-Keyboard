@@ -18,6 +18,15 @@ export const sendOscMessage = async (
   bridgeUrl: string,
 ): Promise<OscResponse> => {
   return new Promise((resolve) => {
+    let isResolved = false; // Flag to prevent multiple resolves / 複数回のresolveを防ぐフラグ
+
+    const safeResolve = (result: OscResponse) => {
+      if (!isResolved) {
+        isResolved = true;
+        resolve(result);
+      }
+    };
+
     try {
       // Auto-correct http/https to ws/wss if user forgot / ユーザーが忘れた場合にhttp/httpsをws/wssに自動修正
       let url = bridgeUrl;
@@ -30,7 +39,7 @@ export const sendOscMessage = async (
       // Timeout to prevent hanging if server is down / サーバーがダウンしている場合のハングを防ぐためのタイムアウト
       const timeout = setTimeout(() => {
         if (ws.readyState !== WebSocket.CLOSED) ws.close();
-        resolve({
+        safeResolve({
           success: false,
           error: "Timeout: Is 'node server.js' running?",
         });
@@ -48,23 +57,25 @@ export const sendOscMessage = async (
           ws.close(); // Close immediately to keep it stateless/simple / ステートレス/シンプルに保つために即座に閉じる
 
           if (data.success) {
-            resolve({ success: true });
+            safeResolve({ success: true });
           } else {
-            resolve({ success: false, error: data.error || 'Bridge Error' });
+            safeResolve({
+              success: false,
+              error: data.error || 'Bridge Error',
+            });
           }
         } catch (e) {
           clearTimeout(timeout);
           ws.close();
           // If we got a message but couldn't parse JSON, assume success (legacy check) / メッセージを受信したがJSONを解析できなかった場合、成功と見なす（レガシーチェック）
-          resolve({ success: true });
+          safeResolve({ success: true });
         }
       };
 
       ws.onerror = () => {
         clearTimeout(timeout);
-        // Do not resolve here immediately as 'onclose' might fire too, / 'onclose'も発火する可能性があるため、ここでは即座に解決しない
-        // but generally onerror implies connection failure. / しかし、一般的にonerrorは接続の失敗を意味する
-        resolve({
+        // Use safeResolve to prevent double resolution / 二重解決を防ぐためにsafeResolveを使用
+        safeResolve({
           success: false,
           error: 'Connection Refused (Is server.js running?)',
         });
@@ -73,10 +84,13 @@ export const sendOscMessage = async (
       ws.onclose = () => {
         // Cleanup timeout if not already cleared / まだクリアされていない場合はタイムアウトをクリーンアップ
         clearTimeout(timeout);
-        // Promise may already be resolved by onerror or onmessage / Promiseはonerrorまたはonmessageによって既に解決されている可能性がある
+        // No resolve here - let onerror or onmessage handle it / ここではresolveしない - onerrorまたはonmessageに処理させる
       };
     } catch (error: any) {
-      resolve({ success: false, error: error.message || 'WebSocket Error' });
+      safeResolve({
+        success: false,
+        error: error.message || 'WebSocket Error',
+      });
     }
   });
 };

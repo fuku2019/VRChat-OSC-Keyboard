@@ -33,14 +33,23 @@ export const useIME = (
     if (buffer.length === 0 || bufferPosition === null) {
       return input + buffer; // Fallback: append buffer at end / フォールバック: バッファを末尾に追加
     }
-    return input.slice(0, bufferPosition) + buffer + input.slice(bufferPosition);
+    return (
+      input.slice(0, bufferPosition) + buffer + input.slice(bufferPosition)
+    );
   }, [input, buffer, bufferPosition]);
 
   const commitBuffer = useCallback(() => {
     if (buffer.length > 0) {
       if (bufferPosition !== null && bufferPosition <= input.length) {
+        // Ensure position is within valid range / 位置が有効な範囲内であることを確認
+        const safePosition = Math.max(
+          0,
+          Math.min(bufferPosition, input.length),
+        );
         // Insert buffer at the stored position / 保存された位置にバッファを挿入
-        setInput(input.slice(0, bufferPosition) + buffer + input.slice(bufferPosition));
+        setInput(
+          input.slice(0, safePosition) + buffer + input.slice(safePosition),
+        );
       } else {
         setInput((prev) => prev + buffer);
       }
@@ -50,22 +59,29 @@ export const useIME = (
   }, [buffer, bufferPosition, input]);
 
   // Called when typing directly into the textarea (Physical Keyboard / Native IME) / テキストエリアに直接入力するときに呼び出される（物理キーボード / ネイティブIME）
-  const overwriteInput = useCallback((text: string) => {
-    const currentValue = input + buffer;
-    
-    // If already at max and trying to add more characters, block completely (no slice)
-    // 既に最大長に達していて文字を追加しようとしている場合は完全にブロック（sliceしない）
-    if (currentValue.length >= maxLength && text.length > currentValue.length) {
-      return; // Reject input entirely / 入力を完全に拒否
-    }
-    
-    // Truncate to maxLength if exceeded (for paste operations etc.)
-    // maxLengthを超えた場合は切り捨て（ペースト操作などの場合）
-    const truncated = text.length > maxLength ? text.slice(0, maxLength) : text;
-    setInput(truncated);
-    setBuffer(''); // Clear local buffer as native IME handles composition / ネイティブIMEが構成を処理するため、ローカルバッファをクリアする
-    setBufferPosition(null);
-  }, [input, buffer, maxLength]);
+  const overwriteInput = useCallback(
+    (text: string) => {
+      const currentValue = input + buffer;
+
+      // If already at max and trying to add more characters, block completely (no slice)
+      // 既に最大長に達していて文字を追加しようとしている場合は完全にブロック（sliceしない）
+      if (
+        currentValue.length >= maxLength &&
+        text.length > currentValue.length
+      ) {
+        return; // Reject input entirely / 入力を完全に拒否
+      }
+
+      // Truncate to maxLength if exceeded (for paste operations etc.)
+      // maxLengthを超えた場合は切り捨て（ペースト操作などの場合）
+      const truncated =
+        text.length > maxLength ? text.slice(0, maxLength) : text;
+      setInput(truncated);
+      setBuffer(''); // Clear local buffer as native IME handles composition / ネイティブIMEが構成を処理するため、ローカルバッファをクリアする
+      setBufferPosition(null);
+    },
+    [input, buffer, maxLength],
+  );
 
   // Called by Virtual Keyboard buttons / バーチャルキーボードのボタンから呼び出される
   const handleCharInput = useCallback(
@@ -75,11 +91,12 @@ export const useIME = (
       if (currentLength >= maxLength) return; // Block input if at limit / 制限に達したら入力をブロック
 
       // Calculate effective cursor position in input (excluding buffer) / input内の有効なカーソル位置を計算（バッファを除く）
-      const effectiveCursorPos = cursorPosition !== undefined 
-        ? (bufferPosition !== null && cursorPosition > bufferPosition 
-            ? Math.max(0, cursorPosition - buffer.length) 
-            : cursorPosition)
-        : input.length;
+      const effectiveCursorPos =
+        cursorPosition !== undefined
+          ? bufferPosition !== null && cursorPosition > bufferPosition
+            ? Math.max(0, cursorPosition - buffer.length)
+            : cursorPosition
+          : input.length;
 
       // Helper function to insert char at position / 位置に文字を挿入するヘルパー関数
       const insertAtPosition = (text: string) => {
@@ -128,7 +145,12 @@ export const useIME = (
           out = convertToKatakana(out);
         }
         // Insert converted kana at buffer position / 変換されたかなをバッファ位置に挿入
-        const pos = bufferPosition !== null ? bufferPosition : Math.min(effectiveCursorPos, input.length);
+        const rawPos =
+          bufferPosition !== null
+            ? bufferPosition
+            : Math.min(effectiveCursorPos, input.length);
+        // Ensure position is within valid range / 位置が有効な範囲内であることを確認
+        const pos = Math.max(0, Math.min(rawPos, input.length));
         setInput(input.slice(0, pos) + out + input.slice(pos));
         // Update buffer position for next character / 次の文字のためにバッファ位置を更新
         if (res.newBuffer.length > 0) {
@@ -142,22 +164,25 @@ export const useIME = (
     [buffer, mode, commitBuffer, input, maxLength, bufferPosition],
   );
 
-  const handleBackspace = useCallback((cursorPosition?: number) => {
-    if (buffer.length > 0) {
-      setBuffer((prev) => prev.slice(0, -1));
-      if (buffer.length === 1) {
-        setBufferPosition(null);
+  const handleBackspace = useCallback(
+    (cursorPosition?: number) => {
+      if (buffer.length > 0) {
+        setBuffer((prev) => prev.slice(0, -1));
+        if (buffer.length === 1) {
+          setBufferPosition(null);
+        }
+      } else if (cursorPosition !== undefined && cursorPosition > 0) {
+        // Delete character at cursor position - 1 / カーソル位置-1の文字を削除
+        const pos = Math.min(cursorPosition - 1, input.length - 1);
+        if (pos >= 0) {
+          setInput(input.slice(0, pos) + input.slice(pos + 1));
+        }
+      } else {
+        setInput((prev) => prev.slice(0, -1));
       }
-    } else if (cursorPosition !== undefined && cursorPosition > 0) {
-      // Delete character at cursor position - 1 / カーソル位置-1の文字を削除
-      const pos = Math.min(cursorPosition - 1, input.length - 1);
-      if (pos >= 0) {
-        setInput(input.slice(0, pos) + input.slice(pos + 1));
-      }
-    } else {
-      setInput((prev) => prev.slice(0, -1));
-    }
-  }, [buffer, input]);
+    },
+    [buffer, input],
+  );
 
   const handleClear = useCallback(() => {
     setBuffer('');
@@ -165,27 +190,60 @@ export const useIME = (
     setBufferPosition(null);
   }, []);
 
-  const handleSpace = useCallback((cursorPosition?: number) => {
-    // Check if adding space would exceed maxLength / スペース追加がmaxLengthを超えるかチェック
-    const currentLength = input.length + buffer.length;
-    if (currentLength >= maxLength) {
-      // Just commit buffer without adding space / スペースを追加せずにバッファのみ確定
-      commitBuffer();
-      return;
-    }
+  const handleSpace = useCallback(
+    (cursorPosition?: number) => {
+      // Check if adding space would exceed maxLength / スペース追加がmaxLengthを超えるかチェック
+      const currentLength = input.length + buffer.length;
+      if (currentLength >= maxLength) {
+        // Just commit buffer without adding space / スペースを追加せずにバッファのみ確定
+        commitBuffer();
+        return;
+      }
 
-    if (buffer.length > 0) {
-      // Simple behavior: just commit current buffer as is / 単純な動作: 現在のバッファをそのまま確定する
-      commitBuffer();
-    }
-    
-    // Insert space at cursor position / カーソル位置にスペースを挿入
-    if (cursorPosition !== undefined && cursorPosition <= input.length) {
-      setInput(input.slice(0, cursorPosition) + ' ' + input.slice(cursorPosition));
-    } else {
-      setInput((prev) => prev + ' ');
-    }
-  }, [buffer, commitBuffer, input, maxLength]);
+      // Calculate the position where space should be inserted after buffer commit / バッファ確定後にスペースを挿入する位置を計算
+      let spaceInsertPosition: number | undefined;
+      let inputAfterCommit = input;
+
+      if (buffer.length > 0) {
+        // Calculate what input will be after commit / 確定後の入力を計算
+        if (bufferPosition !== null && bufferPosition <= input.length) {
+          inputAfterCommit =
+            input.slice(0, bufferPosition) +
+            buffer +
+            input.slice(bufferPosition);
+          // Adjust cursor position to account for committed buffer / 確定されたバッファを考慮してカーソル位置を調整
+          if (cursorPosition !== undefined) {
+            spaceInsertPosition = cursorPosition; // Cursor is already at correct position in displayText / カーソルは既にdisplayText内の正しい位置にある
+          }
+        } else {
+          inputAfterCommit = input + buffer;
+          if (cursorPosition !== undefined) {
+            spaceInsertPosition = cursorPosition;
+          }
+        }
+        // Commit buffer by updating input directly / inputを直接更新してバッファを確定
+        setInput(inputAfterCommit);
+        setBuffer('');
+        setBufferPosition(null);
+      }
+
+      // Insert space at cursor position / カーソル位置にスペースを挿入
+      const targetInput = buffer.length > 0 ? inputAfterCommit : input;
+      const insertPos =
+        spaceInsertPosition !== undefined
+          ? spaceInsertPosition
+          : cursorPosition;
+
+      if (insertPos !== undefined && insertPos <= targetInput.length) {
+        setInput(
+          targetInput.slice(0, insertPos) + ' ' + targetInput.slice(insertPos),
+        );
+      } else {
+        setInput(targetInput + ' ');
+      }
+    },
+    [buffer, bufferPosition, input, maxLength, commitBuffer],
+  );
 
   return {
     input,

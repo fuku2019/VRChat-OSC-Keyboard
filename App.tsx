@@ -10,13 +10,13 @@ import { sendOscMessage } from './services/oscService';
 import { useIME } from './hooks/useIME';
 import { useUpdateChecker } from './hooks/useUpdateChecker';
 import { useConfigStore } from './stores/configStore';
+import { TRANSLATIONS, STORAGE_KEYS, TIMEOUTS, CHATBOX } from './constants';
 import {
-  TRANSLATIONS,
-  STORAGE_KEYS,
-  TIMEOUTS,
-  CHATBOX,
-} from './constants';
-import { generatePalette, PRESET_PALETTES, hexToRgb, getLuminance } from './utils/colorUtils';
+  generatePalette,
+  PRESET_PALETTES,
+  hexToRgb,
+  getLuminance,
+} from './utils/colorUtils';
 import { DEFAULT_CONFIG } from './constants/appConfig';
 
 const App = () => {
@@ -54,34 +54,36 @@ const App = () => {
   useEffect(() => {
     const root = window.document.documentElement;
     const accentColor = config.accentColor || DEFAULT_CONFIG.ACCENT_COLOR;
-    
+
     let palette;
     if (accentColor === 'cyan') {
       palette = PRESET_PALETTES.cyan;
     } else if (accentColor === 'purple') {
       palette = PRESET_PALETTES.purple;
     } else {
-      palette = generatePalette(accentColor, config.theme as any);
+      palette = generatePalette(accentColor, config.theme);
     }
 
     Object.entries(palette).forEach(([shade, hex]) => {
       const rgb = hexToRgb(hex as string);
       if (rgb) {
-        root.style.setProperty(`--rgb-primary-${shade}`, `${rgb.r} ${rgb.g} ${rgb.b}`);
+        root.style.setProperty(
+          `--rgb-primary-${shade}`,
+          `${rgb.r} ${rgb.g} ${rgb.b}`,
+        );
       }
     });
 
     // Calculate on-primary color (text color on primary background)
     // We check shade 600 as it's often used for buttons
-    const primary600 = palette[600]; 
+    const primary600 = palette[600];
     if (primary600) {
-        const lum = getLuminance(primary600);
-        // If luminance is high (bright), text should be black. Otherwise white.
-        // Threshold around 0.5-0.6 usually works.
-        const onPrimary = lum > 0.6 ? '0 0 0' : '255 255 255';
-        root.style.setProperty('--rgb-on-primary', onPrimary);
+      const lum = getLuminance(primary600);
+      // If luminance is high (bright), text should be black. Otherwise white.
+      // Threshold around 0.5-0.6 usually works.
+      const onPrimary = lum > 0.6 ? '0 0 0' : '255 255 255';
+      root.style.setProperty('--rgb-on-primary', onPrimary);
     }
-
   }, [config.accentColor, config.theme]);
 
   // Theme effect / テーマ反映
@@ -112,8 +114,6 @@ const App = () => {
   }, []);
 
   const t = TRANSLATIONS[config.language];
-
-
 
   const handleTutorialClose = () => {
     setIsTutorialOpen(false);

@@ -1,4 +1,4 @@
-import { FC, useRef } from 'react';
+import { FC, useRef, useEffect } from 'react';
 import { KeyConfig } from '../types';
 import { TIMEOUTS } from '../constants';
 
@@ -22,6 +22,16 @@ const Key: FC<KeyProps> = ({
 
   const timerRef = useRef<number | null>(null);
   const isLongPressTriggeredRef = useRef(false);
+
+  // Cleanup timer on unmount / アンマウント時にタイマーをクリーンアップ
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, []);
 
   const handlePointerDown = (e: React.PointerEvent) => {
     // Only left click or touch / 左クリックまたはタッチのみ
