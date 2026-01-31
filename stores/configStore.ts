@@ -6,7 +6,10 @@ import { STORAGE_KEYS, DEFAULT_CONFIG } from '../constants';
 interface ConfigStore {
   config: OscConfig;
   setConfig: (config: OscConfig) => void;
-  updateConfig: <K extends keyof OscConfig>(key: K, value: OscConfig[K]) => void;
+  updateConfig: <K extends keyof OscConfig>(
+    key: K,
+    value: OscConfig[K],
+  ) => void;
   syncOscPort: (port: number) => void;
 }
 
@@ -24,13 +27,14 @@ const loadConfigFromStorage = (): OscConfig => {
         language: parsed.language || DEFAULT_CONFIG.LANGUAGE,
         theme: parsed.theme || DEFAULT_CONFIG.THEME,
         accentColor: parsed.accentColor || DEFAULT_CONFIG.ACCENT_COLOR,
-        updateCheckInterval: parsed.updateCheckInterval || DEFAULT_CONFIG.UPDATE_CHECK_INTERVAL,
+        updateCheckInterval:
+          parsed.updateCheckInterval || DEFAULT_CONFIG.UPDATE_CHECK_INTERVAL,
       };
     }
   } catch (error) {
     console.error('Failed to load config from localStorage:', error);
   }
-  
+
   // Return default config / デフォルト設定を返す
   return {
     bridgeUrl: DEFAULT_CONFIG.BRIDGE_URL,
@@ -59,30 +63,35 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
   // Set entire config / 設定全体を設定
   setConfig: (config) => {
     const currentConfig = get().config;
-    
+    const electronAPI = window.electronAPI;
+
     // Check for changes and log them / 変更を確認してログ出力
-    if (window.electronAPI?.logConfigChange) {
+    if (electronAPI?.logConfigChange) {
       Object.keys(config).forEach((key) => {
         const k = key as keyof OscConfig;
         if (config[k] !== currentConfig[k]) {
-          window.electronAPI!.logConfigChange(k, currentConfig[k], config[k]);
+          electronAPI.logConfigChange(k, currentConfig[k], config[k]);
         }
       });
     }
 
     saveConfigToStorage(config);
     set({ config });
-    
+
     // Sync OSC port with Electron only if changed / OSCポートが変更された場合のみElectronと同期
-    if (window.electronAPI && config.oscPort && currentConfig.oscPort !== config.oscPort) {
-      window.electronAPI.updateOscPort(config.oscPort);
+    if (
+      electronAPI &&
+      config.oscPort &&
+      currentConfig.oscPort !== config.oscPort
+    ) {
+      electronAPI.updateOscPort(config.oscPort);
     }
   },
 
   // Update specific config field / 特定の設定フィールドを更新
   updateConfig: (key, value) => {
     const currentConfig = get().config;
-    
+
     // Check if value actually changed / 値が実際に変更されたか確認
     if (currentConfig[key] === value) return;
 
@@ -94,7 +103,7 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
     const newConfig = { ...currentConfig, [key]: value };
     saveConfigToStorage(newConfig);
     set({ config: newConfig });
-    
+
     // Sync OSC port if changed / OSCポートが変更された場合のみ同期
     if (key === 'oscPort' && window.electronAPI) {
       window.electronAPI.updateOscPort(value as number);

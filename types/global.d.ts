@@ -1,6 +1,7 @@
-// TypeScript declarations for Electron API exposed via preload
-// preload経由で公開されるElectron APIのTypeScript宣言
+// Global TypeScript declarations / グローバルTypeScript宣言
+// This file defines global types and constants / このファイルはグローバル型と定数を定義
 
+// Electron API exposed via preload / preload経由で公開されるElectron API
 interface UpdateOscPortResult {
   success: boolean;
   port?: number;
@@ -28,6 +29,9 @@ interface ElectronAPI {
 }
 
 declare global {
+  // APP_VERSION is defined in vite.config.ts via `define` option / APP_VERSIONはvite.config.tsの`define`オプションで定義される
+  const APP_VERSION: string;
+
   interface Window {
     electronAPI?: ElectronAPI;
   }

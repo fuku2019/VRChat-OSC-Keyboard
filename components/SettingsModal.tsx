@@ -37,7 +37,14 @@ const SettingsModal: FC<SettingsModalProps> = ({
       setLocalConfig(config);
       // Initialize check status if update is already available from parent
       if (updateAvailableVersion) {
-        setCheckStatus(TRANSLATIONS[config.language || 'ja'].settings.updateAvailable.replace('{version}', updateAvailableVersion));
+        setCheckStatus(
+          TRANSLATIONS[
+            config.language || 'ja'
+          ].settings.updateAvailable.replace(
+            '{version}',
+            updateAvailableVersion,
+          ),
+        );
         setUpdateUrl('https://github.com/fuku2019/VRC-OSC-Keyboard/releases');
       } else {
         setCheckStatus('');
@@ -98,7 +105,9 @@ const SettingsModal: FC<SettingsModalProps> = ({
         className={`dark:bg-slate-800 pure-black:bg-black bg-white w-full max-w-lg max-h-[90vh] flex flex-col rounded-2xl border dark:border-slate-600 pure-black:border-slate-800 border-slate-200 shadow-2xl overflow-hidden transition-colors duration-300 ${modalAnimationClass}`}
       >
         <div className='flex justify-between items-center p-6 border-b dark:border-slate-700 pure-black:border-slate-800 border-slate-200 dark:bg-slate-800 pure-black:bg-black bg-white transition-colors duration-300'>
-          <h2 className='text-2xl font-bold dark:text-primary-400 text-primary-600'>{t.title}</h2>
+          <h2 className='text-2xl font-bold dark:text-primary-400 text-primary-600'>
+            {t.title}
+          </h2>
           <button
             onClick={onClose}
             className='p-2 dark:hover:bg-slate-700 hover:bg-slate-100 rounded-full dark:text-slate-400 text-slate-500 dark:hover:text-[rgb(var(--rgb-on-primary))] hover:text-slate-900 transition-colors'
@@ -165,45 +174,66 @@ const SettingsModal: FC<SettingsModalProps> = ({
               <button
                 onClick={() => handleAccentColorChange('cyan')}
                 className={`flex-1 py-3 px-4 rounded-xl border transition-all flex items-center justify-center gap-2 ${
-                  (localConfig.accentColor === 'cyan' || !localConfig.accentColor) 
-                  ? 'dark:bg-primary-900/40 bg-primary-50 border-primary-500 dark:text-primary-300 text-primary-700 shadow-[0_0_15px_rgb(var(--color-primary-500)_/_0.15)]' 
-                  : 'dark:bg-slate-900 bg-slate-50 dark:border-slate-700 border-slate-300 dark:text-slate-400 text-slate-500 hover:border-slate-400 dark:hover:border-slate-500'
+                  localConfig.accentColor === 'cyan' || !localConfig.accentColor
+                    ? 'dark:bg-primary-900/40 bg-primary-50 border-primary-500 dark:text-primary-300 text-primary-700 shadow-[0_0_15px_rgb(var(--color-primary-500)_/_0.15)]'
+                    : 'dark:bg-slate-900 bg-slate-50 dark:border-slate-700 border-slate-300 dark:text-slate-400 text-slate-500 hover:border-slate-400 dark:hover:border-slate-500'
                 }`}
               >
-                <div className="w-3 h-3 rounded-full bg-[#06b6d4]" />
-                <span className="text-xs md:text-sm whitespace-nowrap">{t.accentColorCyan}</span>
+                <div className='w-3 h-3 rounded-full bg-[#06b6d4]' />
+                <span className='text-xs md:text-sm whitespace-nowrap'>
+                  {t.accentColorCyan}
+                </span>
               </button>
               <button
                 onClick={() => handleAccentColorChange('purple')}
-                 className={`flex-1 py-3 px-4 rounded-xl border transition-all flex items-center justify-center gap-2 ${
-                   localConfig.accentColor === 'purple'
-                   ? 'dark:bg-primary-900/40 bg-primary-50 border-primary-500 dark:text-primary-300 text-primary-700 shadow-[0_0_15px_rgb(var(--color-primary-500)_/_0.15)]' 
-                   : 'dark:bg-slate-900 bg-slate-50 dark:border-slate-700 border-slate-300 dark:text-slate-400 text-slate-500 hover:border-slate-400 dark:hover:border-slate-500'
+                className={`flex-1 py-3 px-4 rounded-xl border transition-all flex items-center justify-center gap-2 ${
+                  localConfig.accentColor === 'purple'
+                    ? 'dark:bg-primary-900/40 bg-primary-50 border-primary-500 dark:text-primary-300 text-primary-700 shadow-[0_0_15px_rgb(var(--color-primary-500)_/_0.15)]'
+                    : 'dark:bg-slate-900 bg-slate-50 dark:border-slate-700 border-slate-300 dark:text-slate-400 text-slate-500 hover:border-slate-400 dark:hover:border-slate-500'
                 }`}
               >
-                <div className="w-3 h-3 rounded-full bg-[#a855f7]" />
-                <span className="text-xs md:text-sm whitespace-nowrap">{t.accentColorPurple}</span>
+                <div className='w-3 h-3 rounded-full bg-[#a855f7]' />
+                <span className='text-xs md:text-sm whitespace-nowrap'>
+                  {t.accentColorPurple}
+                </span>
               </button>
-              
-              <div className="flex-1 relative">
-                  <input
-                    id="custom-color-picker"
-                    type="color"
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                    onChange={(e) => handleAccentColorChange(e.target.value)}
-                    value={(localConfig.accentColor !== 'cyan' && localConfig.accentColor !== 'purple') ? localConfig.accentColor : '#ff0000'}
+
+              <div className='flex-1 relative'>
+                <input
+                  id='custom-color-picker'
+                  type='color'
+                  className='absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10'
+                  onChange={(e) => handleAccentColorChange(e.target.value)}
+                  value={
+                    localConfig.accentColor !== 'cyan' &&
+                    localConfig.accentColor !== 'purple'
+                      ? localConfig.accentColor
+                      : '#ff0000'
+                  }
+                />
+                <div
+                  className={`w-full h-full py-3 px-4 rounded-xl border transition-all flex items-center justify-center gap-2 ${
+                    localConfig.accentColor &&
+                    localConfig.accentColor !== 'cyan' &&
+                    localConfig.accentColor !== 'purple'
+                      ? 'dark:bg-primary-900/40 bg-primary-50 border-primary-500 dark:text-primary-300 text-primary-700 shadow-[0_0_15px_rgb(var(--color-primary-500)_/_0.15)]'
+                      : 'dark:bg-slate-900 bg-slate-50 dark:border-slate-700 border-slate-300 dark:text-slate-400 text-slate-500 hover:border-slate-400 dark:hover:border-slate-500'
+                  }`}
+                >
+                  <div
+                    className='w-3 h-3 rounded-full border border-slate-300 dark:border-slate-600'
+                    style={{
+                      background:
+                        localConfig.accentColor !== 'cyan' &&
+                        localConfig.accentColor !== 'purple'
+                          ? localConfig.accentColor
+                          : 'linear-gradient(135deg, #f00, #0f0, #00f)',
+                    }}
                   />
-                  <div className={`w-full h-full py-3 px-4 rounded-xl border transition-all flex items-center justify-center gap-2 ${
-                     (localConfig.accentColor && localConfig.accentColor !== 'cyan' && localConfig.accentColor !== 'purple')
-                     ? 'dark:bg-primary-900/40 bg-primary-50 border-primary-500 dark:text-primary-300 text-primary-700 shadow-[0_0_15px_rgb(var(--color-primary-500)_/_0.15)]' 
-                     : 'dark:bg-slate-900 bg-slate-50 dark:border-slate-700 border-slate-300 dark:text-slate-400 text-slate-500 hover:border-slate-400 dark:hover:border-slate-500'
-                  }`}>
-                     <div 
-                       className="w-3 h-3 rounded-full border border-slate-300 dark:border-slate-600"
-                       style={{ background: (localConfig.accentColor !== 'cyan' && localConfig.accentColor !== 'purple') ? localConfig.accentColor : 'linear-gradient(135deg, #f00, #0f0, #00f)' }}
-                     />
-                     <span className="text-xs md:text-sm whitespace-nowrap">{t.accentColorCustom}</span>
-                  </div>
+                  <span className='text-xs md:text-sm whitespace-nowrap'>
+                    {t.accentColorCustom}
+                  </span>
+                </div>
               </div>
             </div>
           </section>
@@ -273,86 +303,106 @@ const SettingsModal: FC<SettingsModalProps> = ({
             </label>
             <div className='bg-gray-100 dark:bg-slate-900 rounded-xl p-1 mb-3 flex gap-1 overflow-x-auto'>
               {[
-                  { id: 'startup', label: t.intervalStartup },
-                  { id: 'daily', label: t.intervalDaily },
-                  { id: 'weekly', label: t.intervalWeekly },
-                  { id: 'manual', label: t.intervalManual },
+                { id: 'startup', label: t.intervalStartup },
+                { id: 'daily', label: t.intervalDaily },
+                { id: 'weekly', label: t.intervalWeekly },
+                { id: 'manual', label: t.intervalManual },
               ].map((option) => (
                 <button
                   key={option.id}
                   onClick={() => {
-                    const newConfig = { ...localConfig, updateCheckInterval: option.id as any };
+                    const newConfig = {
+                      ...localConfig,
+                      updateCheckInterval: option.id as any,
+                    };
                     saveConfigImmediately(newConfig);
                   }}
                   className={`flex-1 py-2 px-2 text-xs rounded-lg transition-all whitespace-nowrap ${
                     localConfig.updateCheckInterval === option.id
-                     ? 'bg-white dark:bg-primary-900/40 text-primary-600 dark:text-primary-300 shadow-sm'
-                     : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
+                      ? 'bg-white dark:bg-primary-900/40 text-primary-600 dark:text-primary-300 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
                   }`}
                 >
                   {option.label}
                 </button>
               ))}
             </div>
-            
+
             <div className='flex items-center justify-between'>
-               <div className='flex items-center gap-2'>
-                 <button
-                    onClick={async () => {
-                       setCheckStatus(t.checking);
-                       try {
-                          const result = await window.electronAPI.checkForUpdate();
-                          if (result.success) {
-                             if (result.updateAvailable) {
-                                const msg = t.updateAvailable.replace('{version}', result.latestVersion || '');
-                                setCheckStatus(msg);
-                                const url = result.url || 'https://github.com/fuku2019/VRC-OSC-Keyboard/releases';
-                                 setUpdateUrl(url);
-                                 // Persist to localStorage / localStorageに永続化
-                                 localStorage.setItem(STORAGE_KEYS.UPDATE_AVAILABLE, JSON.stringify({ version: result.latestVersion, url }));
-                                 // Notify parent to show toast/badge / 親に通知してトースト/バッジを表示
-                                if (onUpdateAvailable && result.latestVersion) {
-                                  onUpdateAvailable(result.latestVersion, url);
-                                }
-                              } else {
-                                 setCheckStatus(t.latestVersion);
-                                 setUpdateUrl('');
-                                 // Clear persisted update info / 永続化された更新情報をクリア
-                                 localStorage.removeItem(STORAGE_KEYS.UPDATE_AVAILABLE);
-                                 // Notify parent to clear state / 親に通知して状態をクリア
-                                 if (onUpdateAvailable) {
-                                   onUpdateAvailable(null);
-                                 }
-                              }
-                          } else {
-                             setCheckStatus(t.updateError);
+              <div className='flex items-center gap-2'>
+                <button
+                  onClick={async () => {
+                    if (!window.electronAPI) {
+                      setCheckStatus(t.updateError);
+                      return;
+                    }
+                    setCheckStatus(t.checking);
+                    try {
+                      const result = await window.electronAPI.checkForUpdate();
+                      if (result.success) {
+                        if (result.updateAvailable) {
+                          const msg = t.updateAvailable.replace(
+                            '{version}',
+                            result.latestVersion || '',
+                          );
+                          setCheckStatus(msg);
+                          const url =
+                            result.url ||
+                            'https://github.com/fuku2019/VRC-OSC-Keyboard/releases';
+                          setUpdateUrl(url);
+                          // Persist to localStorage / localStorageに永続化
+                          localStorage.setItem(
+                            STORAGE_KEYS.UPDATE_AVAILABLE,
+                            JSON.stringify({
+                              version: result.latestVersion,
+                              url,
+                            }),
+                          );
+                          // Notify parent to show toast/badge / 親に通知してトースト/バッジを表示
+                          if (onUpdateAvailable && result.latestVersion) {
+                            onUpdateAvailable(result.latestVersion, url);
                           }
-                       } catch (e) {
-                          setCheckStatus(t.updateError);
-                       }
-                    }}
-                    className='text-sm px-4 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 dark:text-white text-slate-900 rounded-lg transition-colors font-medium'
-                 >
-                    {t.checkNow}
-                 </button>
-                 {updateUrl && (
-                   <button
-                      onClick={() => {
-                        if (window.electronAPI && updateUrl) {
-                          window.electronAPI.openExternal(updateUrl);
+                        } else {
+                          setCheckStatus(t.latestVersion);
+                          setUpdateUrl('');
+                          // Clear persisted update info / 永続化された更新情報をクリア
+                          localStorage.removeItem(
+                            STORAGE_KEYS.UPDATE_AVAILABLE,
+                          );
+                          // Notify parent to clear state / 親に通知して状態をクリア
+                          if (onUpdateAvailable) {
+                            onUpdateAvailable(null);
+                          }
                         }
-                      }}
-                      className='text-sm px-4 py-2 bg-primary-600 hover:bg-primary-500 text-[rgb(var(--rgb-on-primary))] rounded-lg transition-colors font-medium shadow-primary-900/20 shadow-lg'
-                   >
-                      {t.openReleasePage}
-                   </button>
-                 )}
-               </div>
-               {checkStatus && (
-                  <span className='text-sm text-primary-600 dark:text-primary-400 font-medium'>
-                     {checkStatus}
-                  </span>
-               )}
+                      } else {
+                        setCheckStatus(t.updateError);
+                      }
+                    } catch (e) {
+                      setCheckStatus(t.updateError);
+                    }
+                  }}
+                  className='text-sm px-4 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 dark:text-white text-slate-900 rounded-lg transition-colors font-medium'
+                >
+                  {t.checkNow}
+                </button>
+                {updateUrl && (
+                  <button
+                    onClick={() => {
+                      if (window.electronAPI && updateUrl) {
+                        window.electronAPI.openExternal(updateUrl);
+                      }
+                    }}
+                    className='text-sm px-4 py-2 bg-primary-600 hover:bg-primary-500 text-[rgb(var(--rgb-on-primary))] rounded-lg transition-colors font-medium shadow-primary-900/20 shadow-lg'
+                  >
+                    {t.openReleasePage}
+                  </button>
+                )}
+              </div>
+              {checkStatus && (
+                <span className='text-sm text-primary-600 dark:text-primary-400 font-medium'>
+                  {checkStatus}
+                </span>
+              )}
             </div>
           </section>
 
