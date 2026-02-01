@@ -16,6 +16,8 @@ interface OscResponse {
 export const sendOscMessage = async (
   text: string,
   bridgeUrl: string,
+  direct: boolean = true,
+  sound: boolean = true,
 ): Promise<OscResponse> => {
   return new Promise((resolve) => {
     let isResolved = false; // Flag to prevent multiple resolves / 複数回のresolveを防ぐフラグ
@@ -47,7 +49,7 @@ export const sendOscMessage = async (
 
       ws.onopen = () => {
         // Send payload / ペイロードを送信
-        ws.send(JSON.stringify({ text }));
+        ws.send(JSON.stringify({ text, direct, sound }));
       };
 
       ws.onmessage = (event) => {

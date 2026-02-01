@@ -26,8 +26,8 @@ const SettingsModal: FC<SettingsModalProps> = ({
   const config = useConfigStore((state) => state.config);
   const setConfig = useConfigStore((state) => state.setConfig);
   const [localConfig, setLocalConfig] = useState(config);
-  const [checkStatus, setCheckStatus] = useState<string>(''); // For update check status
-  const [updateUrl, setUpdateUrl] = useState<string>(''); // Store update URL locally
+  const [checkStatus, setCheckStatus] = useState<string>(''); // For update check status / 更新確認ステータス用
+  const [updateUrl, setUpdateUrl] = useState<string>(''); // Store update URL locally / 更新URLをローカルに保存
   const { shouldRender, animationClass, modalAnimationClass } =
     useModalAnimation(isOpen);
 

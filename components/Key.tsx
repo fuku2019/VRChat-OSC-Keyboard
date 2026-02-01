@@ -108,6 +108,7 @@ const Key: FC<KeyProps> = ({
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerLeave}
+      onMouseDown={(e) => e.preventDefault()}
       onClick={handleClick}
       type='button'
     >

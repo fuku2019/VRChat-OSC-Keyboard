@@ -26,6 +26,7 @@ interface ElectronAPI {
   checkForUpdate: () => Promise<CheckUpdateResult>;
   openExternal: (url: string) => Promise<{ success: boolean; error?: string }>;
   logConfigChange: (key: string, oldValue: any, newValue: any) => Promise<void>;
+  sendTypingStatus: (isTyping: boolean) => Promise<{ success: boolean; error?: string }>;
 }
 
 declare global {

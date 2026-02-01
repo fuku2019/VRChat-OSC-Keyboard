@@ -18,4 +18,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Log config change / 設定変更をログ出力
   logConfigChange: (key, oldValue, newValue) => ipcRenderer.invoke('log-config-change', { key, oldValue, newValue }),
+
+  // Send typing status to VRChat chatbox / VRChatチャットボックスにタイピング状態を送信
+  sendTypingStatus: (isTyping) => ipcRenderer.invoke('send-typing-status', isTyping),
 });

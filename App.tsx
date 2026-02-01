@@ -1,26 +1,22 @@
 import { useState, useEffect, useRef } from 'react';
-import { Settings } from 'lucide-react';
+import { Settings, Zap, ZapOff } from 'lucide-react';
 import VirtualKeyboard from './components/VirtualKeyboard';
 import SettingsModal from './components/SettingsModal';
 import TutorialOverlay from './components/TutorialOverlay';
 import NotificationToast from './components/NotificationToast';
 import StatusDisplay from './components/StatusDisplay';
 import { InputMode } from './types';
-import { sendOscMessage } from './services/oscService';
 import { useIME } from './hooks/useIME';
 import { useUpdateChecker } from './hooks/useUpdateChecker';
 import { useConfigStore } from './stores/configStore';
+import { useTheme } from './hooks/useTheme';
+import { useTypingIndicator } from './hooks/useTypingIndicator';
+import { useOscSender } from './hooks/useOscSender';
 import { TRANSLATIONS, STORAGE_KEYS, TIMEOUTS, CHATBOX } from './constants';
-import {
-  generatePalette,
-  PRESET_PALETTES,
-  hexToRgb,
-  getLuminance,
-} from './utils/colorUtils';
-import { DEFAULT_CONFIG } from './constants/appConfig';
 
 const App = () => {
   const config = useConfigStore((state) => state.config);
+  const updateConfig = useConfigStore((state) => state.updateConfig);
   const {
     input,
     buffer,
@@ -39,67 +35,26 @@ const App = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
   const [isToastDismissed, setIsToastDismissed] = useState(false); // Track if update toast is dismissed / 更新トーストが閉じられたか追跡
-  const [lastSent, setLastSent] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [isSending, setIsSending] = useState(false);
+  
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const preCompositionValue = useRef<string>(''); // Store value before IME composition / IME構成前の値を保存
   const isComposing = useRef<boolean>(false); // Track if IME is composing / IME構成中かどうかを追跡
   const lastCursorPosition = useRef<number | null>(null); // Store cursor position before virtual key click / 仮想キークリック前のカーソル位置を保存
+  
+  // Use custom hooks
+  useTheme();
+  const { sendTypingStatus, resetTypingTimeout, cancelTypingTimeout } = useTypingIndicator();
+  const { isSending, lastSent, error, throttledAutoSend, handleSend: triggerSend } = useOscSender(
+    input, 
+    buffer, 
+    setInput, 
+    sendTypingStatus, 
+    cancelTypingTimeout, 
+    commitBuffer
+  );
 
   // Use update checker hook / アップデート確認フックを使用
   const { updateAvailable, setUpdateAvailable } = useUpdateChecker();
-
-  // Accent Color Effect / アクセントカラー反映
-  useEffect(() => {
-    const root = window.document.documentElement;
-    const accentColor = config.accentColor || DEFAULT_CONFIG.ACCENT_COLOR;
-
-    let palette;
-    if (accentColor === 'cyan') {
-      palette = PRESET_PALETTES.cyan;
-    } else if (accentColor === 'purple') {
-      palette = PRESET_PALETTES.purple;
-    } else {
-      palette = generatePalette(accentColor, config.theme);
-    }
-
-    Object.entries(palette).forEach(([shade, hex]) => {
-      const rgb = hexToRgb(hex as string);
-      if (rgb) {
-        root.style.setProperty(
-          `--rgb-primary-${shade}`,
-          `${rgb.r} ${rgb.g} ${rgb.b}`,
-        );
-      }
-    });
-
-    // Calculate on-primary color (text color on primary background)
-    // We check shade 600 as it's often used for buttons
-    const primary600 = palette[600];
-    if (primary600) {
-      const lum = getLuminance(primary600);
-      // If luminance is high (bright), text should be black. Otherwise white.
-      // Threshold around 0.5-0.6 usually works.
-      const onPrimary = lum > 0.6 ? '0 0 0' : '255 255 255';
-      root.style.setProperty('--rgb-on-primary', onPrimary);
-    }
-  }, [config.accentColor, config.theme]);
-
-  // Theme effect / テーマ反映
-  useEffect(() => {
-    const root = window.document.documentElement;
-    if (config.theme === 'dark') {
-      root.classList.add('dark');
-      root.classList.remove('pure-black');
-    } else if (config.theme === 'pure-black') {
-      root.classList.add('dark');
-      root.classList.add('pure-black');
-    } else {
-      root.classList.remove('dark');
-      root.classList.remove('pure-black');
-    }
-  }, [config.theme]);
 
   // Check for first launch to show tutorial / 初回起動を確認してチュートリアルを表示
   useEffect(() => {
@@ -112,6 +67,13 @@ const App = () => {
       textareaRef.current?.focus();
     }
   }, []);
+
+  // Handle textarea blur - stop typing indicator / textarea ブラー時 - タイピングインジケーターを停止
+  const handleBlur = () => {
+    cancelTypingTimeout();
+    sendTypingStatus(false);
+    isComposing.current = false;
+  };
 
   const t = TRANSLATIONS[config.language];
 
@@ -126,37 +88,8 @@ const App = () => {
     setIsTutorialOpen(true);
   };
 
-  const handleSend = async () => {
-    let textToSend = input;
-    if (buffer.length > 0) {
-      textToSend += buffer;
-      commitBuffer();
-    }
-
-    if (!textToSend.trim()) return;
-
-    setIsSending(true);
-    setError(null);
-
-    try {
-      const result = await sendOscMessage(textToSend, config.bridgeUrl);
-
-      if (result.success) {
-        setLastSent(textToSend);
-        setInput('');
-        setTimeout(() => setLastSent(null), TIMEOUTS.SENT_NOTIFICATION);
-      } else {
-        console.error('OSC Send Failed:', result.error);
-        setError(result.error || t.status.error);
-        setTimeout(() => setError(null), TIMEOUTS.ERROR_NOTIFICATION);
-      }
-    } catch (e: any) {
-      setError(e.message || t.status.error);
-      setTimeout(() => setError(null), TIMEOUTS.ERROR_NOTIFICATION);
-    } finally {
-      setIsSending(false);
-      textareaRef.current?.focus();
-    }
+  const handleSend = () => {
+    triggerSend(textareaRef);
   };
 
   const toggleMode = () => {
@@ -165,6 +98,25 @@ const App = () => {
     else if (mode === InputMode.HIRAGANA) setMode(InputMode.KATAKANA);
     else setMode(InputMode.ENGLISH);
     textareaRef.current?.focus();
+  };
+
+  // Common handler for input side effects (Typing indicator, Auto-send)
+  // 入力副作用の共通ハンドラ（タイピングインジケーター、自動送信）
+  const handleInputEffect = (text: string) => {
+    // Typing Indicator Logic
+    if (text.length > 0) {
+      sendTypingStatus(true);
+      resetTypingTimeout();
+    } else {
+      // If text is empty, stop typing indicator immediately / テキストが空なら即座に停止
+      cancelTypingTimeout();
+      sendTypingStatus(false);
+    }
+
+    // Auto-Send Logic
+    if (config.autoSend) {
+      throttledAutoSend(text, config.bridgeUrl);
+    }
   };
 
   const handleVirtualKey = (action: () => void) => {
@@ -190,6 +142,10 @@ const App = () => {
           textareaRef.current.selectionStart = len;
           textareaRef.current.selectionEnd = len;
         }
+
+        // Trigger input side effects / 入力副作用を発火
+        const currentText = textareaRef.current.value;
+        handleInputEffect(currentText);
       }
     }, 0);
   };
@@ -210,6 +166,10 @@ const App = () => {
     }
   };
 
+  const handleAutoSendToggle = () => {
+    updateConfig('autoSend', !config.autoSend);
+  };
+
   // Store current value when IME composition starts / IME構成開始時に現在の値を保存
   const handleCompositionStart = () => {
     isComposing.current = true;
@@ -226,9 +186,11 @@ const App = () => {
     if (newValue.length > CHATBOX.MAX_LENGTH) {
       // Revert to pre-composition value if over limit / 制限を超えたら構成前の値に戻す
       overwriteInput(preCompositionValue.current);
+      handleInputEffect(preCompositionValue.current);
     } else {
       // Apply the new value / 新しい値を適用
       overwriteInput(newValue);
+      handleInputEffect(newValue);
     }
   };
 
@@ -240,12 +202,16 @@ const App = () => {
     // IME構成中はすべての入力を許可（制限チェックはhandleCompositionEndで行う）
     if (isComposing.current) {
       overwriteInput(newValue);
+      
+      // Still trigger effects during IME (for typing indicator) / IME中もエフェクトを発火（タイピング表示のため）
+      handleInputEffect(newValue);
       return;
     }
 
     // For non-IME input, apply character limit / 非IME入力は文字数制限を適用
     if (newValue.length <= CHATBOX.MAX_LENGTH) {
       overwriteInput(newValue);
+      handleInputEffect(newValue);
     }
   };
 
@@ -267,15 +233,36 @@ const App = () => {
             </span>
           </h1>
         </div>
-        <button
-          onClick={() => setIsSettingsOpen(true)}
-          className='relative p-2 dark:bg-slate-800/80 bg-white/80 rounded-full dark:hover:bg-slate-700 hover:bg-slate-100 dark:text-slate-300 text-slate-500 transition-colors border dark:border-slate-700 border-slate-200 shadow-sm'
-        >
-          <Settings size={20} />
-          {updateAvailable && (
-            <span className='absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full border-2 dark:border-slate-900 border-white animate-pulse' />
-          )}
-        </button>
+        
+        <div className='flex items-center gap-3'>
+          <button
+            onClick={handleAutoSendToggle}
+            className={`
+              relative p-2 rounded-full transition-all border shadow-sm flex items-center gap-2 px-3
+              ${
+                config.autoSend
+                  ? 'bg-green-500/10 border-green-500/50 text-green-600 dark:text-green-400'
+                  : 'dark:bg-slate-800/80 bg-white/80 dark:hover:bg-slate-700 hover:bg-slate-100 dark:text-slate-500 text-slate-400 border-slate-200 dark:border-slate-700'
+              }
+            `}
+            title={config.autoSend ? 'Auto Send: ON' : 'Auto Send: OFF'}
+          >
+            {config.autoSend ? <Zap size={20} /> : <ZapOff size={20} />}
+            <span className='text-xs font-bold hidden md:inline'>
+              {config.autoSend ? 'AUTO' : 'MANUAL'}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setIsSettingsOpen(true)}
+            className='relative p-2 dark:bg-slate-800/80 bg-white/80 rounded-full dark:hover:bg-slate-700 hover:bg-slate-100 dark:text-slate-300 text-slate-500 transition-colors border dark:border-slate-700 border-slate-200 shadow-sm'
+          >
+            <Settings size={20} />
+            {updateAvailable && (
+              <span className='absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full border-2 dark:border-slate-900 border-white animate-pulse' />
+            )}
+          </button>
+        </div>
       </div>
 
       <div className='w-full max-w-5xl mb-4 relative shrink-0 group px-1'>
@@ -312,9 +299,8 @@ const App = () => {
             onKeyDown={handleKeyDown}
             onCompositionStart={handleCompositionStart}
             onCompositionEnd={handleCompositionEnd}
-            onBlur={() => {
-              isComposing.current = false;
-            }}
+
+            onBlur={handleBlur}
             onSelect={(e) => {
               lastCursorPosition.current = e.currentTarget.selectionStart;
             }}

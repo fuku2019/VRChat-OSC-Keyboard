@@ -64,8 +64,13 @@ function startBridge() {
       ws.on('message', async (message) => {
         try {
           const data = JSON.parse(message.toString());
-          if (data.text) {
-            await oscClient.send('/chatbox/input', [data.text, true]);
+          // Allow empty string for clearing chatbox / チャットボックスをクリアするための空文字を許可
+          if (typeof data.text === 'string') {
+            // Default to direct=true, sound=true if not specified / 指定がない場合はdirect=true, sound=trueをデフォルトとする
+            const direct = data.direct !== undefined ? data.direct : true;
+            const sound = data.sound !== undefined ? data.sound : true;
+
+            await oscClient.send('/chatbox/input', [data.text, direct, sound]);
             ws.send(JSON.stringify({ success: true }));
           }
         } catch (e) {
@@ -80,7 +85,7 @@ function startBridge() {
       if (e.code === 'EADDRINUSE') {
         console.error(`Port ${WS_PORT} is already in use.`);
         // Optional: Show error dialog to user / オプション: ユーザーにエラーダイアログを表示する
-        // dialog.showErrorBox('Port Conflict', `Port ${WS_PORT} is already in use. Is the app already open?`);
+
       }
     });
   } catch (err) {
@@ -204,6 +209,19 @@ ipcMain.handle('log-config-change', (event, { key, oldValue, newValue }) => {
   return { success: true };
 });
 
+// Send typing status to VRChat chatbox / VRChatチャットボックスにタイピング状態を送信
+ipcMain.handle('send-typing-status', async (event, isTyping) => {
+  try {
+    if (oscClient) {
+      await oscClient.send('/chatbox/typing', [isTyping ? true : false]);
+    }
+    return { success: true };
+  } catch (error) {
+    console.error('[OSC] Failed to send typing status:', error);
+    return { success: false, error: error.message };
+  }
+});
+
 // --- Electron Window Logic --- / Electronウィンドウロジック
 
 // Initialize electron-store for window position persistence / ウィンドウ位置の永続化用にelectron-storeを初期化
@@ -306,7 +324,7 @@ if (!gotTheLock) {
   app.quit();
 } else {
   app.on('second-instance', (event, commandLine, workingDirectory) => {
-    // Someone tried to run a second instance, we should focus our window.
+    // Someone tried to run a second instance, we should focus our window. / 誰かが2つ目のインスタンスを実行しようとしたので、ウィンドウにフォーカスする必要がある。
     if (mainWindow) {
       if (mainWindow.isMinimized()) mainWindow.restore();
       mainWindow.focus();
