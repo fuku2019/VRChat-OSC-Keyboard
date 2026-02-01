@@ -1,0 +1,62 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build and Dist
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm run dist
+
+      - name: Create Zip archive
+        shell: pwsh
+        run: |
+          # Get version from tag (remove 'v' prefix)
+          $version = "${{ github.ref_name }}".Substring(1)
+          
+          # Define paths
+          $releaseDir = "release"
+          $folderName = "VRChat-OSC-Keyboard-v$version"
+          $targetFolder = Join-Path $releaseDir $folderName
+          $zipName = "VRChat-OSC-Keyboard-v$version-win.zip"
+          $zipPath = Join-Path $releaseDir $zipName
+          
+          Write-Host "Looking for target folder: $targetFolder"
+          
+          if (Test-Path $targetFolder) {
+            Write-Host "Compressing '$targetFolder' to '$zipPath'..."
+            Compress-Archive -Path "$targetFolder\*" -DestinationPath $zipPath
+            Write-Host "Compression complete."
+          } else {
+            Write-Error "Target folder '$targetFolder' not found. 'npm run dist' might have failed or rename script behavior changed."
+            exit 1
+          }
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            release/VRChat OSC Keyboard Setup *.exe
+            release/*.zip
+          draft: false
+          prerelease: false
+          generate_release_notes: true
