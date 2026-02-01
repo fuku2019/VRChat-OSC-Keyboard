@@ -47,7 +47,7 @@ jobs:
           
           if (Test-Path $targetFolder) {
             Write-Host "Compressing '$targetFolder' to '$zipPath'..."
-            Compress-Archive -Path "$targetFolder\*" -DestinationPath $zipPath
+            Compress-Archive -Path "$targetFolder" -DestinationPath $zipPath
             Write-Host "Compression complete."
           } else {
             Write-Error "Target folder '$targetFolder' not found. 'npm run dist' might have failed or rename script behavior changed."
