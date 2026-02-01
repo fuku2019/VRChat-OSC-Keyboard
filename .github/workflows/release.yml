@@ -40,7 +40,7 @@ jobs:
           $releaseDir = "release"
           $folderName = "VRChat-OSC-Keyboard-v$version"
           $targetFolder = Join-Path $releaseDir $folderName
-          $zipName = "VRChat-OSC-Keyboard-v$version-win.zip"
+          $zipName = "VRChat-OSC-Keyboard-v$version.zip"
           $zipPath = Join-Path $releaseDir $zipName
           
           Write-Host "Looking for target folder: $targetFolder"
