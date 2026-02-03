@@ -21,4 +21,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Send typing status to VRChat chatbox / VRChatチャットボックスにタイピング状態を送信
   sendTypingStatus: (isTyping) => ipcRenderer.invoke('send-typing-status', isTyping),
+
+  // Get current WebSocket bridge port / 現在のWebSocketブリッジポートを取得
+  getBridgePort: () => ipcRenderer.invoke('get-bridge-port'),
 });

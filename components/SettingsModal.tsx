@@ -92,10 +92,7 @@ const SettingsModal: FC<SettingsModalProps> = ({
     // Allow empty for typing, but don't save / 入力中は空を許可するが保存しない
   };
 
-  const handleBridgeUrlChange = (value: string) => {
-    const newConfig = { ...localConfig, bridgeUrl: value };
-    saveConfigImmediately(newConfig);
-  };
+
 
   return (
     <div
@@ -276,25 +273,7 @@ const SettingsModal: FC<SettingsModalProps> = ({
             </p>
           </section>
 
-          {/* URL Config / URL設定 */}
-          <section>
-            <label className='block dark:text-slate-300 text-slate-600 mb-3 text-sm font-semibold uppercase tracking-wider'>
-              {t.oscUrl}
-            </label>
-            <div className='relative group'>
-              <input
-                type='text'
-                value={localConfig.bridgeUrl}
-                onChange={(e) => handleBridgeUrlChange(e.target.value)}
-                className='w-full dark:bg-slate-900 bg-slate-50 border dark:border-slate-700 border-slate-300 rounded-xl p-4 dark:text-white text-slate-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500/30 focus:outline-none font-mono text-sm transition-all'
-                placeholder='ws://127.0.0.1:8080'
-              />
-            </div>
-            <p className='text-xs text-slate-500 mt-3 flex items-center gap-2 px-1'>
-              <Info size={14} className='text-slate-400' />
-              {t.defaultUrl}
-            </p>
-          </section>
+
 
           {/* Update Check Config / 更新確認設定 */}
           <section className='pt-4 border-t dark:border-slate-700/50 border-slate-200'>

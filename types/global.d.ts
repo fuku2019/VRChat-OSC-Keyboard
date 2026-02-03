@@ -23,6 +23,7 @@ interface CheckUpdateResult {
 interface ElectronAPI {
   updateOscPort: (port: number) => Promise<UpdateOscPortResult>;
   getOscPort: () => Promise<GetOscPortResult>;
+  getBridgePort: () => Promise<{ port: number | null }>; // Get current WebSocket bridge port / 現在のWebSocketブリッジポートを取得
   checkForUpdate: () => Promise<CheckUpdateResult>;
   openExternal: (url: string) => Promise<{ success: boolean; error?: string }>;
   logConfigChange: (key: string, oldValue: any, newValue: any) => Promise<void>;

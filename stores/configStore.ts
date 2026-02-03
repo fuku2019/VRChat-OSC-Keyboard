@@ -121,10 +121,28 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
 // Initialize OSC port sync once on module load / モジュール読み込み時に一度だけOSCポートを同期
 if (typeof window !== 'undefined' && window.electronAPI) {
   // Use setTimeout to ensure this runs after store initialization / ストア初期化後に実行されるようsetTimeoutを使用
-  setTimeout(() => {
+  setTimeout(async () => {
     const currentConfig = useConfigStore.getState().config;
     if (currentConfig.oscPort) {
       window.electronAPI!.updateOscPort(currentConfig.oscPort);
+    }
+
+    // Get bridge port from Electron and update bridgeUrl / Electronからブリッジポートを取得してbridgeUrlを更新
+    if (window.electronAPI!.getBridgePort) {
+      try {
+        const result = await window.electronAPI!.getBridgePort();
+        if (result.port) {
+          const newBridgeUrl = `ws://127.0.0.1:${result.port}`;
+          const store = useConfigStore.getState();
+          if (store.config.bridgeUrl !== newBridgeUrl) {
+            // Update bridgeUrl without logging to avoid noise / ノイズを避けるためログなしでbridgeUrlを更新
+            store.setConfig({ ...store.config, bridgeUrl: newBridgeUrl });
+            console.log(`✅ Bridge URL synced to: ${newBridgeUrl}`);
+          }
+        }
+      } catch (e) {
+        console.warn('[Config] Failed to get bridge port:', e);
+      }
     }
   }, 0);
 }

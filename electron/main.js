@@ -20,8 +20,10 @@ let mainWindow;
 // --- OSC Bridge Logic (Integrated) --- / OSCブリッジロジック（統合済み）
 const OSC_IP = '127.0.0.1';
 let OSC_PORT = 9000; // Now mutable via IPC / IPCで変更可能
-const WS_PORT = 8080;
+const WS_PORT_START = 8080; // Starting port for auto-selection / 自動選択の開始ポート
+const WS_PORT_END = 8099; // Ending port for auto-selection / 自動選択の終了ポート
 const WS_HOST = '127.0.0.1'; // Explicitly bind to localhost for security / セキュリティのためにlocalhostに明示的にバインドする
+let ACTIVE_WS_PORT = null; // Currently active WebSocket port / 現在アクティブなWebSocketポート
 
 let oscClient;
 let wss;
@@ -49,45 +51,100 @@ function updateOscClient(newPort) {
   console.log(`➡️  Now forwarding to VRChat at ${OSC_IP}:${OSC_PORT}`);
 }
 
-function startBridge() {
+// Try to start WebSocket server on a specific port / 特定のポートでWebSocketサーバーを起動を試みる
+function tryStartWebSocket(port) {
+  return new Promise((resolve) => {
+    let resolved = false; // Prevent multiple resolves / 複数回のresolveを防ぐ
+    
+    const testWss = new WebSocketServer({ port, host: WS_HOST });
+
+    const cleanup = (success, data) => {
+      if (resolved) return;
+      resolved = true;
+      
+      if (!success && testWss) {
+        try {
+          testWss.close();
+        } catch (e) {
+          // Ignore cleanup errors / クリーンアップエラーを無視
+        }
+      }
+      resolve(data);
+    };
+
+    testWss.on('listening', () => {
+      cleanup(true, { success: true, wss: testWss });
+    });
+
+    testWss.on('error', (e) => {
+      if (e.code === 'EADDRINUSE') {
+        cleanup(false, { success: false, error: 'Port in use' });
+      } else {
+        cleanup(false, { success: false, error: e.message });
+      }
+    });
+
+    // Timeout in case events don't fire / イベントが発火しない場合のタイムアウト
+    setTimeout(() => {
+      cleanup(false, { success: false, error: 'Timeout' });
+    }, 1000);
+  });
+}
+
+async function startBridge() {
   console.log('⚡ Starting OSC Bridge in Electron Main Process...');
   try {
     oscClient = new Client(OSC_IP, OSC_PORT);
 
-    // Bind specifically to localhost to avoid triggering firewall "Public Network" warnings / ファイアウォールの「パブリックネットワーク」警告のトリガーを避けるために、特にlocalhostにバインドする
-    wss = new WebSocketServer({ port: WS_PORT, host: WS_HOST });
+    // Try ports from WS_PORT_START to WS_PORT_END / WS_PORT_STARTからWS_PORT_ENDまでポートを試行
+    for (let port = WS_PORT_START; port <= WS_PORT_END; port++) {
+      console.log(`🔍 Trying port ${port}...`);
+      const result = await tryStartWebSocket(port);
 
-    console.log(`⚡ WebSocket listening on ws://${WS_HOST}:${WS_PORT}`);
-    console.log(`➡️  Forwarding to VRChat at ${OSC_IP}:${OSC_PORT}`);
+      if (result.success) {
+        wss = result.wss;
+        ACTIVE_WS_PORT = port;
+        console.log(`✅ WebSocket listening on ws://${WS_HOST}:${ACTIVE_WS_PORT}`);
+        console.log(`➡️  Forwarding to VRChat at ${OSC_IP}:${OSC_PORT}`);
 
-    wss.on('connection', (ws) => {
-      ws.on('message', async (message) => {
-        try {
-          const data = JSON.parse(message.toString());
-          // Allow empty string for clearing chatbox / チャットボックスをクリアするための空文字を許可
-          if (typeof data.text === 'string') {
-            // Default to direct=true, sound=true if not specified / 指定がない場合はdirect=true, sound=trueをデフォルトとする
-            const direct = data.direct !== undefined ? data.direct : true;
-            const sound = data.sound !== undefined ? data.sound : true;
+        // Setup WebSocket event handlers / WebSocketイベントハンドラを設定
+        wss.on('connection', (ws) => {
+          ws.on('message', async (message) => {
+            try {
+              const data = JSON.parse(message.toString());
+              // Allow empty string for clearing chatbox / チャットボックスをクリアするための空文字を許可
+              if (typeof data.text === 'string') {
+                // Default to direct=true, sound=true if not specified / 指定がない場合はdirect=true, sound=trueをデフォルトとする
+                const direct = data.direct !== undefined ? data.direct : true;
+                const sound = data.sound !== undefined ? data.sound : true;
 
-            await oscClient.send('/chatbox/input', [data.text, direct, sound]);
-            ws.send(JSON.stringify({ success: true }));
-          }
-        } catch (e) {
-          console.error('[OSC Bridge] Error:', e);
-          ws.send(JSON.stringify({ success: false, error: 'Bridge Error' }));
-        }
-      });
-    });
+                await oscClient.send('/chatbox/input', [data.text, direct, sound]);
+                ws.send(JSON.stringify({ success: true }));
+              }
+            } catch (e) {
+              console.error('[OSC Bridge] Error:', e);
+              ws.send(JSON.stringify({ success: false, error: 'Bridge Error' }));
+            }
+          });
+        });
 
-    wss.on('error', (e) => {
-      console.error('[WS Server] Error:', e);
-      if (e.code === 'EADDRINUSE') {
-        console.error(`Port ${WS_PORT} is already in use.`);
-        // Optional: Show error dialog to user / オプション: ユーザーにエラーダイアログを表示する
+        wss.on('error', (e) => {
+          console.error('[WS Server] Error:', e);
+        });
 
+        return; // Success - exit function / 成功 - 関数を終了
+      } else {
+        console.log(`⚠️ Port ${port} is in use, trying next...`);
       }
-    });
+    }
+
+    // All ports failed / すべてのポートが失敗
+    console.error(`❌ All ports (${WS_PORT_START}-${WS_PORT_END}) are in use.`);
+    const { dialog } = await import('electron');
+    dialog.showErrorBox(
+      'Port Unavailable / ポート使用不可',
+      `All WebSocket ports (${WS_PORT_START}-${WS_PORT_END}) are in use.\nPlease close other applications and restart.\n\nすべてのWebSocketポート(${WS_PORT_START}-${WS_PORT_END})が使用中です。\n他のアプリケーションを終了して再起動してください。`
+    );
   } catch (err) {
     console.error('Failed to start bridge:', err);
   }
@@ -108,6 +165,11 @@ ipcMain.handle('update-osc-port', (event, port) => {
 // Get current OSC port / 現在のOSCポートを取得
 ipcMain.handle('get-osc-port', () => {
   return { port: OSC_PORT };
+});
+
+// Get current WebSocket bridge port / 現在のWebSocketブリッジポートを取得
+ipcMain.handle('get-bridge-port', () => {
+  return { port: ACTIVE_WS_PORT };
 });
 
 // Helper for semantic version comparison / セマンティックバージョン比較用ヘルパー
