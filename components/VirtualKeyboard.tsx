@@ -1,4 +1,4 @@
-import { useState, FC } from 'react';
+import { useState, FC, memo } from 'react';
 import { KEYBOARD_LAYOUT, TRANSLATIONS, KEYBOARD_GRID } from '../constants';
 import { KeyConfig, InputMode, Language } from '../types';
 import Key from './Key';
@@ -145,4 +145,5 @@ const VirtualKeyboard: FC<VirtualKeyboardProps> = ({
   );
 };
 
-export default VirtualKeyboard;
+// Wrap with React.memo to prevent unnecessary re-renders / 不要な再レンダリングを防ぐためにReact.memoでラップ
+export default memo(VirtualKeyboard);

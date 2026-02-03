@@ -26,6 +26,9 @@ export interface KeyConfig {
     | 'tab';
 }
 
+// Update check interval type / 更新確認間隔の型
+export type UpdateCheckInterval = 'startup' | 'daily' | 'weekly' | 'manual';
+
 export interface OscConfig {
   bridgeUrl: string;
   oscPort: number; // VRChat OSC port (default: 9000) / VRChat OSCポート（デフォルト: 9000）
@@ -33,5 +36,5 @@ export interface OscConfig {
   language: Language;
   theme: 'light' | 'dark' | 'pure-black';
   accentColor: string;
-  updateCheckInterval: 'startup' | 'daily' | 'weekly' | 'manual';
+  updateCheckInterval: UpdateCheckInterval;
 }
