@@ -38,6 +38,9 @@ OSC経由でメッセージを送信するツール
 このソフトの使用によって発生したトラブルについては、自己責任でお願いします。
 
 ## デモ・紹介
+
+音声をオンにして視聴すると、動画がより楽しめます。 
+
 <details>
 <summary>UIのカスタマイズ</summary>
 
@@ -56,7 +59,10 @@ https://github.com/user-attachments/assets/988b4c58-d770-46fa-ad06-91ad71321da8
 <details>
   <summary>その他</summary>
   
+  ミュートを解除することをお勧めします。
+  CV VOICEVOX ずんだもん
 
+  https://github.com/user-attachments/assets/8a650dfa-ebf4-455d-91ce-c526d8e19e1a
 
 </details>
 
@@ -71,7 +77,9 @@ https://github.com/user-attachments/assets/988b4c58-d770-46fa-ad06-91ad71321da8
   ![udream_0](/docs/udream_0.png)
   
   https://github.com/user-attachments/assets/aab2cf37-fc52-4324-a83e-8559a9d85e81
-  
+
+  https://github.com/user-attachments/assets/119ae1cf-6a14-4134-a036-752c6de342ef
+
 </details>
 
 ## 手動ビルド
