@@ -9,15 +9,6 @@ export const useTypingIndicator = () => {
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null); // Debounce timer for typing indicator / タイピングインジケーター用のデバウンスタイマー
   const isTypingRef = useRef<boolean>(false); // Track if currently typing / 現在タイピング中かどうかを追跡
 
-  // Cleanup typing timeout on unmount / アンマウント時にタイピングタイムアウトをクリーンアップ
-  useEffect(() => {
-    return () => {
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
-      }
-    };
-  }, []);
-
   // Throttled sender for typing=true (prevents excessive OSC messages)
   // typing=true送信用のスロットル関数（過剰なOSCメッセージを防ぐ）
   const throttledSendTypingTrue = useMemo(
@@ -33,6 +24,16 @@ export const useTypingIndicator = () => {
       ),
     [],
   );
+
+  // Cleanup typing timeout on unmount / アンマウント時にタイピングタイムアウトをクリーンアップ
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      throttledSendTypingTrue.cancel();
+    };
+  }, [throttledSendTypingTrue]);
 
   // Send typing status to VRChat / VRChatにタイピング状態を送信
   const sendTypingStatus = (isTyping: boolean) => {

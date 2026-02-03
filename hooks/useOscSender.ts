@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useConfigStore } from '../stores/configStore';
 import { sendOscMessage } from '../services/oscService';
 import { throttle } from '../utils/throttle';
@@ -35,6 +35,13 @@ export const useOscSender = (
       }, 750), // 750ms throttle
     [],
   );
+
+  // Cleanup throttled sender on unmount / アンマウント時にスロットル送信をクリーンアップ
+  useEffect(() => {
+    return () => {
+      throttledAutoSend.cancel();
+    };
+  }, [throttledAutoSend]);
 
   const handleSend = async (
     textareaRef: React.RefObject<HTMLTextAreaElement>,

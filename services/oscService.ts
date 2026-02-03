@@ -86,7 +86,11 @@ export const sendOscMessage = async (
       ws.onclose = () => {
         // Cleanup timeout if not already cleared / まだクリアされていない場合はタイムアウトをクリーンアップ
         clearTimeout(timeout);
-        // No resolve here - let onerror or onmessage handle it / ここではresolveしない - onerrorまたはonmessageに処理させる
+        // Fallback resolve if neither onerror nor onmessage handled it / onerrorもonmessageも処理しなかった場合のフォールバック
+        safeResolve({
+          success: false,
+          error: 'Connection closed unexpectedly',
+        });
       };
     } catch (error: any) {
       safeResolve({
