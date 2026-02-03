@@ -41,3 +41,26 @@ export const CHATBOX = {
   MAX_LENGTH: 144, // Maximum characters allowed in VRChat chatbox / VRChatチャットボックスで許可される最大文字数
   WARNING_THRESHOLD: 120, // Show warning when approaching limit / 制限に近づいたときに警告を表示
 } as const;
+
+// Throttle/Debounce intervals (in milliseconds) / スロットル/デバウンス間隔（ミリ秒）
+export const THROTTLE = {
+  TYPING_INDICATOR: 2000, // Typing status send interval / タイピング状態送信間隔
+  TYPING_TIMEOUT: 3000, // Typing indicator timeout / タイピングインジケータータイムアウト
+  AUTO_SEND: 750, // Auto-send throttle interval / 自動送信スロットル間隔
+} as const;
+
+// GitHub repository info / GitHubリポジトリ情報
+export const GITHUB = {
+  REPO_OWNER: 'fuku2019',
+  REPO_NAME: 'VRC-OSC-Keyboard',
+  API_URL:
+    'https://api.github.com/repos/fuku2019/VRC-OSC-Keyboard/releases/latest',
+  RELEASES_URL: 'https://github.com/fuku2019/VRC-OSC-Keyboard/releases',
+} as const;
+
+// Network defaults / ネットワークデフォルト
+export const NETWORK = {
+  LOCALHOST: '127.0.0.1',
+  WS_PORT_START: 8080, // Starting port for auto-selection / 自動選択の開始ポート
+  WS_PORT_END: 8099, // Ending port for auto-selection / 自動選択の終了ポート
+} as const;

@@ -12,4 +12,7 @@ export {
   TIMEOUTS,
   KEYBOARD_GRID,
   CHATBOX,
+  THROTTLE,
+  GITHUB,
+  NETWORK,
 } from './appConfig';

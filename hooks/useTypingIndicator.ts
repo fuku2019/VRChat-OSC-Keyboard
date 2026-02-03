@@ -1,5 +1,6 @@
 import { useRef, useEffect, useMemo } from 'react';
 import { throttle } from '../utils/throttle';
+import { THROTTLE } from '../constants';
 
 /**
  * Hook to handle typing indicator status sending with throttling
@@ -19,7 +20,7 @@ export const useTypingIndicator = () => {
             window.electronAPI.sendTypingStatus(true);
           }
         },
-        2000, // Send at most once per 2 seconds / 最大2秒に1回送信
+        THROTTLE.TYPING_INDICATOR, // Send at most once per 2 seconds / 最大2秒に1回送信
         { leading: true, trailing: true }, // Send immediately on first call, then throttle / 最初の呼び出しは即実行、その後スロットル
       ),
     [],
@@ -66,7 +67,7 @@ export const useTypingIndicator = () => {
     }
     typingTimeoutRef.current = setTimeout(() => {
       sendTypingStatus(false);
-    }, 3000); // 3 seconds debounce / 3秒のデバウンス
+    }, THROTTLE.TYPING_TIMEOUT); // 3 seconds debounce / 3秒のデバウンス
   };
 
   const cancelTypingTimeout = () => {

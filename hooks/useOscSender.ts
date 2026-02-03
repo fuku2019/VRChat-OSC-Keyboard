@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useConfigStore } from '../stores/configStore';
 import { sendOscMessage } from '../services/oscService';
 import { throttle } from '../utils/throttle';
-import { TRANSLATIONS, TIMEOUTS } from '../constants';
+import { TRANSLATIONS, TIMEOUTS, THROTTLE } from '../constants';
 
 /**
  * Hook to handle OSC message sending, including manual and throttled auto-sending
@@ -32,7 +32,7 @@ export const useOscSender = (
         if (!useConfigStore.getState().config.autoSend) return;
         if (!text) return;
         sendOscMessage(text, url, true, false); // direct=true, sound=false
-      }, 750), // 750ms throttle
+      }, THROTTLE.AUTO_SEND), // 750ms throttle
     [],
   );
 
