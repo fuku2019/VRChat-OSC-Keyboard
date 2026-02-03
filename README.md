@@ -37,7 +37,7 @@ OSC経由でメッセージを送信するツール
 <br>
 このソフトの使用によって発生したトラブルについては、自己責任でお願いします。
 
-## デモ
+## デモ・紹介
 <details>
 <summary>UIのカスタマイズ</summary>
 
@@ -51,6 +51,13 @@ https://github.com/user-attachments/assets/6afb4e82-649f-44fb-b359-42fa86495ccb
 https://github.com/user-attachments/assets/fc8e216b-8f50-4271-896b-cee8c70a5dd8
 
 https://github.com/user-attachments/assets/988b4c58-d770-46fa-ad06-91ad71321da8
+</details>
+
+<details>
+  <summary>その他</summary>
+  
+
+
 </details>
 
 <details>
