@@ -54,11 +54,16 @@ https://github.com/user-attachments/assets/988b4c58-d770-46fa-ad06-91ad71321da8
 </details>
 
 <details>
-  <summary>イメージ</summary>
+  <summary> 𝓓𝓻𝓮𝓪𝓶 </summary>
+
+  このセクションのメディアコンテンツは、実際のツールの操作感、機能、外観とは異なります。本ツールに着想を得た「夢」としてお楽しみください。
+  <br>
   
   ![waao](/docs/waao.jpg)
 
   ![udream_0](/docs/udream_0.png)
+  
+  https://github.com/user-attachments/assets/aab2cf37-fc52-4324-a83e-8559a9d85e81
   
 </details>
 
