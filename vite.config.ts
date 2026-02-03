@@ -75,7 +75,6 @@ const oscBridgePlugin = () => {
   };
 };
 
-
 const packageJson = JSON.parse(readFileSync('./package.json', 'utf-8'));
 
 export default defineConfig({

@@ -92,8 +92,6 @@ const SettingsModal: FC<SettingsModalProps> = ({
     // Allow empty for typing, but don't save / 入力中は空を許可するが保存しない
   };
 
-
-
   return (
     <div
       className={`fixed inset-0 z-[110] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 ${animationClass}`}
@@ -272,8 +270,6 @@ const SettingsModal: FC<SettingsModalProps> = ({
               <span>{t.oscPortDesc}</span>
             </p>
           </section>
-
-
 
           {/* Update Check Config / 更新確認設定 */}
           <section className='pt-4 border-t dark:border-slate-700/50 border-slate-200'>
