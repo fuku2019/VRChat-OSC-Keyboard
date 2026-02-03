@@ -7,8 +7,6 @@ export interface TranslationStrings {
     language: string;
     oscPort: string;
     oscPortDesc: string;
-    oscUrl: string;
-    defaultUrl: string;
     instructionsTitle: string;
     resetWelcome: string;
     save: string;
@@ -74,9 +72,7 @@ export const TRANSLATIONS: TranslationsMap = {
       title: '設定',
       language: '言語 / Language',
       oscPort: 'VRChat OSC ポート',
-      oscPortDesc: 'VRChatにOSCメッセージを送信するポート（デフォルト: 9000）\n 注意:間違ったOSCポートを設定しても、エラーは表示されずVRChatにはチャットが送信されません。',
-      oscUrl: 'OSCブリッジ URL',
-      defaultUrl: '基本的に変更しないでください。(デフォルト: ws://127.0.0.1:8080)',
+      oscPortDesc: 'VRChatにOSCメッセージを送信するポート（デフォルト: 9000）\n 注意:間違ったOSCポートを指定しても、エラーは表示されずVRChatにはチャットが送信されません。',
       instructionsTitle: 'ヘルプ',
       resetWelcome: 'チュートリアルを表示する',
       save: '閉じる',
@@ -85,7 +81,7 @@ export const TRANSLATIONS: TranslationsMap = {
       themeDark: 'ダーク',
       themePureBlack: 'ピュアブラック',
       accentColor: 'アクセントカラー',
-      accentColorCyan: '水色 (デフォルト)',
+      accentColorCyan: '水色',
       accentColorPurple: '紫',
       accentColorCustom: 'カスタム',
       checkInterval: '更新確認頻度',
@@ -139,8 +135,6 @@ export const TRANSLATIONS: TranslationsMap = {
       language: 'Language',
       oscPort: 'VRChat OSC Port',
       oscPortDesc: 'VRChat OSC Send Port (Default: 9000) \n Note: Incorrect port settings will not trigger an error, but chat will not be sent.',
-      oscUrl: 'OSC Bridge URL',
-      defaultUrl: 'Do not change unless necessary. (Default: ws://127.0.0.1:8080)',
       instructionsTitle: 'Help',
       resetWelcome: 'Show Tutorial',
       save: 'Close',
