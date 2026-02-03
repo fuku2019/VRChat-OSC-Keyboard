@@ -35,22 +35,29 @@ const App = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
   const [isToastDismissed, setIsToastDismissed] = useState(false); // Track if update toast is dismissed / 更新トーストが閉じられたか追跡
-  
+
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const preCompositionValue = useRef<string>(''); // Store value before IME composition / IME構成前の値を保存
   const isComposing = useRef<boolean>(false); // Track if IME is composing / IME構成中かどうかを追跡
   const lastCursorPosition = useRef<number | null>(null); // Store cursor position before virtual key click / 仮想キークリック前のカーソル位置を保存
-  
+
   // Use custom hooks
   useTheme();
-  const { sendTypingStatus, resetTypingTimeout, cancelTypingTimeout } = useTypingIndicator();
-  const { isSending, lastSent, error, throttledAutoSend, handleSend: triggerSend } = useOscSender(
-    input, 
-    buffer, 
-    setInput, 
-    sendTypingStatus, 
-    cancelTypingTimeout, 
-    commitBuffer
+  const { sendTypingStatus, resetTypingTimeout, cancelTypingTimeout } =
+    useTypingIndicator();
+  const {
+    isSending,
+    lastSent,
+    error,
+    throttledAutoSend,
+    handleSend: triggerSend,
+  } = useOscSender(
+    input,
+    buffer,
+    setInput,
+    sendTypingStatus,
+    cancelTypingTimeout,
+    commitBuffer,
   );
 
   // Use update checker hook / アップデート確認フックを使用
@@ -202,7 +209,7 @@ const App = () => {
     // IME構成中はすべての入力を許可（制限チェックはhandleCompositionEndで行う）
     if (isComposing.current) {
       overwriteInput(newValue);
-      
+
       // Still trigger effects during IME (for typing indicator) / IME中もエフェクトを発火（タイピング表示のため）
       handleInputEffect(newValue);
       return;
@@ -233,7 +240,7 @@ const App = () => {
             </span>
           </h1>
         </div>
-        
+
         <div className='flex items-center gap-3'>
           <button
             onClick={handleAutoSendToggle}
@@ -299,7 +306,6 @@ const App = () => {
             onKeyDown={handleKeyDown}
             onCompositionStart={handleCompositionStart}
             onCompositionEnd={handleCompositionEnd}
-
             onBlur={handleBlur}
             onSelect={(e) => {
               lastCursorPosition.current = e.currentTarget.selectionStart;

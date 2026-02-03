@@ -55,13 +55,13 @@ function updateOscClient(newPort) {
 function tryStartWebSocket(port) {
   return new Promise((resolve) => {
     let resolved = false; // Prevent multiple resolves / 複数回のresolveを防ぐ
-    
+
     const testWss = new WebSocketServer({ port, host: WS_HOST });
 
     const cleanup = (success, data) => {
       if (resolved) return;
       resolved = true;
-      
+
       if (!success && testWss) {
         try {
           testWss.close();
@@ -104,7 +104,9 @@ async function startBridge() {
       if (result.success) {
         wss = result.wss;
         ACTIVE_WS_PORT = port;
-        console.log(`✅ WebSocket listening on ws://${WS_HOST}:${ACTIVE_WS_PORT}`);
+        console.log(
+          `✅ WebSocket listening on ws://${WS_HOST}:${ACTIVE_WS_PORT}`,
+        );
         console.log(`➡️  Forwarding to VRChat at ${OSC_IP}:${OSC_PORT}`);
 
         // Setup WebSocket event handlers / WebSocketイベントハンドラを設定
@@ -118,12 +120,18 @@ async function startBridge() {
                 const direct = data.direct !== undefined ? data.direct : true;
                 const sound = data.sound !== undefined ? data.sound : true;
 
-                await oscClient.send('/chatbox/input', [data.text, direct, sound]);
+                await oscClient.send('/chatbox/input', [
+                  data.text,
+                  direct,
+                  sound,
+                ]);
                 ws.send(JSON.stringify({ success: true }));
               }
             } catch (e) {
               console.error('[OSC Bridge] Error:', e);
-              ws.send(JSON.stringify({ success: false, error: 'Bridge Error' }));
+              ws.send(
+                JSON.stringify({ success: false, error: 'Bridge Error' }),
+              );
             }
           });
         });
@@ -143,7 +151,7 @@ async function startBridge() {
     const { dialog } = await import('electron');
     dialog.showErrorBox(
       'Port Unavailable / ポート使用不可',
-      `All WebSocket ports (${WS_PORT_START}-${WS_PORT_END}) are in use.\nPlease close other applications and restart.\n\nすべてのWebSocketポート(${WS_PORT_START}-${WS_PORT_END})が使用中です。\n他のアプリケーションを終了して再起動してください。`
+      `All WebSocket ports (${WS_PORT_START}-${WS_PORT_END}) are in use.\nPlease close other applications and restart.\n\nすべてのWebSocketポート(${WS_PORT_START}-${WS_PORT_END})が使用中です。\n他のアプリケーションを終了して再起動してください。`,
     );
   } catch (err) {
     console.error('Failed to start bridge:', err);

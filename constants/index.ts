@@ -6,4 +6,10 @@ export { ROMAJI_MAP, HIRAGANA_TO_KATAKANA } from './romajiMap';
 
 export { KEYBOARD_LAYOUT } from './keyboardLayout';
 
-export { STORAGE_KEYS, DEFAULT_CONFIG, TIMEOUTS, KEYBOARD_GRID, CHATBOX } from './appConfig';
+export {
+  STORAGE_KEYS,
+  DEFAULT_CONFIG,
+  TIMEOUTS,
+  KEYBOARD_GRID,
+  CHATBOX,
+} from './appConfig';
