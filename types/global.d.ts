@@ -41,8 +41,10 @@ interface ElectronAPI {
   }) => void;
   getOverlaySettings: () => Promise<{ success: boolean; settings: { useOffscreenCapture: boolean; forceOpaqueAlpha: boolean } }>;
   setOverlaySettings: (settings: { useOffscreenCapture?: boolean; forceOpaqueAlpha?: boolean }) => Promise<{ success: boolean; settings: { useOffscreenCapture: boolean; forceOpaqueAlpha: boolean } }>;
-  onCursorMove: (callback: (data: { u: number; v: number }) => void) => void;
-  removeCursorMoveListener: (callback: (data: { u: number; v: number }) => void) => void;
+  onCursorMove: (callback: (data: { u: number; v: number; controllerId?: number }) => void) => void;
+  removeCursorMoveListener: (callback: (data: { u: number; v: number; controllerId?: number }) => void) => void;
+  onCursorHide: (callback: (data: { controllerId?: number }) => void) => void;
+  removeCursorHideListener: (callback: (data: { controllerId?: number }) => void) => void;
   onInputScroll: (callback: (data: { deltaY: number }) => void) => void;
   removeInputScrollListener: (callback: (data: { deltaY: number }) => void) => void;
 }
