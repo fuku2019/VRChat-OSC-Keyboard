@@ -8,6 +8,7 @@ interface KeyProps {
   onLongPress?: (config: KeyConfig) => void;
   highlight?: boolean;
   isShiftActive?: boolean;
+  isCapsLock?: boolean;
 }
 
 const Key: FC<KeyProps> = ({
@@ -16,6 +17,7 @@ const Key: FC<KeyProps> = ({
   onLongPress,
   highlight = false,
   isShiftActive = false,
+  isCapsLock = false,
 }) => {
   const baseClasses =
     'rounded-lg font-bold text-xl transition-all duration-75 active:scale-95 select-none flex shadow-lg border-b-4 dark:border-slate-700 border-slate-300 active:border-b-0 active:translate-y-1 relative items-center justify-center';
@@ -95,7 +97,8 @@ const Key: FC<KeyProps> = ({
   }
 
   // Handle Shift Key label itself / Shiftキー自体のラベルを処理する
-  if (config.action === 'shift' && isShiftActive) displayLabel = 'SHIFT';
+  if (config.action === 'shift' && isShiftActive)
+    displayLabel = isCapsLock ? 'SHIFT ↑' : 'SHIFT';
 
   return (
     <button

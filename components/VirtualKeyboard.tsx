@@ -132,6 +132,7 @@ const VirtualKeyboard: FC<VirtualKeyboardProps> = ({
               }
               highlight={key.action === 'shift' && isKeyShiftActive}
               isShiftActive={isKeyShiftActive}
+              isCapsLock={capsLock}
             />
           );
         })}
