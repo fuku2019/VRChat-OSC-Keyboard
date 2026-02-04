@@ -37,10 +37,16 @@ const oscBridgePlugin = () => {
         ws.on('message', async (message) => {
           try {
             const data = JSON.parse(message.toString());
-            if (data.text) {
+            if (typeof data.text === 'string') {
               // VRChat Chatbox format / VRChatチャットボックス形式
-              await oscClient.send('/chatbox/input', [data.text, true]);
+              const direct = data.direct !== undefined ? data.direct : true;
+              const sound = data.sound !== undefined ? data.sound : true;
+              await oscClient.send('/chatbox/input', [data.text, direct, sound]);
               ws.send(JSON.stringify({ success: true }));
+            } else {
+              ws.send(
+                JSON.stringify({ success: false, error: 'Invalid payload' }),
+              );
             }
           } catch (e) {
             console.error('[OSC] Bridge Error:', e);

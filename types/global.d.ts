@@ -26,7 +26,11 @@ interface ElectronAPI {
   getBridgePort: () => Promise<{ port: number | null }>; // Get current WebSocket bridge port / 現在のWebSocketブリッジポートを取得
   checkForUpdate: () => Promise<CheckUpdateResult>;
   openExternal: (url: string) => Promise<{ success: boolean; error?: string }>;
-  logConfigChange: (key: string, oldValue: any, newValue: any) => Promise<void>;
+  logConfigChange: (
+    key: string,
+    oldValue: any,
+    newValue: any,
+  ) => Promise<{ success: boolean; error?: string }>;
   sendTypingStatus: (isTyping: boolean) => Promise<{ success: boolean; error?: string }>;
 }
 

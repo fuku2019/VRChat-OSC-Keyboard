@@ -14,7 +14,7 @@ interface UseKeyboardControllerProps {
   mode: InputMode;
   setMode: (mode: InputMode) => void;
   setInput: (val: string) => void;
-  overwriteInput: (val: string) => void;
+  overwriteInput: (val: string) => string;
   handleCharInput: (char: string, cursorPos?: number) => void;
   handleBackspace: (cursorPos?: number) => void;
   handleClear: () => void;
@@ -118,12 +118,12 @@ export const useKeyboardController = ({
 
     if (newValue.length > CHATBOX.MAX_LENGTH) {
       // Revert to pre-composition value if over limit / 制限を超えたら構成前の値に戻す
-      overwriteInput(preCompositionValue.current);
-      handleInputEffect(preCompositionValue.current);
+      const applied = overwriteInput(preCompositionValue.current);
+      handleInputEffect(applied);
     } else {
       // Apply the new value / 新しい値を適用
-      overwriteInput(newValue);
-      handleInputEffect(newValue);
+      const applied = overwriteInput(newValue);
+      handleInputEffect(applied);
     }
   };
 
@@ -134,18 +134,16 @@ export const useKeyboardController = ({
     // During IME composition, allow all input (limit check happens in handleCompositionEnd)
     // IME構成中はすべての入力を許可（制限チェックはhandleCompositionEndで行う）
     if (isComposing.current) {
-      overwriteInput(newValue);
+      const applied = overwriteInput(newValue);
 
       // Still trigger effects during IME (for typing indicator) / IME中もエフェクトを発火（タイピング表示のため）
-      handleInputEffect(newValue);
+      handleInputEffect(applied);
       return;
     }
 
-    // For non-IME input, apply character limit / 非IME入力は文字数制限を適用
-    if (newValue.length <= CHATBOX.MAX_LENGTH) {
-      overwriteInput(newValue);
-      handleInputEffect(newValue);
-    }
+    // For non-IME input, let overwriteInput handle trimming/blocking / 非IME入力はoverwriteInputにトリミング/ブロックを任せる
+    const applied = overwriteInput(newValue);
+    handleInputEffect(applied);
   };
 
   // Handle cursor position update on selection / 選択時のカーソル位置更新

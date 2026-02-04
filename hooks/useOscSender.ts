@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useConfigStore } from '../stores/configStore';
 import { sendOscMessage } from '../services/oscService';
 import { throttle } from '../utils/throttle';
@@ -21,6 +21,9 @@ export const useOscSender = (
   const [error, setError] = useState<string | null>(null);
   const [isSending, setIsSending] = useState(false);
 
+  const lastSentTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const t = TRANSLATIONS[config.language];
 
   // Throttled sender for auto-send mode / 自動送信モード用のスロットル送信関数
@@ -40,6 +43,14 @@ export const useOscSender = (
   useEffect(() => {
     return () => {
       throttledAutoSend.cancel();
+      if (lastSentTimerRef.current) {
+        clearTimeout(lastSentTimerRef.current);
+        lastSentTimerRef.current = null;
+      }
+      if (errorTimerRef.current) {
+        clearTimeout(errorTimerRef.current);
+        errorTimerRef.current = null;
+      }
     };
   }, [throttledAutoSend]);
 
@@ -67,15 +78,33 @@ export const useOscSender = (
         sendTypingStatus(false);
         cancelTypingTimeout();
 
-        setTimeout(() => setLastSent(null), TIMEOUTS.SENT_NOTIFICATION);
+        if (lastSentTimerRef.current) {
+          clearTimeout(lastSentTimerRef.current);
+        }
+        lastSentTimerRef.current = setTimeout(
+          () => setLastSent(null),
+          TIMEOUTS.SENT_NOTIFICATION,
+        );
       } else {
         console.error('OSC Send Failed:', result.error);
         setError(result.error || t.status.error);
-        setTimeout(() => setError(null), TIMEOUTS.ERROR_NOTIFICATION);
+        if (errorTimerRef.current) {
+          clearTimeout(errorTimerRef.current);
+        }
+        errorTimerRef.current = setTimeout(
+          () => setError(null),
+          TIMEOUTS.ERROR_NOTIFICATION,
+        );
       }
     } catch (e: any) {
       setError(e.message || t.status.error);
-      setTimeout(() => setError(null), TIMEOUTS.ERROR_NOTIFICATION);
+      if (errorTimerRef.current) {
+        clearTimeout(errorTimerRef.current);
+      }
+      errorTimerRef.current = setTimeout(
+        () => setError(null),
+        TIMEOUTS.ERROR_NOTIFICATION,
+      );
     } finally {
       setIsSending(false);
       textareaRef.current?.focus();

@@ -66,18 +66,21 @@ export const useUpdateChecker = (): UseUpdateCheckerReturn => {
 
       const lastCheck = localStorage.getItem(STORAGE_KEYS.LAST_UPDATE_CHECK);
       const now = Date.now();
+      const lastCheckTime = Number.isFinite(Number(lastCheck))
+        ? Number(lastCheck)
+        : 0;
       let shouldCheck = false;
 
       if (currentInterval === 'startup') {
         shouldCheck = true;
       } else if (currentInterval === 'daily') {
         // Check if 24 hours passed / 24時間経過したか確認
-        if (!lastCheck || now - parseInt(lastCheck) > 24 * 60 * 60 * 1000) {
+        if (!lastCheckTime || now - lastCheckTime > 24 * 60 * 60 * 1000) {
           shouldCheck = true;
         }
       } else if (currentInterval === 'weekly') {
         // Check if 7 days passed / 7日経過したか確認
-        if (!lastCheck || now - parseInt(lastCheck) > 7 * 24 * 60 * 60 * 1000) {
+        if (!lastCheckTime || now - lastCheckTime > 7 * 24 * 60 * 60 * 1000) {
           shouldCheck = true;
         }
       }
