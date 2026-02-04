@@ -65,7 +65,7 @@ if (!gotTheLock) {
       if (mainWindow) {
         // Wait for window to be ready, then start capture / ウィンドウ準備完了を待ってからキャプチャ開始
         mainWindow.webContents.once('did-finish-load', () => {
-          startCapture(mainWindow.webContents, 30); // 30 FPS target
+          startCapture(mainWindow.webContents, 60); // 60 FPS target
           startInputLoop(60, mainWindow.webContents); // 60 FPS input polling
           console.log('VR overlay capture started');
         });

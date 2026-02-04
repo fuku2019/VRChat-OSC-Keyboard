@@ -20,7 +20,7 @@ const CursorOverlay = () => {
     const handleCursorMove = ({ u, v }: { u: number, v: number }) => {
       // OpenVR UV: (0,0) is bottom-left, screen (0,0) is top-left
       // Flip V for screen coordinates
-      console.log('Renderer received cursor:', u.toFixed(2), v.toFixed(2));
+      // console.log('Renderer received cursor:', u.toFixed(2), v.toFixed(2));
       
       setPosition({ u, v: 1.0 - v }); // Flip V
       setVisible(true);
@@ -73,7 +73,7 @@ const CursorOverlay = () => {
         transform: 'translate(-50%, -50%)',
         pointerEvents: 'none',
         zIndex: 9999,
-        transition: 'top 0.05s linear, left 0.05s linear' // Smooth movement
+        // transition: 'top 0.05s linear, left 0.05s linear' // Removed for better responsiveness / 応答性向上のため削除
       }}
     />
   );

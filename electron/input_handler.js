@@ -5,10 +5,10 @@ let overlayManager = null;
 
 /**
  * Start the input handling loop
- * @param {number} fps - Input polling rate (default: 60)
+ * @param {number} fps - Input polling rate (default: 120)
  * @param {Electron.WebContents} webContents - Target webContents for input events
  */
-export function startInputLoop(fps = 60, webContents = null) {
+export function startInputLoop(fps = 120, webContents = null) {
   overlayManager = getOverlayManager();
   targetWebContents = webContents;
   

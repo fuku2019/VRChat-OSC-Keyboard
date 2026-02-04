@@ -207,7 +207,7 @@ export function initOverlay() {
  * @param {Electron.WebContents} webContents - The webContents to capture
  * @param {number} fps - Update frequency in FPS
  */
-export function startCapture(webContents, fps = 10) {
+export function startCapture(webContents, fps = 60) {
   if (!overlayManager || overlayHandles[0] === null) {
     console.warn('Overlay not initialized, skipping capture');
     return;
@@ -255,8 +255,8 @@ export function startCapture(webContents, fps = 10) {
       // This order prevents flickering (momentary overlap is better than black flash)
       // この順序で点滅を防ぐ（一瞬の重なりは黒点滅よりマシ）
       overlayManager.showOverlay(backBufferHandle);
-      // Try not hiding the old one immediately to prevent flickering
-      // 点滅を防ぐため、古い方をすぐには非表示にしない（Showだけで前面に来ることを期待）
+      // Keep old overlay visible to prevent black flash - OpenVR will bring new one to front
+      // 黒点滅を防ぐため古い方は表示したまま - OpenVRが新しい方を前面に出す
       // overlayManager.hideOverlay(overlayHandles[activeOverlayIndex]);
       
       // Update index
