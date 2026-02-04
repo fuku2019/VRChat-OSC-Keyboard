@@ -23,7 +23,7 @@
     "dist": "vite build && electron-builder && node scripts/rename-build-output.js",
     "test": "vitest",
     "test:run": "vitest run",
-    "build:native": "napi build --platform --release --manifest-path ./native/Cargo.toml"
+    "build:native": "napi build --platform --release --manifest-path ./native/Cargo.toml && node scripts/sync-native.cjs"
   },
   "dependencies": {
     "electron-store": "^11.0.2",

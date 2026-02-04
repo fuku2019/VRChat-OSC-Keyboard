@@ -57,6 +57,11 @@ let updateInterval = null;
  * Initialize VR overlay / VRオーバーレイを初期化
  * @returns {number|null} Overlay handle or null on failure
  */
+// Configuration for "Ideal Position" / "理想的な位置"の設定
+const SPAWN_OFFSET_Y = -0.3; // 30cm down
+const SPAWN_OFFSET_Z = -0.5; // 50cm forward
+const SPAWN_PITCH_ANGLE = 30 * (Math.PI / 180); // 30 degrees tilt up
+
 import { mat4, quat, vec3 } from 'gl-matrix';
 
 /**
@@ -64,10 +69,10 @@ import { mat4, quat, vec3 } from 'gl-matrix';
  * HMDに対して相対的なスポーン位置を計算
  */
 function getSpawnTransform(hmdPose) {
-    // Configuration for "Ideal Position"
-    const OFFSET_Y = -0.3; // 30cm down
-    const OFFSET_Z = -0.5; // 50cm forward
-    const PITCH_ANGLE = 30 * (Math.PI / 180); // 30 degrees tilt up
+    // Use constants defined at top / 上部で定義された定数を使用
+    // const OFFSET_Y = -0.3; 
+    // const OFFSET_Z = -0.5; 
+    // const PITCH_ANGLE = 30 * (Math.PI / 180);
 
     // Input is Row-Major (OpenVR), gl-matrix needs Column-Major
     // Treat input array as flattened Row-Major 4x4
@@ -89,7 +94,9 @@ function getSpawnTransform(hmdPose) {
 
     // Create offset vector (in HMD local space)
     // HMDローカル空間でのオフセットベクトルを作成
-    const offset = vec3.fromValues(0, OFFSET_Y, OFFSET_Z);
+    // Create offset vector (in HMD local space)
+    // HMDローカル空間でのオフセットベクトルを作成
+    const offset = vec3.fromValues(0, SPAWN_OFFSET_Y, SPAWN_OFFSET_Z);
     
     // Rotate offset by HMD rotation to get World offset
     // HMDの回転でオフセットを回転させ、ワールドオフセットを取得
@@ -103,9 +110,10 @@ function getSpawnTransform(hmdPose) {
     // 2. Calculate Rotation
     const targetRot = quat.clone(hmdRot);
     
+
     // Local X axis rotation for Tilt
     const tilt = quat.create();
-    quat.setAxisAngle(tilt, vec3.fromValues(1, 0, 0), PITCH_ANGLE);
+    quat.setAxisAngle(tilt, vec3.fromValues(1, 0, 0), SPAWN_PITCH_ANGLE);
     
     // Apply tilt: NewRot = HMD_Rot * Tilt
     quat.multiply(targetRot, targetRot, tilt);
@@ -240,14 +248,26 @@ export function startCapture(webContents, fps = 60) {
   console.log(`Starting capture at ${fps} FPS (${intervalMs}ms interval) with GPU direct transfer`);
   
   let isProcessing = false;
+  let lastSizeMismatchTime = 0; // For log throttling / ログの間引き用
   
   updateInterval = setInterval(async () => {
     if (isProcessing) return;
     isProcessing = true;
     
     try {
+      if (webContents.isDestroyed()) {
+          stopCapture();
+          return;
+      }
+
       // Capture the page / ページをキャプチャ
       const image = await webContents.capturePage();
+      // Verify webContents again after await check / await後に再度webContentsを確認
+      if (webContents.isDestroyed()) {
+          stopCapture();
+          return;
+      }
+
       const size = image.getSize();
       
       if (size.width === 0 || size.height === 0) {
@@ -256,6 +276,7 @@ export function startCapture(webContents, fps = 60) {
       }
       
       // Get BGRA bitmap buffer from Electron / ElectronからBGRAビットマップバッファを取得
+      // image.toBitmap() returns BGRA format directly / image.toBitmap()はBGRA形式を直接返す
       const bgraBuffer = image.toBitmap();
       
       // Calculate expected buffer size / 期待されるバッファサイズを計算
@@ -270,28 +291,37 @@ export function startCapture(webContents, fps = 60) {
         const actualHeight = Math.sqrt(actualPixels / aspectRatio);
         const actualWidth = actualPixels / actualHeight;
         
-        console.warn(`Size mismatch: getSize()=${size.width}x${size.height}, buffer=${bgraBuffer.length} bytes (expected ${expectedSize}), using calculated ${Math.round(actualWidth)}x${Math.round(actualHeight)}`);
+        // Log warning only once every 5 seconds to avoid spam / スパム回避のため5秒に1回だけ警告をログ出力
+        const now = Date.now();
+        if (now - lastSizeMismatchTime > 5000) {
+            console.warn(`Size mismatch: getSize()=${size.width}x${size.height}, buffer=${bgraBuffer.length} bytes (expected ${expectedSize}), using calculated ${Math.round(actualWidth)}x${Math.round(actualHeight)}`);
+            lastSizeMismatchTime = now;
+        }
         
         size.width = Math.round(actualWidth);
         size.height = Math.round(actualHeight);
       }
       
-      // Convert BGRA to RGBA (swap R and B channels) / BGRAからRGBAに変換（RとBチャンネルを入れ替え）
-      const rgbaBuffer = Buffer.from(bgraBuffer);
-      for (let i = 0; i < rgbaBuffer.length; i += 4) {
-        const b = rgbaBuffer[i];     // B
-        const r = rgbaBuffer[i + 2]; // R
-        rgbaBuffer[i] = r;           // R -> position 0
-        rgbaBuffer[i + 2] = b;       // B -> position 2
-      }
+      /* 
+       * OPTIMIZATION: Removed CPU-side pixel swapping loop.
+       * Native module now accepts BGRA format directly (DXGI_FORMAT_B8G8R8A8_UNORM).
+       * This removes overhead of Buffer.from() and the for-loop.
+       * 
+       * 最適化: CPU側のピクセル入替ループを削除しました。
+       * ネイティブモジュールがBGRA形式（DXGI_FORMAT_B8G8R8A8_UNORM）を直接受け入れるようになりました。
+       * これにより、Buffer.from() とforループのオーバーヘッドが排除されます。
+       */
       
       // Update texture directly via D3D11 shared texture / D3D11共有テクスチャ経由で直接テクスチャを更新
       // Uses GPU memory sharing - no file I/O, minimal flickering / GPUメモリ共有を使用 - ファイルI/Oなし、点滅最小化
-      overlayManager.setOverlayTextureD3D11(overlayHandle, rgbaBuffer, size.width, size.height);
+      overlayManager.setOverlayTextureD3D11(overlayHandle, bgraBuffer, size.width, size.height);
       
     } catch (error) {
       if (!error.message?.includes('destroyed')) {
         console.error('Capture error:', error);
+      } else {
+        // Stop capture if destroyed / 破棄された場合はキャプチャを停止
+        stopCapture();
       }
     } finally {
       isProcessing = false;

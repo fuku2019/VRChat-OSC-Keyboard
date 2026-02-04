@@ -411,17 +411,51 @@ impl OverlayManager {
             d3d11.context.Map(texture, 0, D3D11_MAP_WRITE_DISCARD, 0, Some(&mut mapped))
                 .map_err(|e| napi::Error::from_reason(format!("Map failed: {:?}", e)))?;
 
-            // Copy buffer to texture / バッファをテクスチャにコピー
-            let row_pitch = width * 4;
+            // Copy buffer to texture with BGRA -> RGBA swap
+            // バッファをテクスチャにコピー（BGRA -> RGBA の R/B スワップ）
             let src = buffer.as_ptr();
             let dst = mapped.pData as *mut u8;
-            
-            for y in 0..height {
-                std::ptr::copy_nonoverlapping(
-                    src.add((y * row_pitch) as usize),
-                    dst.add((y * mapped.RowPitch) as usize),
-                    row_pitch as usize,
-                );
+            let row_pitch = (width * 4) as usize;
+            let dst_pitch = mapped.RowPitch as usize;
+
+            // Fast path when aligned to 4 bytes
+            let aligned = (src as usize & 3) == 0
+                && (dst as usize & 3) == 0
+                && (row_pitch & 3) == 0
+                && (dst_pitch & 3) == 0;
+
+            if aligned {
+                for y in 0..height {
+                    let src_row = src.add((y as usize) * row_pitch) as *const u32;
+                    let dst_row = dst.add((y as usize) * dst_pitch) as *mut u32;
+
+                    for x in 0..width {
+                        let v = *src_row.add(x as usize);
+                        // v is AARRGGBB (little-endian bytes: B,G,R,A)
+                        // swap R and B => AABBGGRR (bytes: R,G,B,A)
+                        let rb_swapped = (v & 0xFF00FF00)
+                            | ((v & 0x00FF0000) >> 16)
+                            | ((v & 0x000000FF) << 16);
+                        *dst_row.add(x as usize) = rb_swapped;
+                    }
+                }
+            } else {
+                // Safe fallback for unaligned pointers
+                for y in 0..height {
+                    let src_row = src.add((y as usize) * row_pitch);
+                    let dst_row = dst.add((y as usize) * dst_pitch);
+
+                    for x in 0..width {
+                        let p = src_row.add((x as usize) * 4);
+                        let d = dst_row.add((x as usize) * 4);
+
+                        // BGRA -> RGBA
+                        *d.add(0) = *p.add(2);
+                        *d.add(1) = *p.add(1);
+                        *d.add(2) = *p.add(0);
+                        *d.add(3) = *p.add(3);
+                    }
+                }
             }
 
             d3d11.context.Unmap(texture, 0);
