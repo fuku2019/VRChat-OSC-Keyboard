@@ -2,7 +2,8 @@
 VRChatのチャットボックスにソフトウェアキーボードや物理キーボードを使用して<br>
 OSC経由でメッセージを送信するツール
 
-![logo](/docs/fake_logo_3.png)
+![FakeLogo_Dev-VR_0](https://github.com/user-attachments/assets/c7bd7f51-c8ad-4310-99ca-4f6f2c6e015b)
+
 
 <div align="center">
 
