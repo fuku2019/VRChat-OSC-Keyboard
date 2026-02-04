@@ -23,7 +23,8 @@ export interface KeyConfig {
     | 'mode'
     | 'clear'
     | 'send'
-    | 'tab';
+    | 'tab'
+    | 'none';
   isSpacer?: boolean; // Layout placeholder / レイアウトプレースホルダー
 }
 

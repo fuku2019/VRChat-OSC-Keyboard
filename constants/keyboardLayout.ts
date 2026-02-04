@@ -33,7 +33,7 @@ export const KEYBOARD_LAYOUT: KeyConfig[] = [
   { label: 'p', value: 'p', gridCols: 4 },
   { label: '@', value: '@', shiftValue: '`', gridCols: 4 },
   { label: '[', value: '[', shiftValue: '{', gridCols: 4 },
-  { label: 'Enter', value: 'enter', action: 'send', gridCols: 6, isSpacer: true },
+  { label: '', value: '', action: 'none', gridCols: 6, isSpacer: true },
 
   // ROW 3 (7 + 12*4 + 5 = 60) / 3行目
   { label: 'Mode', value: 'mode', action: 'mode', gridCols: 7 },
@@ -49,7 +49,7 @@ export const KEYBOARD_LAYOUT: KeyConfig[] = [
   { label: ';', value: ';', shiftValue: '+', gridCols: 4 },
   { label: ':', value: ':', shiftValue: '*', gridCols: 4 },
   { label: ']', value: ']', shiftValue: '}', gridCols: 4 },
-  { label: 'Enter', value: 'enter', action: 'send', gridCols: 5, isSpacer: true },
+  { label: '', value: '', action: 'none', gridCols: 5, isSpacer: true },
 
   // ROW 4 (9 + 11*4 + 7 = 60) / 4行目
   { label: 'Shift', value: 'shift', action: 'shift', gridCols: 9 },

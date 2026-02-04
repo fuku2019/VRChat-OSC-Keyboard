@@ -122,7 +122,7 @@ const VirtualKeyboard: FC<VirtualKeyboardProps> = ({
 
           // Spacer Logic for Enter Key / Enterキー用のスペーサーロジック
           if (key.isSpacer) {
-            // Top part spacer (Row 2) - this holds the actual button
+            // Top part spacer (Row 2) - previously Send button, now empty spacer or hidden
             if (key.gridCols === 6) {
               return (
                 <div
@@ -130,33 +130,9 @@ const VirtualKeyboard: FC<VirtualKeyboardProps> = ({
                   style={{
                     gridColumn: `span ${key.gridCols}`,
                     gridRow: `span ${key.gridRows || 1}`,
-                    position: 'relative',
                   }}
                   className='pointer-events-none'
-                >
-                  <Key
-                    config={{
-                      label: tKeys.send,
-                      value: 'enter',
-                      action: 'send',
-                      gridCols: 6,
-                    }}
-                    onPress={handleKeyPress}
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      width: '100%',
-                      height: 'calc(200% + 0.25rem)', // Span 2 rows (100% + 100% + gap)
-                      zIndex: 10,
-                      clipPath:
-                        'polygon(0 0, 100% 0, 100% 100%, 16.666% 100%, 16.666% 50%, 0 50%)',
-                      filter:
-                        'drop-shadow(0 4px 6px -1px rgb(0 0 0 / 0.1)) drop-shadow(0 2px 4px -2px rgb(0 0 0 / 0.1))',
-                    }}
-                    className='shadow-none pointer-events-auto' // Enable pointer events for the button itself
-                  />
-                </div>
+                />
               );
             }
 
@@ -174,6 +150,19 @@ const VirtualKeyboard: FC<VirtualKeyboardProps> = ({
           }
 
           const isKeyShiftActive = shift || capsLock;
+
+          if (key.action === 'none') {
+            return (
+              <div
+                key={index}
+                style={{
+                  gridColumn: `span ${key.gridCols || 2}`,
+                  gridRow: `span ${key.gridRows || 1}`,
+                }}
+                className='pointer-events-none'
+              />
+            );
+          }
 
           return (
             <Key

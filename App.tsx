@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Settings, Zap, ZapOff } from 'lucide-react';
+import { Settings, Zap, ZapOff, Send } from 'lucide-react';
 import VirtualKeyboard from './components/VirtualKeyboard';
 import SettingsModal from './components/SettingsModal';
 import TutorialOverlay from './components/TutorialOverlay';
@@ -168,23 +168,8 @@ const App = () => {
         </div>
 
         <div className='flex items-center gap-3'>
-          <button
-            onClick={handleAutoSendToggle}
-            className={`
-              relative p-2 rounded-full transition-all border shadow-sm flex items-center gap-2 px-3
-              ${
-                config.autoSend
-                  ? 'bg-green-500/10 border-green-500/50 text-green-600 dark:text-green-400'
-                  : 'dark:bg-slate-800/80 bg-white/80 dark:hover:bg-slate-700 hover:bg-slate-100 dark:text-slate-500 text-slate-400 border-slate-200 dark:border-slate-700'
-              }
-            `}
-            title={config.autoSend ? 'Auto Send: ON' : 'Auto Send: OFF'}
-          >
-            {config.autoSend ? <Zap size={20} /> : <ZapOff size={20} />}
-            <span className='text-xs font-bold hidden md:inline'>
-              {config.autoSend ? 'AUTO' : 'MANUAL'}
-            </span>
-          </button>
+{/* Auto Send button moved to sidebar / 自動送信ボタンはサイドバーに移動 */}
+
 
           <button
             onClick={() => setIsSettingsOpen(true)}
@@ -241,16 +226,63 @@ const App = () => {
             autoFocus
           />
         </div>
+
+        {/* Independent Send Button / 独立した送信ボタン */}
+        <button
+          onClick={() => triggerSend(textareaRef)}
+          className={`
+            absolute right-4 top-1/2 -translate-y-1/2 h-20 w-20 
+            rounded-full shadow-xl transition-all duration-200 
+            flex items-center justify-center border-4 
+            ${
+              isSending
+                ? 'bg-primary-700 scale-95 border-primary-900 cursor-wait'
+                : 'bg-primary-500 hover:bg-primary-600 active:scale-95 border-primary-400 hover:border-primary-300'
+            }
+          `}
+          title={t.keys.send}
+        >
+          {isSending ? (
+            <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-white'></div>
+          ) : (
+            <Send size={32} className='text-white ml-1' />
+          )}
+        </button>
       </div>
 
-      {/* Virtual Keyboard / 仮想キーボード */}
-      <div className='w-full max-w-5xl shrink-0 px-1 pb-4'>
-        <VirtualKeyboard
-          {...virtualKeyHandlers}
-          mode={mode}
-          buffer={buffer}
-          language={config.language}
-        />
+      {/* Keyboard and Sidebar Container / キーボードとサイドバーのコンテナ */}
+      <div className='w-full max-w-6xl shrink-0 px-1 pb-4 flex flex-row gap-4 justify-center items-start'>
+        {/* Virtual Keyboard / 仮想キーボード */}
+        <div className='flex-grow max-w-5xl'>
+          <VirtualKeyboard
+            {...virtualKeyHandlers}
+            mode={mode}
+            buffer={buffer}
+            language={config.language}
+          />
+        </div>
+
+        {/* Sidebar / サイドバー */}
+        <div className='w-24 flex flex-col gap-4 pt-2'>
+          {/* Auto Send Toggle in Sidebar / サイドバー内の自動送信切り替え */}
+          <button
+            onClick={handleAutoSendToggle}
+            className={`
+              flex flex-col items-center justify-center gap-2 p-3 rounded-2xl border-2 transition-all shadow-md w-full aspect-square
+              ${
+                config.autoSend
+                  ? 'bg-green-500/10 border-green-500 text-green-600 dark:text-green-400 shadow-[0_0_15px_rgba(34,197,94,0.3)]'
+                  : 'dark:bg-slate-800 bg-white hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 dark:text-slate-500 border-slate-300 dark:border-slate-600'
+              }
+            `}
+            title={config.autoSend ? 'Auto Send: ON' : 'Auto Send: OFF'}
+          >
+            {config.autoSend ? <Zap size={28} /> : <ZapOff size={28} />}
+            <span className='text-[10px] font-bold'>
+              {config.autoSend ? 'AUTO' : 'MANUAL'}
+            </span>
+          </button>
+        </div>
       </div>
 
       <SettingsModal
