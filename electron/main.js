@@ -19,6 +19,8 @@ import {
   setAppTitle,
 } from './services/WindowManager.js';
 import { registerIpcHandlers } from './services/IpcHandlers.js';
+import { initOverlay, startCapture } from './overlay.js';
+import { startInputLoop } from './input_handler.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -53,6 +55,22 @@ if (!gotTheLock) {
   app.whenReady().then(() => {
     startBridge();
     createWindow();
+    
+    // Initialize VR overlay / VRオーバーレイを初期化
+    const overlayHandles = initOverlay();
+    
+    // Start capturing window content to VR overlay / ウィンドウ内容のVRオーバーレイへのキャプチャを開始
+    if (overlayHandles !== null) {
+      const mainWindow = getMainWindow();
+      if (mainWindow) {
+        // Wait for window to be ready, then start capture / ウィンドウ準備完了を待ってからキャプチャ開始
+        mainWindow.webContents.once('did-finish-load', () => {
+          startCapture(mainWindow.webContents, 30); // 30 FPS target
+          startInputLoop(60, mainWindow.webContents); // 60 FPS input polling
+          console.log('VR overlay capture started');
+        });
+      }
+    }
 
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) {
