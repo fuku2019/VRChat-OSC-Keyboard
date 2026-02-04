@@ -37,18 +37,26 @@ function getSpawnTransform(hmdPose) {
     const OFFSET_Z = -0.5; // 50cm forward
     const PITCH_ANGLE = 30 * (Math.PI / 180); // 30 degrees tilt up
 
-    const hmdMat = mat4.clone(hmdPose);
+    // Input is Row-Major (OpenVR), gl-matrix needs Column-Major
+    // Treat input array as flattened Row-Major 4x4
+    const hmdMatRow = mat4.clone(hmdPose);
+    const hmdMat = mat4.create();
+    mat4.transpose(hmdMat, hmdMatRow); // Row-Major -> Column-Major
+
+    // Check if valid rotation (sometimes it's all zeros)
+    // 0,0,0,0 quaternion is invalid
+    const hmdRot = quat.create();
+    mat4.getRotation(hmdRot, hmdMat);
+    if (hmdRot[0] === 0 && hmdRot[1] === 0 && hmdRot[2] === 0 && hmdRot[3] === 0) {
+        throw new Error("Invalid HMD rotation");
+    }
     
     // 1. Calculate position
-    // Get HMD position and rotation
     const hmdPos = vec3.create();
-    const hmdRot = quat.create();
     mat4.getTranslation(hmdPos, hmdMat);
-    mat4.getRotation(hmdRot, hmdMat);
 
     // Create offset vector (in HMD local space)
     // HMDローカル空間でのオフセットベクトルを作成
-    // Forward is -Z in OpenVR/OpenGL
     const offset = vec3.fromValues(0, OFFSET_Y, OFFSET_Z);
     
     // Rotate offset by HMD rotation to get World offset
@@ -61,15 +69,6 @@ function getSpawnTransform(hmdPose) {
     vec3.add(targetPos, hmdPos, offset);
 
     // 2. Calculate Rotation
-    // Start with HMD rotation (billboard-like)
-    // HMDの回転から開始（ビルボード風）
-    // But we want to tilt it up by 30 degrees locally
-    // しかし、ローカルで30度上に傾けたい
-    
-    // Extract Yaw from HMD rotation to keep it level (remove roll/pitch from HMD if desired)
-    // Or just use HMD rotation directly and apply local pitch.
-    // simpler: Use HMD rotation, then rotate X axis locally.
-    
     const targetRot = quat.clone(hmdRot);
     
     // Local X axis rotation for Tilt
@@ -79,11 +78,15 @@ function getSpawnTransform(hmdPose) {
     // Apply tilt: NewRot = HMD_Rot * Tilt
     quat.multiply(targetRot, targetRot, tilt);
 
-    // 3. Compose Matrix
-    const targetMat = mat4.create();
-    mat4.fromRotationTranslation(targetMat, targetRot, targetPos);
+    // 3. Compose Matrix (Column-Major)
+    const targetMatCol = mat4.create();
+    mat4.fromRotationTranslation(targetMatCol, targetRot, targetPos);
     
-    return targetMat;
+    // 4. Convert back to Row-Major for OpenVR
+    const targetMatRow = mat4.create();
+    mat4.transpose(targetMatRow, targetMatCol); // Column-Major -> Row-Major
+    
+    return targetMatRow;
 }
 
 /**
