@@ -27,6 +27,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Send window size to main process / メインプロセスにウィンドウサイズを送信
   sendWindowSize: (width, height) => ipcRenderer.send('window-size', { width, height }),
+  // Send renderer metrics to main process / レンダラーメトリクスをメインプロセスに送信
+  sendRendererMetrics: (metrics) => ipcRenderer.send('renderer-metrics', metrics),
 
   // VR Controller cursor events / VRコントローラーカーソルイベント
   onCursorMove: (callback) => {
@@ -35,7 +37,18 @@ contextBridge.exposeInMainWorld('electronAPI', {
   removeCursorMoveListener: (callback) => {
     ipcRenderer.removeListener('input-cursor-move', callback);
   },
+
+  // VR Controller scroll events / VRコントローラスクロールイベント
+  onInputScroll: (callback) => {
+    ipcRenderer.on('input-scroll', (event, data) => callback(data));
+  },
+  removeInputScrollListener: (callback) => {
+    ipcRenderer.removeListener('input-scroll', callback);
+  },
   
   // Reset overlay position
   resetOverlayPosition: () => ipcRenderer.invoke('reset-overlay-position'),
+  // Overlay settings
+  getOverlaySettings: () => ipcRenderer.invoke('get-overlay-settings'),
+  setOverlaySettings: (settings) => ipcRenderer.invoke('set-overlay-settings', settings),
 });

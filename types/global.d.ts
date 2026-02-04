@@ -34,8 +34,17 @@ interface ElectronAPI {
   sendTypingStatus: (isTyping: boolean) => Promise<{ success: boolean; error?: string }>;
   resetOverlayPosition: () => Promise<{ success: boolean }>;
   sendWindowSize: (width: number, height: number) => void;
+  sendRendererMetrics: (metrics: {
+    width: number;
+    height: number;
+    devicePixelRatio: number;
+  }) => void;
+  getOverlaySettings: () => Promise<{ success: boolean; settings: { useOffscreenCapture: boolean; forceOpaqueAlpha: boolean } }>;
+  setOverlaySettings: (settings: { useOffscreenCapture?: boolean; forceOpaqueAlpha?: boolean }) => Promise<{ success: boolean; settings: { useOffscreenCapture: boolean; forceOpaqueAlpha: boolean } }>;
   onCursorMove: (callback: (data: { u: number; v: number }) => void) => void;
   removeCursorMoveListener: (callback: (data: { u: number; v: number }) => void) => void;
+  onInputScroll: (callback: (data: { deltaY: number }) => void) => void;
+  removeInputScrollListener: (callback: (data: { deltaY: number }) => void) => void;
 }
 
 declare global {

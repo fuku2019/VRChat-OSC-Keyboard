@@ -29,6 +29,10 @@ const loadConfigFromStorage = (): OscConfig => {
         accentColor: parsed.accentColor || DEFAULT_CONFIG.ACCENT_COLOR,
         updateCheckInterval:
           parsed.updateCheckInterval || DEFAULT_CONFIG.UPDATE_CHECK_INTERVAL,
+        useOffscreenCapture:
+          parsed.useOffscreenCapture ?? DEFAULT_CONFIG.USE_OFFSCREEN_CAPTURE,
+        forceOpaqueAlpha:
+          parsed.forceOpaqueAlpha ?? DEFAULT_CONFIG.FORCE_OPAQUE_ALPHA,
       };
     }
   } catch (error) {
@@ -44,6 +48,8 @@ const loadConfigFromStorage = (): OscConfig => {
     theme: DEFAULT_CONFIG.THEME,
     accentColor: DEFAULT_CONFIG.ACCENT_COLOR,
     updateCheckInterval: DEFAULT_CONFIG.UPDATE_CHECK_INTERVAL,
+    useOffscreenCapture: DEFAULT_CONFIG.USE_OFFSCREEN_CAPTURE,
+    forceOpaqueAlpha: DEFAULT_CONFIG.FORCE_OPAQUE_ALPHA,
   };
 };
 
@@ -86,6 +92,14 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
     ) {
       electronAPI.updateOscPort(config.oscPort);
     }
+
+    // Sync overlay settings with Electron / オーバーレイ設定をElectronに同期
+    if (electronAPI?.setOverlaySettings) {
+      electronAPI.setOverlaySettings({
+        useOffscreenCapture: config.useOffscreenCapture,
+        forceOpaqueAlpha: config.forceOpaqueAlpha,
+      });
+    }
   },
 
   // Update specific config field / 特定の設定フィールドを更新
@@ -108,6 +122,14 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
     if (key === 'oscPort' && window.electronAPI) {
       window.electronAPI.updateOscPort(value as number);
     }
+
+    // Sync overlay settings if changed / オーバーレイ設定を同期
+    if (
+      (key === 'useOffscreenCapture' || key === 'forceOpaqueAlpha') &&
+      window.electronAPI?.setOverlaySettings
+    ) {
+      window.electronAPI.setOverlaySettings({ [key]: value });
+    }
   },
 
   // Sync OSC port with Electron Main process / ElectronのMainプロセスとOSCポートを同期
@@ -125,6 +147,14 @@ if (typeof window !== 'undefined' && window.electronAPI) {
     const currentConfig = useConfigStore.getState().config;
     if (currentConfig.oscPort) {
       window.electronAPI!.updateOscPort(currentConfig.oscPort);
+    }
+
+    // Sync overlay settings on startup / 起動時にオーバーレイ設定を同期
+    if (window.electronAPI?.setOverlaySettings) {
+      window.electronAPI.setOverlaySettings({
+        useOffscreenCapture: currentConfig.useOffscreenCapture,
+        forceOpaqueAlpha: currentConfig.forceOpaqueAlpha,
+      });
     }
 
     // Get bridge port from Electron and update bridgeUrl / Electronからブリッジポートを取得してbridgeUrlを更新

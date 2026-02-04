@@ -6,6 +6,7 @@ declare global {
     electronAPI?: {
       onCursorMove: (callback: (data: { u: number, v: number }) => void) => void;
       sendWindowSize?: (width: number, height: number) => void;
+      sendRendererMetrics?: (metrics: { width: number; height: number; devicePixelRatio: number }) => void;
     };
   }
 }
@@ -16,6 +17,7 @@ const CursorOverlay = () => {
   
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
+    let dprQuery: MediaQueryList | null = null;
     
     const handleCursorMove = ({ u, v }: { u: number, v: number }) => {
       // OpenVR UV: (0,0) is bottom-left, screen (0,0) is top-left
@@ -36,22 +38,48 @@ const CursorOverlay = () => {
         window.electronAPI.onCursorMove(handleCursorMove);
     }
     
-    // Send initial window size
-    if (window.electronAPI?.sendWindowSize) {
-        window.electronAPI.sendWindowSize(window.innerWidth, window.innerHeight);
-    }
+    const sendMetrics = () => {
+        const metrics = {
+            width: window.innerWidth,
+            height: window.innerHeight,
+            devicePixelRatio: window.devicePixelRatio,
+        };
+        if (window.electronAPI?.sendRendererMetrics) {
+            window.electronAPI.sendRendererMetrics(metrics);
+        } else if (window.electronAPI?.sendWindowSize) {
+            window.electronAPI.sendWindowSize(metrics.width, metrics.height);
+        }
+    };
+    
+    const setupDprListener = () => {
+        if (dprQuery) {
+            dprQuery.removeEventListener('change', handleDprChange);
+        }
+        dprQuery = window.matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`);
+        dprQuery.addEventListener('change', handleDprChange);
+    };
+    
+    const handleDprChange = () => {
+        sendMetrics();
+        setupDprListener();
+    };
+    
+    // Send initial metrics
+    sendMetrics();
+    setupDprListener();
     
     // Handle resize
     const handleResize = () => {
-        if (window.electronAPI?.sendWindowSize) {
-            window.electronAPI.sendWindowSize(window.innerWidth, window.innerHeight);
-        }
+        sendMetrics();
     };
     
     window.addEventListener('resize', handleResize);
 
     return () => {
         window.removeEventListener('resize', handleResize);
+        if (dprQuery) {
+            dprQuery.removeEventListener('change', handleDprChange);
+        }
         clearTimeout(timeoutId);
     };
   }, []);

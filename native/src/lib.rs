@@ -673,6 +673,9 @@ impl OverlayManager {
                     touchpad_pressed: false,
                     touchpad_x: 0.0,
                     touchpad_y: 0.0,
+                    joystick_pressed: false,
+                    joystick_x: 0.0,
+                    joystick_y: 0.0,
                 });
             }
 
@@ -680,10 +683,12 @@ impl OverlayManager {
             const BUTTON_TRIGGER: u64 = 1u64 << 33; // k_EButton_SteamVR_Trigger
             const BUTTON_GRIP: u64 = 1u64 << 2;     // k_EButton_Grip
             const BUTTON_TOUCHPAD: u64 = 1u64 << 32; // k_EButton_SteamVR_Touchpad
+            const BUTTON_JOYSTICK: u64 = 1u64 << 34; // k_EButton_Axis2 (often joystick click)
 
             // Axis indices
             const AXIS_TRIGGER: usize = 1;
             const AXIS_TOUCHPAD: usize = 0;
+            const AXIS_JOYSTICK: usize = 2;
 
             Ok(ControllerState {
                 trigger_pressed: (state.ulButtonPressed & BUTTON_TRIGGER) != 0,
@@ -692,6 +697,9 @@ impl OverlayManager {
                 touchpad_pressed: (state.ulButtonPressed & BUTTON_TOUCHPAD) != 0,
                 touchpad_x: state.rAxis[AXIS_TOUCHPAD].x as f64,
                 touchpad_y: state.rAxis[AXIS_TOUCHPAD].y as f64,
+                joystick_pressed: (state.ulButtonPressed & BUTTON_JOYSTICK) != 0,
+                joystick_x: state.rAxis[AXIS_JOYSTICK].x as f64,
+                joystick_y: state.rAxis[AXIS_JOYSTICK].y as f64,
             })
         }
     }
@@ -715,6 +723,9 @@ pub struct ControllerState {
     pub touchpad_pressed: bool,
     pub touchpad_x: f64,
     pub touchpad_y: f64,
+    pub joystick_pressed: bool,
+    pub joystick_x: f64,
+    pub joystick_y: f64,
 }
 
 #[napi(object)]

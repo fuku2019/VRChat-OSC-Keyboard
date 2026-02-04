@@ -1,14 +1,21 @@
-import { getActiveOverlayHandle, getOverlayManager } from './overlay.js';
+import { addCaptureFrameListener, getActiveOverlayHandle, getOverlayManager } from './overlay.js';
 
 let inputInterval = null;
 let overlayManager = null;
+let captureSyncUnsubscribe = null;
+let inputInProgress = false;
+let inputFallbackInterval = null;
+let lastCaptureFrameAt = 0;
+const TRIGGER_DRAG_THRESHOLD = 0.015;
+const TRIGGER_SCROLL_MULTIPLIER = 0.9;
+const TRIGGER_SCROLL_MAX = 180;
 
 /**
  * Start the input handling loop
  * @param {number} fps - Input polling rate (default: 120)
  * @param {Electron.WebContents} webContents - Target webContents for input events
  */
-export function startInputLoop(fps = 120, webContents = null) {
+export function startInputLoop(fps = 120, webContents = null, options = {}) {
   overlayManager = getOverlayManager();
   targetWebContents = webContents;
   
@@ -17,15 +24,55 @@ export function startInputLoop(fps = 120, webContents = null) {
     return;
   }
   
-  if (inputInterval) {
-    clearInterval(inputInterval);
+  stopInputLoop();
+
+  const syncWithCapture = options.syncWithCapture !== false;
+  if (syncWithCapture && typeof addCaptureFrameListener === 'function') {
+    captureSyncUnsubscribe = addCaptureFrameListener(() => {
+      lastCaptureFrameAt = Date.now();
+      if (inputInProgress) return;
+      inputInProgress = true;
+      try {
+        updateInput();
+      } finally {
+        inputInProgress = false;
+      }
+    });
+    console.log('Input loop synced to capture frames');
+
+    const fallbackFps = Number.isFinite(options.fallbackFps)
+      ? Math.max(1, options.fallbackFps)
+      : Math.max(1, Math.min(30, fps));
+    const fallbackIntervalMs = Math.floor(1000 / fallbackFps);
+    lastCaptureFrameAt = Date.now();
+    inputFallbackInterval = setInterval(() => {
+      const now = Date.now();
+      if (now - lastCaptureFrameAt < fallbackIntervalMs * 2) {
+        return;
+      }
+      if (inputInProgress) return;
+      inputInProgress = true;
+      try {
+        updateInput();
+      } finally {
+        inputInProgress = false;
+      }
+    }, fallbackIntervalMs);
+
+    return;
   }
-  
+
   const intervalMs = Math.floor(1000 / fps);
   console.log(`Starting input loop at ${fps} FPS`);
   
   inputInterval = setInterval(() => {
-    updateInput();
+    if (inputInProgress) return;
+    inputInProgress = true;
+    try {
+      updateInput();
+    } finally {
+      inputInProgress = false;
+    }
   }, intervalMs);
 }
 
@@ -42,6 +89,16 @@ function sendMouseEvent(u, v) {
     }
 }
 
+function sendScrollEvent(deltaY) {
+    if (targetWebContents && !targetWebContents.isDestroyed()) {
+        try {
+            targetWebContents.send('input-scroll', { deltaY });
+        } catch (e) {
+            console.error('Failed to send scroll event', e);
+        }
+    }
+}
+
 /**
  * Stop the input handling loop
  */
@@ -49,8 +106,18 @@ export function stopInputLoop() {
   if (inputInterval) {
     clearInterval(inputInterval);
     inputInterval = null;
-    console.log('Input loop stopped');
   }
+  if (inputFallbackInterval) {
+    clearInterval(inputFallbackInterval);
+    inputFallbackInterval = null;
+  }
+  if (captureSyncUnsubscribe) {
+    captureSyncUnsubscribe();
+    captureSyncUnsubscribe = null;
+  }
+  inputInProgress = false;
+  lastCaptureFrameAt = 0;
+  console.log('Input loop stopped');
 }
 
 /**
@@ -65,7 +132,6 @@ function updateInput() {
 
     // 1. Get active controllers
     const controllerIds = overlayManager.getControllerIds();
-    
     // 2. Process each controller
     for (const id of controllerIds) {
       if (id === 0) continue; // Skip HMD
@@ -76,9 +142,13 @@ function updateInput() {
         continue;
       }
       
+      const state = overlayManager.getControllerState(id);
+      if (!state) {
+          continue;
+      }
       // Use absolute tracking pose directly with ComputeOverlayIntersection
       // ComputeOverlayIntersectionは絶対座標を受け取るため、変換不要
-      processController(id, poseData, activeHandle);
+      processController(id, poseData, activeHandle, state);
     }
     
   } catch (error) {
@@ -94,6 +164,7 @@ function updateInput() {
  * @param {number} id - Controller index
  * @param {Array<number>} poseMatrix - 4x4 transformation matrix (Absolute)
  * @param {number} overlayHandle - Current overlay handle
+ * @param {object} state - Controller state
  */
 import { mat4 } from 'gl-matrix';
 
@@ -103,7 +174,7 @@ let draggingControllerId = null;
 let startControllerInverse = mat4.create();
 let startOverlayTransform = mat4.create();
 
-function processController(id, poseMatrix, overlayHandle) {
+function processController(id, poseMatrix, overlayHandle, state) {
   // Extract position and forward direction
   
   // Position (Tx, Ty, Tz)
@@ -124,15 +195,12 @@ function processController(id, poseMatrix, overlayHandle) {
           [px, py, pz], 
           [dirX, dirY, dirZ]
       );
-      
-      const state = overlayManager.getControllerState(id);
 
+      handleTriggerInput(id, state, hit);
+      
       if (hit) {
           // Send mouse move event
           sendMouseEvent(hit.u, hit.v);
-          
-          // Check trigger button for click (only if valid hit)
-          handleTriggerState(id, state.triggerPressed, hit.u, hit.v);
       }
 
       // 2. Grip Interaction (Move Overlay)
@@ -287,29 +355,69 @@ function endDrag() {
     }
 }
 
-// Track previous trigger state per controller
-const previousTriggerState = {};
+const triggerDragState = {};
 
-function handleTriggerState(controllerId, triggerPressed, u, v) {
-    const wasPressed = previousTriggerState[controllerId] || false;
-    
-    if (triggerPressed && !wasPressed) {
-        // Trigger just pressed - send mousedown
-        sendClickEvent(u, v, 'mouseDown');
-    } else if (!triggerPressed && wasPressed) {
-        // Trigger just released - send mouseup
-        sendClickEvent(u, v, 'mouseUp');
+function handleTriggerInput(controllerId, state, hit) {
+    if (!state) return;
+    const pressed = !!state.triggerPressed;
+    const existing = triggerDragState[controllerId];
+
+    if (pressed) {
+        if (!existing) {
+            if (!hit) return;
+            triggerDragState[controllerId] = {
+                startU: hit.u,
+                startV: hit.v,
+                lastU: hit.u,
+                lastV: hit.v,
+                dragging: false,
+            };
+            return;
+        }
+
+        if (!hit) return;
+        const totalV = hit.v - existing.startV;
+        const deltaV = hit.v - existing.lastV;
+        if (!existing.dragging && Math.abs(totalV) > TRIGGER_DRAG_THRESHOLD) {
+            existing.dragging = true;
+        }
+        if (existing.dragging) {
+            const height = windowSize.height > 0 ? windowSize.height : 700;
+            const rawDelta = deltaV * height * TRIGGER_SCROLL_MULTIPLIER;
+            const clamped = Math.max(-TRIGGER_SCROLL_MAX, Math.min(TRIGGER_SCROLL_MAX, rawDelta));
+            if (clamped !== 0) {
+                sendScrollEvent(clamped);
+            }
+        }
+        existing.lastU = hit.u;
+        existing.lastV = hit.v;
+        return;
     }
-    
-    previousTriggerState[controllerId] = triggerPressed;
+
+    if (existing) {
+        if (!existing.dragging) {
+            sendClickEvent(existing.startU, existing.startV, 'mouseDown');
+            sendClickEvent(existing.startU, existing.startV, 'mouseUp');
+        }
+        delete triggerDragState[controllerId];
+    }
 }
 
 // Window size state for coordinate mapping
 let windowSize = { width: 0, height: 0 };
+let windowScale = { devicePixelRatio: 1, zoomFactor: 1 };
 
-export function updateWindowSize(width, height) {
+export function updateWindowSize(width, height, devicePixelRatio = null, zoomFactor = null) {
     windowSize = { width, height };
-    console.log(`Updated window size for input: ${width}x${height}`);
+    if (Number.isFinite(devicePixelRatio) && devicePixelRatio > 0) {
+        windowScale.devicePixelRatio = devicePixelRatio;
+    }
+    if (Number.isFinite(zoomFactor) && zoomFactor > 0) {
+        windowScale.zoomFactor = zoomFactor;
+    }
+    console.log(
+        `Updated window size for input: ${width}x${height} (dpr=${windowScale.devicePixelRatio}, zoom=${windowScale.zoomFactor})`,
+    );
 }
 
 function sendClickEvent(u, v, type) {

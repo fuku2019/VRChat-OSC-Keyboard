@@ -4,6 +4,33 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>VRChat OSC Keyboard</title>
+    <script>
+      (function () {
+        try {
+          var raw = localStorage.getItem('vrc_osc_config');
+          var theme = 'dark';
+          if (raw) {
+            var parsed = JSON.parse(raw);
+            if (parsed && parsed.theme) {
+              theme = parsed.theme;
+            }
+          }
+          var root = document.documentElement;
+          if (theme === 'pure-black') {
+            root.classList.add('dark');
+            root.classList.add('pure-black');
+          } else if (theme === 'dark') {
+            root.classList.add('dark');
+            root.classList.remove('pure-black');
+          } else {
+            root.classList.remove('dark');
+            root.classList.remove('pure-black');
+          }
+        } catch (e) {
+          // no-op: fallback to default
+        }
+      })();
+    </script>
     <!-- Tailwind V4 via local build -->
     <script type="importmap">
       {

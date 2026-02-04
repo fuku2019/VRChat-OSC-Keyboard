@@ -55,9 +55,26 @@ let captureTimer = null;
 let paintHandler = null;
 let captureWebContents = null;
 let captureInProgress = false;
+let destroyedHandler = null;
+let renderGoneHandler = null;
 let lastSizeMismatchTime = 0; // For log throttling / ログの間引き用
 let lastFrameBuffer = null; // Keep last buffer alive for native read safety
 let lastFrameImage = null; // Keep last image alive if buffer is a view
+
+const MAX_FRAME_RETENTION = 3;
+const frameRetention = [];
+const captureFrameListeners = new Set();
+
+let forceOpaqueAlpha = false;
+const rendererMetrics = {
+    cssWidth: 0,
+    cssHeight: 0,
+    devicePixelRatio: 1,
+    zoomFactor: 1,
+    pixelWidth: 0,
+    pixelHeight: 0,
+    updatedAt: 0,
+};
 
 /**
  * Initialize VR overlay / VRオーバーレイを初期化
@@ -120,6 +137,81 @@ function deriveSizeFromBuffer(size, bufferLength) {
     return { width, height };
 }
 
+function applyOpaqueAlpha(buffer) {
+    if (!buffer || buffer.length < 4 || buffer.length % 4 !== 0) return;
+    const view = new Uint32Array(
+        buffer.buffer,
+        buffer.byteOffset,
+        buffer.byteLength / 4,
+    );
+    for (let i = 0; i < view.length; i++) {
+        view[i] |= 0xFF000000;
+    }
+}
+
+function retainFrame(buffer, image) {
+    frameRetention.push({ buffer, image });
+    if (frameRetention.length > MAX_FRAME_RETENTION) {
+        frameRetention.shift();
+    }
+}
+
+function notifyCaptureFrame(info) {
+    if (captureFrameListeners.size === 0) return;
+    for (const listener of captureFrameListeners) {
+        try {
+            listener(info);
+        } catch (e) {
+            console.warn('Capture frame listener error:', e);
+        }
+    }
+}
+
+export function addCaptureFrameListener(listener) {
+    if (typeof listener !== 'function') return () => {};
+    captureFrameListeners.add(listener);
+    return () => captureFrameListeners.delete(listener);
+}
+
+export function updateRendererMetrics(metrics) {
+    if (!metrics) return;
+    const cssWidth = Number(metrics.width ?? metrics.cssWidth);
+    const cssHeight = Number(metrics.height ?? metrics.cssHeight);
+    const devicePixelRatio = Number(metrics.devicePixelRatio ?? metrics.dpr);
+    const zoomFactor = Number(metrics.zoomFactor ?? 1);
+
+    if (Number.isFinite(cssWidth) && cssWidth > 0) {
+        rendererMetrics.cssWidth = cssWidth;
+    }
+    if (Number.isFinite(cssHeight) && cssHeight > 0) {
+        rendererMetrics.cssHeight = cssHeight;
+    }
+    if (Number.isFinite(devicePixelRatio) && devicePixelRatio > 0) {
+        rendererMetrics.devicePixelRatio = devicePixelRatio;
+    }
+    if (Number.isFinite(zoomFactor) && zoomFactor > 0) {
+        rendererMetrics.zoomFactor = zoomFactor;
+    }
+
+    const effectiveScale = rendererMetrics.devicePixelRatio * rendererMetrics.zoomFactor;
+    rendererMetrics.pixelWidth = Math.max(
+        0,
+        Math.round(rendererMetrics.cssWidth * effectiveScale),
+    );
+    rendererMetrics.pixelHeight = Math.max(
+        0,
+        Math.round(rendererMetrics.cssHeight * effectiveScale),
+    );
+    rendererMetrics.updatedAt = Date.now();
+}
+
+export function setOverlayPreferences(preferences) {
+    if (!preferences) return;
+    if (typeof preferences.forceOpaqueAlpha === 'boolean') {
+        forceOpaqueAlpha = preferences.forceOpaqueAlpha;
+    }
+}
+
 function updateOverlayFromImage(image) {
     if (!overlayManager || overlayHandle === null) return false;
 
@@ -131,8 +223,16 @@ function updateOverlayFromImage(image) {
 
     let width = size.width;
     let height = size.height;
-    const expectedSize = width * height * 4;
 
+    if (rendererMetrics.pixelWidth > 0 && rendererMetrics.pixelHeight > 0) {
+        const metricsExpected = rendererMetrics.pixelWidth * rendererMetrics.pixelHeight * 4;
+        if (bgraBuffer.length === metricsExpected) {
+            width = rendererMetrics.pixelWidth;
+            height = rendererMetrics.pixelHeight;
+        }
+    }
+
+    const expectedSize = width * height * 4;
     if (bgraBuffer.length !== expectedSize) {
         const derived = deriveSizeFromBuffer(size, bgraBuffer.length);
         if (!derived) {
@@ -154,13 +254,19 @@ function updateOverlayFromImage(image) {
         }
     }
 
+    if (forceOpaqueAlpha) {
+        applyOpaqueAlpha(bgraBuffer);
+    }
+
     // Keep references alive in case native side reads asynchronously
     lastFrameBuffer = bgraBuffer;
     lastFrameImage = image;
+    retainFrame(bgraBuffer, image);
 
     // Update texture directly via D3D11 shared texture / D3D11共有テクスチャ経由で直接テクスチャを更新
     // Uses GPU memory sharing - no file I/O, minimal flickering / GPUメモリ共有を使用 - ファイルI/Oなし、点滅最小化
     overlayManager.setOverlayTextureD3D11(overlayHandle, bgraBuffer, width, height);
+    notifyCaptureFrame({ width, height, timestamp: Date.now() });
     return true;
 }
 
@@ -361,6 +467,22 @@ export function startCapture(webContents, fps = 60) {
   captureWebContents = webContents;
   captureInProgress = false;
 
+  if (typeof captureWebContents.setBackgroundThrottling === 'function') {
+      captureWebContents.setBackgroundThrottling(false);
+  }
+
+  destroyedHandler = () => stopCapture();
+  renderGoneHandler = (_event, details) => {
+      console.warn('Render process gone, stopping capture:', details);
+      stopCapture();
+  };
+  if (typeof captureWebContents.once === 'function') {
+      captureWebContents.once('destroyed', destroyedHandler);
+  }
+  if (typeof captureWebContents.on === 'function') {
+      captureWebContents.on('render-process-gone', renderGoneHandler);
+  }
+
   if (isOffscreen) {
     if (typeof webContents.setFrameRate === 'function') {
         webContents.setFrameRate(Math.round(clampedFps));
@@ -443,17 +565,43 @@ export function stopCapture() {
     clearTimeout(captureTimer);
     captureTimer = null;
   }
-  if (captureWebContents && paintHandler) {
-    captureWebContents.removeListener('paint', paintHandler);
-    if (typeof captureWebContents.stopPainting === 'function') {
+  if (captureWebContents) {
+    const isDestroyed =
+      typeof captureWebContents.isDestroyed === 'function' &&
+      captureWebContents.isDestroyed();
+    try {
+      if (destroyedHandler) {
+        captureWebContents.removeListener('destroyed', destroyedHandler);
+      }
+    } catch (e) {
+      // Ignore if destroyed
+    }
+    try {
+      if (renderGoneHandler) {
+        captureWebContents.removeListener('render-process-gone', renderGoneHandler);
+      }
+    } catch (e) {
+      // Ignore if destroyed
+    }
+    try {
+      if (paintHandler) {
+        captureWebContents.removeListener('paint', paintHandler);
+      }
+      if (!isDestroyed && typeof captureWebContents.stopPainting === 'function') {
         captureWebContents.stopPainting();
+      }
+    } catch (e) {
+      // Ignore if destroyed
     }
   }
   paintHandler = null;
+  destroyedHandler = null;
+  renderGoneHandler = null;
   captureWebContents = null;
   captureInProgress = false;
   lastFrameBuffer = null;
   lastFrameImage = null;
+  frameRetention.length = 0;
   console.log('Capture stopped');
 }
 

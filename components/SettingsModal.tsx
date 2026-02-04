@@ -3,7 +3,7 @@
  * 設定モーダル - アプリケーション設定インターフェース
  */
 
-import { useState, useEffect, FC } from 'react';
+import { useState, useEffect, useRef, FC } from 'react';
 import { X, CircleHelp } from 'lucide-react';
 import { Language, UpdateCheckInterval } from '../types';
 import { TRANSLATIONS, GITHUB } from '../constants';
@@ -17,6 +17,7 @@ import {
   ThemeSection,
   AccentColorSection,
   OscPortSection,
+  OverlaySection,
   UpdateCheckSection,
 } from './settings';
 
@@ -44,6 +45,7 @@ const SettingsModal: FC<SettingsModalProps> = ({
   const [updateUrl, setUpdateUrl] = useState<string>(''); // Store update URL locally / 更新URLをローカルに保存
   const { shouldRender, animationClass, modalAnimationClass } =
     useModalAnimation(isOpen);
+  const contentRef = useRef<HTMLDivElement | null>(null);
 
   // Sync local state when opening / 開くときにローカル状態を同期する
   useEffect(() => {
@@ -66,6 +68,23 @@ const SettingsModal: FC<SettingsModalProps> = ({
       }
     }
   }, [isOpen, config, updateAvailableVersion]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handler = ({ deltaY }: { deltaY: number }) => {
+      const el = contentRef.current;
+      if (!el) return;
+      el.scrollBy({ top: deltaY, behavior: 'auto' });
+    };
+    if (window.electronAPI?.onInputScroll) {
+      window.electronAPI.onInputScroll(handler);
+    }
+    return () => {
+      if (window.electronAPI?.removeInputScrollListener) {
+        window.electronAPI.removeInputScrollListener(handler);
+      }
+    };
+  }, [isOpen]);
 
   if (!shouldRender) return null;
 
@@ -107,6 +126,16 @@ const SettingsModal: FC<SettingsModalProps> = ({
     saveConfigImmediately(newConfig);
   };
 
+  const handleOffscreenCaptureToggle = (value: boolean) => {
+    const newConfig = { ...localConfig, useOffscreenCapture: value };
+    saveConfigImmediately(newConfig);
+  };
+
+  const handleForceOpaqueAlphaToggle = (value: boolean) => {
+    const newConfig = { ...localConfig, forceOpaqueAlpha: value };
+    saveConfigImmediately(newConfig);
+  };
+
   return (
     <div
       className={`fixed inset-0 z-[110] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 ${animationClass}`}
@@ -128,7 +157,7 @@ const SettingsModal: FC<SettingsModalProps> = ({
         </div>
 
         {/* Content / コンテンツ */}
-        <div className='flex-1 overflow-y-auto p-6 space-y-8'>
+        <div ref={contentRef} className='flex-1 overflow-y-auto p-6 space-y-8'>
           <LanguageSection
             localConfig={localConfig}
             t={t}
@@ -167,6 +196,13 @@ const SettingsModal: FC<SettingsModalProps> = ({
             localConfig={localConfig}
             t={t}
             onOscPortChange={handleOscPortChange}
+          />
+
+          <OverlaySection
+            localConfig={localConfig}
+            t={t}
+            onToggleOffscreenCapture={handleOffscreenCaptureToggle}
+            onToggleForceOpaqueAlpha={handleForceOpaqueAlphaToggle}
           />
 
           <UpdateCheckSection
