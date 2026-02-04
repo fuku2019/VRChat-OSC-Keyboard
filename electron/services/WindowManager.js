@@ -14,6 +14,7 @@ const __dirname = path.dirname(__filename);
 // Module state / モジュール状態
 let mainWindow = null;
 let APP_TITLE = '';
+let savePositionTimer = null;
 
 // Initialize electron-store for window position persistence / ウィンドウ位置の永続化用にelectron-storeを初期化
 const store = new Store({
@@ -57,6 +58,16 @@ function saveWindowPosition() {
     const bounds = mainWindow.getBounds();
     store.set('windowPosition', { x: bounds.x, y: bounds.y });
   }
+}
+
+function scheduleSaveWindowPosition() {
+  if (savePositionTimer) {
+    clearTimeout(savePositionTimer);
+  }
+  savePositionTimer = setTimeout(() => {
+    savePositionTimer = null;
+    saveWindowPosition();
+  }, 250);
 }
 
 /**
@@ -120,7 +131,7 @@ export function createWindow() {
 
   // Save window position when moved / ウィンドウ移動時に位置を保存
   mainWindow.on('move', () => {
-    saveWindowPosition();
+    scheduleSaveWindowPosition();
   });
 
   // In development, load from Vite server. In production, load built file. / 開発中はViteサーバーからロードする。本番環境ではビルドされたファイルをロードする。

@@ -48,9 +48,11 @@ export const UpdateCheckSection: FC<UpdateCheckSectionProps> = ({
       return;
     }
     setCheckStatus(t.checking);
+    const now = Date.now();
     try {
       const result = await window.electronAPI.checkForUpdate();
       if (result.success) {
+        localStorage.setItem(STORAGE_KEYS.LAST_UPDATE_CHECK, now.toString());
         if (result.updateAvailable) {
           const msg = t.updateAvailable.replace(
             '{version}',

@@ -11,7 +11,7 @@ interface UseIMEReturn {
   mode: InputMode;
   setMode: (mode: InputMode) => void;
   setInput: (text: string) => void;
-  overwriteInput: (text: string) => void; // For syncing with physical textarea / 物理的なテキストエリアと同期するため
+  overwriteInput: (text: string) => string; // For syncing with physical textarea / 物理的なテキストエリアと同期するため
   handleCharInput: (char: string, cursorPosition?: number) => void;
   handleBackspace: (cursorPosition?: number) => void;
   handleClear: () => void;
@@ -60,7 +60,7 @@ export const useIME = (
 
   // Called when typing directly into the textarea (Physical Keyboard / Native IME) / テキストエリアに直接入力するときに呼び出される（物理キーボード / ネイティブIME）
   const overwriteInput = useCallback(
-    (text: string) => {
+    (text: string): string => {
       const currentValue = input + buffer;
 
       // If already at max and trying to add more characters, block completely (no slice)
@@ -69,7 +69,7 @@ export const useIME = (
         currentValue.length >= maxLength &&
         text.length > currentValue.length
       ) {
-        return; // Reject input entirely / 入力を完全に拒否
+        return currentValue; // Reject input entirely / 入力を完全に拒否
       }
 
       // Truncate to maxLength if exceeded (for paste operations etc.)
@@ -79,6 +79,7 @@ export const useIME = (
       setInput(truncated);
       setBuffer(''); // Clear local buffer as native IME handles composition / ネイティブIMEが構成を処理するため、ローカルバッファをクリアする
       setBufferPosition(null);
+      return truncated;
     },
     [input, buffer, maxLength],
   );
@@ -90,6 +91,18 @@ export const useIME = (
       const currentLength = input.length + buffer.length;
       if (currentLength >= maxLength) return; // Block input if at limit / 制限に達したら入力をブロック
 
+      const displayCursorPos =
+        cursorPosition !== undefined ? cursorPosition : displayText.length;
+
+      const insertDirectChar = (text: string) => {
+        const baseText = displayText;
+        const pos = Math.max(0, Math.min(displayCursorPos, baseText.length));
+        const nextText = baseText.slice(0, pos) + text + baseText.slice(pos);
+        setInput(nextText);
+        setBuffer('');
+        setBufferPosition(null);
+      };
+
       // Calculate effective cursor position in input (excluding buffer) / input内の有効なカーソル位置を計算（バッファを除く）
       const effectiveCursorPos =
         cursorPosition !== undefined
@@ -98,16 +111,8 @@ export const useIME = (
             : cursorPosition
           : input.length;
 
-      // Helper function to insert char at position / 位置に文字を挿入するヘルパー関数
-      const insertAtPosition = (text: string) => {
-        const pos = Math.min(effectiveCursorPos, input.length);
-        return input.slice(0, pos) + text + input.slice(pos);
-      };
-
       if (mode === InputMode.ENGLISH) {
-        commitBuffer(); // Ensure buffer is empty before adding direct chars / 直接文字を追加する前にバッファが空であることを確認する
-        setInput(insertAtPosition(char));
-        setBufferPosition(null);
+        insertDirectChar(char);
         return;
       }
 
@@ -116,18 +121,14 @@ export const useIME = (
       // Check if input is Uppercase (Shift+Key behavior in JP mode) / 入力が大文字かどうかを確認する（JPモードでのShift+Keyの動作）
       // This allows typing Uppercase English letters while in Hiragana/Katakana mode / これにより、ひらがな/カタカナモード中に大文字の英字を入力できる
       if (/^[A-Z]$/.test(char)) {
-        commitBuffer();
-        setInput(insertAtPosition(char));
-        setBufferPosition(null);
+        insertDirectChar(char);
         return;
       }
 
       // Only process lowercase alphabet chars and hyphen for IME conversion / IME変換のために小文字のアルファベットとハイフンのみを処理する
       // Numbers and symbols should go through directly / 数字と記号はそのまま通す
       if (!/^[a-z-]$/.test(char)) {
-        commitBuffer();
-        setInput(insertAtPosition(char));
-        setBufferPosition(null);
+        insertDirectChar(char);
         return;
       }
 
@@ -161,7 +162,7 @@ export const useIME = (
       }
       setBuffer(res.newBuffer);
     },
-    [buffer, mode, commitBuffer, input, maxLength, bufferPosition],
+    [buffer, mode, input, maxLength, bufferPosition, displayText],
   );
 
   const handleBackspace = useCallback(
