@@ -25,6 +25,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Get current WebSocket bridge port / 現在のWebSocketブリッジポートを取得
   getBridgePort: () => ipcRenderer.invoke('get-bridge-port'),
 
+  // Send window size to main process / メインプロセスにウィンドウサイズを送信
+  sendWindowSize: (width, height) => ipcRenderer.send('window-size', { width, height }),
+
   // VR Controller cursor events / VRコントローラーカーソルイベント
   onCursorMove: (callback) => {
     ipcRenderer.on('input-cursor-move', (event, data) => callback(data));

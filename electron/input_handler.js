@@ -34,7 +34,7 @@ let targetWebContents = null;
 function sendMouseEvent(u, v) {
     if (targetWebContents && !targetWebContents.isDestroyed()) {
         try {
-            console.log(`Sending cursor to renderer: ${u.toFixed(2)}, ${v.toFixed(2)}`);
+            // console.log(`Sending cursor to renderer: ${u.toFixed(2)}, ${v.toFixed(2)}`);
             targetWebContents.send('input-cursor-move', { u, v });
         } catch (e) {
             console.error('Failed to send cursor event', e);
@@ -120,11 +120,74 @@ function processController(id, poseMatrix, overlayHandle) {
       );
       
       if (hit) {
-          console.log(`Hit! Controller ${id} UV: ${hit.u.toFixed(2)}, ${hit.v.toFixed(2)}`);
-          // Send mouse event
+          // console.log(`Hit! Controller ${id} UV: ${hit.u.toFixed(2)}, ${hit.v.toFixed(2)}`);
+          // Send mouse move event
           sendMouseEvent(hit.u, hit.v);
+          
+          // Check trigger button for click
+          const state = overlayManager.getControllerState(id);
+          handleTriggerState(id, state.triggerPressed, hit.u, hit.v);
       }
   } catch (e) {
       console.error("Intersection check failed:", e);
   }
+}
+
+// Track previous trigger state per controller
+const previousTriggerState = {};
+
+function handleTriggerState(controllerId, triggerPressed, u, v) {
+    const wasPressed = previousTriggerState[controllerId] || false;
+    
+    if (triggerPressed && !wasPressed) {
+        // Trigger just pressed - send mousedown
+        sendClickEvent(u, v, 'mouseDown');
+    } else if (!triggerPressed && wasPressed) {
+        // Trigger just released - send mouseup
+        sendClickEvent(u, v, 'mouseUp');
+    }
+    
+    previousTriggerState[controllerId] = triggerPressed;
+}
+
+// Window size state for coordinate mapping
+let windowSize = { width: 0, height: 0 };
+
+export function updateWindowSize(width, height) {
+    windowSize = { width, height };
+    console.log(`Updated window size for input: ${width}x${height}`);
+}
+
+function sendClickEvent(u, v, type) {
+    if (!targetWebContents || targetWebContents.isDestroyed()) return;
+    
+    try {
+        // Convert UV (0-1) to pixel coordinates
+        // Use client area size if available, otherwise fallback to window bounds
+        let width, height;
+        
+        if (windowSize.width > 0 && windowSize.height > 0) {
+            width = windowSize.width;
+            height = windowSize.height;
+        } else {
+            const bounds = targetWebContents.getOwnerBrowserWindow().getBounds();
+            width = bounds.width;
+            height = bounds.height;
+        }
+        
+        const x = Math.floor(u * width);
+        const y = Math.floor((1.0 - v) * height); // Invert V to match screen coordinates
+        
+        console.log(`Sending ${type} at pixel (${x}, ${y}) from UV (${u.toFixed(2)}, ${v.toFixed(2)})`);
+        
+        targetWebContents.sendInputEvent({
+            type: type,
+            x: x,
+            y: y,
+            button: 'left',
+            clickCount: 1
+        });
+    } catch (e) {
+        console.error(`Failed to send ${type} event:`, e);
+    }
 }

@@ -5,6 +5,7 @@ declare global {
   interface Window {
     electronAPI?: {
       onCursorMove: (callback: (data: { u: number, v: number }) => void) => void;
+      sendWindowSize?: (width: number, height: number) => void;
     };
   }
 }
@@ -34,8 +35,23 @@ const CursorOverlay = () => {
     if (window.electronAPI?.onCursorMove) {
         window.electronAPI.onCursorMove(handleCursorMove);
     }
+    
+    // Send initial window size
+    if (window.electronAPI?.sendWindowSize) {
+        window.electronAPI.sendWindowSize(window.innerWidth, window.innerHeight);
+    }
+    
+    // Handle resize
+    const handleResize = () => {
+        if (window.electronAPI?.sendWindowSize) {
+            window.electronAPI.sendWindowSize(window.innerWidth, window.innerHeight);
+        }
+    };
+    
+    window.addEventListener('resize', handleResize);
 
     return () => {
+        window.removeEventListener('resize', handleResize);
         clearTimeout(timeoutId);
     };
   }, []);
