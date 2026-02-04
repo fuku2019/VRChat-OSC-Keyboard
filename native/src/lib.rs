@@ -165,6 +165,79 @@ impl OverlayManager {
     }
 
     #[napi]
+    pub fn get_overlay_transform_absolute(&self, handle: i64) -> napi::Result<Vec<f64>> {
+        unsafe {
+            if self.context.overlay.is_null() {
+                return Err(napi::Error::from_reason("Overlay interface is null"));
+            }
+
+            let get_transform_fn = (*self.context.overlay).GetOverlayTransformAbsolute
+                .ok_or_else(|| napi::Error::from_reason("GetOverlayTransformAbsolute not available"))?;
+
+            let mut origin = vr::ETrackingUniverseOrigin_TrackingUniverseStanding;
+            let mut transform = vr::HmdMatrix34_t {
+                m: [[0.0; 4]; 3]
+            };
+
+            let err = get_transform_fn(handle as u64, &mut origin, &mut transform);
+            
+            if err != vr::EVROverlayError_VROverlayError_None {
+                return Err(napi::Error::from_reason(format!("GetOverlayTransformAbsolute failed: {:?}", err)));
+            }
+
+            // Convert 3x4 to 4x4 flattened (Row-Major for JS)
+            let m = transform.m;
+            let matrix = vec![
+                m[0][0] as f64, m[0][1] as f64, m[0][2] as f64, m[0][3] as f64,
+                m[1][0] as f64, m[1][1] as f64, m[1][2] as f64, m[1][3] as f64,
+                m[2][0] as f64, m[2][1] as f64, m[2][2] as f64, m[2][3] as f64,
+                0.0,            0.0,            0.0,            1.0
+            ];
+            
+            Ok(matrix)
+        }
+    }
+
+    #[napi]
+    pub fn set_overlay_transform_absolute(&self, handle: i64, matrix: Vec<f64>) -> napi::Result<()> {
+        unsafe {
+             if self.context.overlay.is_null() {
+                return Err(napi::Error::from_reason("Overlay interface is null"));
+            }
+            
+            if matrix.len() != 16 {
+                return Err(napi::Error::from_reason("Matrix must have 16 elements"));
+            }
+
+            let set_transform_fn = (*self.context.overlay).SetOverlayTransformAbsolute
+                .ok_or_else(|| napi::Error::from_reason("SetOverlayTransformAbsolute not available"))?;
+
+            let transform = vr::HmdMatrix34_t {
+                m: [
+                    [matrix[0] as f32, matrix[1] as f32, matrix[2] as f32, matrix[3] as f32],
+                    [matrix[4] as f32, matrix[5] as f32, matrix[6] as f32, matrix[7] as f32],
+                    [matrix[8] as f32, matrix[9] as f32, matrix[10] as f32, matrix[11] as f32],
+                ]
+            };
+
+            // Calculate inverse to correct OpenVR's expectation? 
+            // Actually SetOverlayTransformAbsolute takes the transform from TrackingOrigin to Overlay.
+            // If the matrix provided is the world transform of the overlay, it should be correct directly.
+
+            let err = set_transform_fn(
+                handle as u64, 
+                vr::ETrackingUniverseOrigin_TrackingUniverseStanding, 
+                &transform as *const _ as *mut _
+            );
+
+            if err != vr::EVROverlayError_VROverlayError_None {
+                return Err(napi::Error::from_reason(format!("SetOverlayTransformAbsolute failed: {:?}", err)));
+            }
+        }
+        Ok(())
+    }
+
+    #[napi]
     pub fn set_overlay_from_file(&self, handle: i64, file_path: String) -> napi::Result<()> {
         // Set overlay texture from image file (PNG, JPG, etc.)
         // 画像ファイルからテクスチャを設定 (PNG, JPG等)
@@ -223,6 +296,59 @@ impl OverlayManager {
             }
         }
         Ok(())
+    }
+
+    #[napi]
+    pub fn get_overlay_transform_type(&self, handle: i64) -> napi::Result<u32> {
+        unsafe {
+             if self.context.overlay.is_null() {
+                return Err(napi::Error::from_reason("Overlay interface is null"));
+            }
+            let get_transform_type_fn = (*self.context.overlay).GetOverlayTransformType
+                .ok_or_else(|| napi::Error::from_reason("GetOverlayTransformType not available"))?;
+            
+            let mut transform_type = vr::VROverlayTransformType_VROverlayTransform_Absolute;
+            let err = get_transform_type_fn(handle as u64, &mut transform_type);
+            
+            if err != vr::EVROverlayError_VROverlayError_None {
+                return Err(napi::Error::from_reason(format!("GetOverlayTransformType failed: {:?}", err)));
+            }
+            
+            Ok(transform_type as u32)
+        }
+    }
+
+    #[napi]
+    pub fn get_overlay_transform_relative(&self, handle: i64) -> napi::Result<OverlayRelativeTransform> {
+        unsafe {
+             if self.context.overlay.is_null() {
+                return Err(napi::Error::from_reason("Overlay interface is null"));
+            }
+            let get_transform_fn = (*self.context.overlay).GetOverlayTransformTrackedDeviceRelative
+                .ok_or_else(|| napi::Error::from_reason("GetOverlayTransformTrackedDeviceRelative not available"))?;
+            
+            let mut device_index = 0;
+            let mut transform = vr::HmdMatrix34_t { m: [[0.0; 4]; 3] };
+            
+            let err = get_transform_fn(handle as u64, &mut device_index, &mut transform);
+            
+            if err != vr::EVROverlayError_VROverlayError_None {
+                return Err(napi::Error::from_reason(format!("GetOverlayTransformTrackedDeviceRelative failed: {:?}", err)));
+            }
+            
+            let m = transform.m;
+            let matrix = vec![
+                m[0][0] as f64, m[0][1] as f64, m[0][2] as f64, m[0][3] as f64,
+                m[1][0] as f64, m[1][1] as f64, m[1][2] as f64, m[1][3] as f64,
+                m[2][0] as f64, m[2][1] as f64, m[2][2] as f64, m[2][3] as f64,
+                0.0,            0.0,            0.0,            1.0
+            ];
+            
+            Ok(OverlayRelativeTransform {
+                trackedDeviceIndex: device_index,
+                transform: matrix
+            })
+        }
     }
 
     #[napi]
@@ -405,5 +531,11 @@ pub struct ControllerState {
     pub touchpad_pressed: bool,
     pub touchpad_x: f64,
     pub touchpad_y: f64,
+}
+
+#[napi(object)]
+pub struct OverlayRelativeTransform {
+    pub trackedDeviceIndex: u32,
+    pub transform: Vec<f64>, // 4x4 flattened
 }
 
