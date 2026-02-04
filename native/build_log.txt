@@ -1,0 +1,13 @@
+   Compiling vr-overlay-native v0.1.0 (E:\VsCodeProject\Dev-VR-Overlay-VRC-OSC-Keyboard\native)
+warning: field `system` is never read
+ --> src\lib.rs:7:5
+  |
+6 | pub struct OverlayManager {
+  |            -------------- field in this struct
+7 |     system: *mut vr::VR_IVRSystem_FnTable,
+  |     ^^^^^^
+  |
+  = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `vr-overlay-native` (lib) generated 1 warning
+    Finished `release` profile [optimized] target(s) in 1.15s

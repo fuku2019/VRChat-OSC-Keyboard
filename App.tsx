@@ -10,6 +10,7 @@ import SettingsModal from './components/SettingsModal';
 import TutorialOverlay from './components/TutorialOverlay';
 import NotificationToast from './components/NotificationToast';
 import StatusDisplay from './components/StatusDisplay';
+import CursorOverlay from './components/CursorOverlay';
 import { InputMode } from './types';
 import { useIME } from './hooks/useIME';
 import { useUpdateChecker } from './hooks/useUpdateChecker';
@@ -275,6 +276,9 @@ const App = () => {
           onClose={() => setIsToastDismissed(true)}
         />
       )}
+      
+      {/* VR Controller Cursor / VRコントローラーカーソル */}
+      <CursorOverlay />
     </div>
   );
 };

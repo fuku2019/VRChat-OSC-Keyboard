@@ -1,0 +1,409 @@
+use napi_derive::napi;
+use napi::bindgen_prelude::*;
+use std::ffi::CString;
+use openvr_sys as vr;
+
+struct VrContext {
+    system: *mut vr::VR_IVRSystem_FnTable,
+    overlay: *mut vr::VR_IVROverlay_FnTable,
+}
+
+unsafe impl Send for VrContext {}
+unsafe impl Sync for VrContext {}
+
+#[napi]
+pub struct OverlayManager {
+    context: VrContext,
+}
+
+#[napi]
+impl OverlayManager {
+    #[napi(constructor)]
+    pub fn new() -> napi::Result<Self> {
+        let mut error = vr::EVRInitError_VRInitError_None;
+        unsafe {
+            if !vr::VR_IsHmdPresent() {
+                 return Err(napi::Error::from_reason("VR Headset not found"));
+            }
+
+            // Use VR_InitInternal instead of VR_Init (return value ignored) // VR_InitではなくVR_InitInternalを使用 (戻り値はSystemのトークンだが今回は無視)
+            // C++ API VR_Init is helper, C API uses InitInternal // C++ APIでは VR_Init はヘルパー関数だが、C API (openvr_sys) では InitInternal を呼ぶ
+            vr::VR_InitInternal(&mut error, vr::EVRApplicationType_VRApplication_Overlay);
+            
+            if error != vr::EVRInitError_VRInitError_None {
+                 return Err(napi::Error::from_reason(format!("VR_Init failed: {:?}", error)));
+            }
+
+            // Get IVROverlay interface // IVROverlay interface取得
+            // C bindings require FnTable_ prefix for function table access
+            // CバインディングではFnTable_プレフィックスが必要
+            let overlay_ver = CString::new("FnTable:IVROverlay_028").unwrap();
+            let mut error = vr::EVRInitError_VRInitError_None;
+            let overlay_ptr = vr::VR_GetGenericInterface(overlay_ver.as_ptr(), &mut error) as *mut vr::VR_IVROverlay_FnTable;
+            
+            if overlay_ptr.is_null() || error != vr::EVRInitError_VRInitError_None {
+                 return Err(napi::Error::from_reason("Failed to get IVROverlay interface"));
+            }
+            
+            // Get IVRSystem interface // IVRSystem interface取得 (必要であれば)
+            let system_ver = CString::new("FnTable:IVRSystem_023").unwrap(); // bindings.rsより
+            let mut error = vr::EVRInitError_VRInitError_None;
+            let system_ptr = vr::VR_GetGenericInterface(system_ver.as_ptr(), &mut error) as *mut vr::VR_IVRSystem_FnTable;
+
+             if system_ptr.is_null() {
+                 // System interface is not mandatory but kept // Systemインターフェースは必須ではないが取っておく
+                 // Error handling omitted // エラーハンドリングは省略
+            }
+
+            Ok(OverlayManager {
+                context: VrContext {
+                    system: system_ptr,
+                    overlay: overlay_ptr,
+                }
+            })
+        }
+    }
+
+    #[napi]
+    pub fn create_overlay(&self, key: String, name: String) -> napi::Result<i64> {
+        let c_key = CString::new(key).unwrap();
+        let c_name = CString::new(name).unwrap();
+        let mut handle = vr::k_ulOverlayHandleInvalid;
+
+        unsafe {
+            if self.context.overlay.is_null() {
+                return Err(napi::Error::from_reason("Overlay interface is null"));
+            }
+            let create_overlay_fn = (*self.context.overlay).CreateOverlay
+                .ok_or_else(|| napi::Error::from_reason("CreateOverlay function not available"))?;
+            let err = create_overlay_fn(c_key.as_ptr() as *mut i8, c_name.as_ptr() as *mut i8, &mut handle);
+            
+            if err != vr::EVROverlayError_VROverlayError_None {
+                return Err(napi::Error::from_reason(format!("CreateOverlay failed: {:?}", err)));
+            }
+        }
+
+        // u64 -> i64 cast (Napi compatibility)
+        Ok(handle as i64)
+    }
+
+    #[napi]
+    pub fn show_overlay(&self, handle: i64) -> napi::Result<()> {
+        unsafe {
+            if self.context.overlay.is_null() {
+                return Err(napi::Error::from_reason("Overlay interface is null"));
+            }
+            let show_overlay_fn = (*self.context.overlay).ShowOverlay
+                .ok_or_else(|| napi::Error::from_reason("ShowOverlay function not available"))?;
+            let err = show_overlay_fn(handle as u64);
+            if err != vr::EVROverlayError_VROverlayError_None {
+                return Err(napi::Error::from_reason(format!("ShowOverlay failed: {:?}", err)));
+            }
+        }
+        Ok(())
+    }
+
+    #[napi]
+    pub fn hide_overlay(&self, handle: i64) -> napi::Result<()> {
+        unsafe {
+            if self.context.overlay.is_null() {
+                return Err(napi::Error::from_reason("Overlay interface is null"));
+            }
+            let hide_overlay_fn = (*self.context.overlay).HideOverlay
+                .ok_or_else(|| napi::Error::from_reason("HideOverlay function not available"))?;
+            let err = hide_overlay_fn(handle as u64);
+             if err != vr::EVROverlayError_VROverlayError_None {
+                return Err(napi::Error::from_reason(format!("HideOverlay failed: {:?}", err)));
+            }
+        }
+        Ok(())
+    }
+
+    #[napi]
+    pub fn set_overlay_width(&self, handle: i64, width_meters: f64) -> napi::Result<()> {
+        unsafe {
+            if self.context.overlay.is_null() {
+                return Err(napi::Error::from_reason("Overlay interface is null"));
+            }
+            let set_width_fn = (*self.context.overlay).SetOverlayWidthInMeters
+                .ok_or_else(|| napi::Error::from_reason("SetOverlayWidthInMeters not available"))?;
+            let err = set_width_fn(handle as u64, width_meters as f32);
+            if err != vr::EVROverlayError_VROverlayError_None {
+                return Err(napi::Error::from_reason(format!("SetOverlayWidthInMeters failed: {:?}", err)));
+            }
+        }
+        Ok(())
+    }
+
+    #[napi]
+    pub fn set_overlay_transform_hmd(&self, handle: i64, distance: f64) -> napi::Result<()> {
+        unsafe {
+            if self.context.overlay.is_null() {
+                return Err(napi::Error::from_reason("Overlay interface is null"));
+            }
+            
+            // Create transform matrix: position overlay `distance` meters in front of HMD
+            // 変換行列を作成: HMDの前方`distance`メートルにオーバーレイを配置
+            let mut transform = vr::HmdMatrix34_t {
+                m: [
+                    [1.0, 0.0, 0.0, 0.0],           // X axis
+                    [0.0, 1.0, 0.0, 0.0],           // Y axis
+                    [0.0, 0.0, 1.0, -(distance as f32)], // Z axis (negative = in front)
+                ]
+            };
+            
+            let set_transform_fn = (*self.context.overlay).SetOverlayTransformTrackedDeviceRelative
+                .ok_or_else(|| napi::Error::from_reason("SetOverlayTransformTrackedDeviceRelative not available"))?;
+            
+            // k_unTrackedDeviceIndex_Hmd = 0 (HMD device index)
+            let err = set_transform_fn(handle as u64, 0, &mut transform);
+            if err != vr::EVROverlayError_VROverlayError_None {
+                return Err(napi::Error::from_reason(format!("SetOverlayTransformTrackedDeviceRelative failed: {:?}", err)));
+            }
+        }
+        Ok(())
+    }
+
+    #[napi]
+    pub fn set_overlay_from_file(&self, handle: i64, file_path: String) -> napi::Result<()> {
+        // Set overlay texture from image file (PNG, JPG, etc.)
+        // 画像ファイルからテクスチャを設定 (PNG, JPG等)
+        let c_path = CString::new(file_path.clone()).unwrap();
+        
+        unsafe {
+            if self.context.overlay.is_null() {
+                return Err(napi::Error::from_reason("Overlay interface is null"));
+            }
+            
+            let set_from_file_fn = (*self.context.overlay).SetOverlayFromFile
+                .ok_or_else(|| napi::Error::from_reason("SetOverlayFromFile not available"))?;
+            
+            let err = set_from_file_fn(handle as u64, c_path.as_ptr() as *mut i8);
+            
+            if err != vr::EVROverlayError_VROverlayError_None {
+                return Err(napi::Error::from_reason(format!("SetOverlayFromFile failed: {:?} (path: {})", err, file_path)));
+            }
+        }
+        Ok(())
+    }
+
+    #[napi]
+    pub fn set_overlay_raw(&self, handle: i64, buffer: Buffer, width: u32, height: u32) -> napi::Result<()> {
+        // Set overlay texture from raw RGBA buffer / RGBAバッファからテクスチャを設定
+        // Buffer from Electron's capturePage().toBitmap() / ElectronのcapturePage().toBitmap()からのバッファ
+        unsafe {
+            if self.context.overlay.is_null() {
+                return Err(napi::Error::from_reason("Overlay interface is null"));
+            }
+            
+            let set_raw_fn = (*self.context.overlay).SetOverlayRaw
+                .ok_or_else(|| napi::Error::from_reason("SetOverlayRaw not available"))?;
+            
+            // Buffer is RGBA, 4 bytes per pixel / バッファはRGBA、ピクセルあたり4バイト
+            let bytes_per_pixel: u32 = 4;
+            let expected_size = (width * height * bytes_per_pixel) as usize;
+            
+            if buffer.len() != expected_size {
+                return Err(napi::Error::from_reason(format!(
+                    "Buffer size mismatch: expected {} bytes ({}x{}x4), got {} bytes",
+                    expected_size, width, height, buffer.len()
+                )));
+            }
+            
+            let err = set_raw_fn(
+                handle as u64,
+                buffer.as_ptr() as *mut std::ffi::c_void,
+                width,
+                height,
+                bytes_per_pixel,
+            );
+            
+            if err != vr::EVROverlayError_VROverlayError_None {
+                return Err(napi::Error::from_reason(format!("SetOverlayRaw failed: {:?}", err)));
+            }
+        }
+        Ok(())
+    }
+
+    #[napi]
+    pub fn get_controller_ids(&self) -> napi::Result<Vec<u32>> {
+        // Get valid controller indices / 有効なコントローラーインデックスを取得
+        let mut controllers = Vec::new();
+        unsafe {
+            if self.context.system.is_null() {
+                return Err(napi::Error::from_reason("System interface is null"));
+            }
+            
+            let get_class_fn = (*self.context.system).GetTrackedDeviceClass
+                .ok_or_else(|| napi::Error::from_reason("GetTrackedDeviceClass not available"))?;
+                
+            for i in 0..vr::k_unMaxTrackedDeviceCount {
+                let device_class = get_class_fn(i);
+                if device_class == vr::ETrackedDeviceClass_TrackedDeviceClass_Controller {
+                    controllers.push(i);
+                }
+            }
+        }
+        Ok(controllers)
+    }
+
+    #[napi]
+    pub fn get_controller_pose(&self, index: u32) -> napi::Result<Vec<f64>> {
+        // Get pose matrix for controller (4x4 flattened) / コントローラーのポーズ行列を取得 (4x4フラット)
+        unsafe {
+            if self.context.system.is_null() {
+                return Err(napi::Error::from_reason("System interface is null"));
+            }
+            
+            let get_pose_fn = (*self.context.system).GetDeviceToAbsoluteTrackingPose
+                .ok_or_else(|| napi::Error::from_reason("GetDeviceToAbsoluteTrackingPose not available"))?;
+                
+            // Getting generic tracker pose
+            // OpenVR API gets array of poses.
+            
+            let mut poses_array: Vec<vr::TrackedDevicePose_t> = vec![std::mem::zeroed(); vr::k_unMaxTrackedDeviceCount as usize];
+            
+            get_pose_fn(
+                vr::ETrackingUniverseOrigin_TrackingUniverseStanding,
+                0.0,
+                poses_array.as_mut_ptr(),
+                vr::k_unMaxTrackedDeviceCount,
+            );
+            
+            if index >= vr::k_unMaxTrackedDeviceCount {
+                 return Err(napi::Error::from_reason("Invalid device index"));
+            }
+            
+            let pose = &poses_array[index as usize];
+            if !pose.bPoseIsValid {
+                 return Ok(vec![]); // Valid but not tracking / 有効だがトラッキングされていない
+            }
+            
+            let m = pose.mDeviceToAbsoluteTracking.m;
+            // Convert 3x4 to 4x4 flattened (column-major for WebGL/Three.js usually? No, let's return row-major and handle in JS)
+            // Three.js Matrix4.set() takes row-major (n11, n12, n13, n14, ...)
+            
+            let matrix = vec![
+                m[0][0] as f64, m[0][1] as f64, m[0][2] as f64, m[0][3] as f64,
+                m[1][0] as f64, m[1][1] as f64, m[1][2] as f64, m[1][3] as f64,
+                m[2][0] as f64, m[2][1] as f64, m[2][2] as f64, m[2][3] as f64,
+                0.0,            0.0,            0.0,            1.0
+            ];
+            
+            Ok(matrix)
+        }
+    }
+
+    #[napi]
+    pub fn compute_overlay_intersection(&self, handle: i64, source: Vec<f64>, direction: Vec<f64>) -> napi::Result<Option<IntersectionResult>> {
+        unsafe {
+            if self.context.overlay.is_null() {
+                return Err(napi::Error::from_reason("Overlay interface is null"));
+            }
+            
+            let compute_intersection_fn = (*self.context.overlay).ComputeOverlayIntersection
+                .ok_or_else(|| napi::Error::from_reason("ComputeOverlayIntersection not available"))?;
+                
+            let mut params = vr::VROverlayIntersectionParams_t {
+                vSource: vr::HmdVector3_t { v: [source[0] as f32, source[1] as f32, source[2] as f32] },
+                vDirection: vr::HmdVector3_t { v: [direction[0] as f32, direction[1] as f32, direction[2] as f32] },
+                eOrigin: vr::ETrackingUniverseOrigin_TrackingUniverseStanding,
+            };
+            
+            let mut results = vr::VROverlayIntersectionResults_t {
+                vPoint: vr::HmdVector3_t { v: [0.0; 3] },
+                vNormal: vr::HmdVector3_t { v: [0.0; 3] },
+                vUVs: vr::HmdVector2_t { v: [0.0; 2] },
+                fDistance: 0.0,
+            };
+            
+            let success = compute_intersection_fn(
+                handle as u64,
+                &mut params,
+                &mut results
+            );
+            
+            if success {
+                Ok(Some(IntersectionResult {
+                    x: results.vPoint.v[0] as f64,
+                    y: results.vPoint.v[1] as f64,
+                    z: results.vPoint.v[2] as f64,
+                    u: results.vUVs.v[0] as f64,
+                    v: results.vUVs.v[1] as f64,
+                    distance: results.fDistance as f64,
+                }))
+            } else {
+                Ok(None)
+            }
+        }
+    }
+
+    #[napi]
+    pub fn get_controller_state(&self, controller_index: u32) -> napi::Result<ControllerState> {
+        unsafe {
+            if self.context.system.is_null() {
+                return Err(napi::Error::from_reason("System interface is null"));
+            }
+
+            let get_controller_state_fn = (*self.context.system).GetControllerState
+                .ok_or_else(|| napi::Error::from_reason("GetControllerState not available"))?;
+
+            let mut state: vr::VRControllerState_t = std::mem::zeroed();
+            let success = get_controller_state_fn(
+                controller_index,
+               &mut state,
+                std::mem::size_of::<vr::VRControllerState_t>() as u32,
+            );
+
+            if !success {
+                return Ok(ControllerState {
+                    trigger_pressed: false,
+                    trigger_value: 0.0,
+                    grip_pressed: false,
+                    touchpad_pressed: false,
+                    touchpad_x: 0.0,
+                    touchpad_y: 0.0,
+                });
+            }
+
+            // Button bitmask constants
+            const BUTTON_TRIGGER: u64 = 1u64 << 33; // k_EButton_SteamVR_Trigger
+            const BUTTON_GRIP: u64 = 1u64 << 2;     // k_EButton_Grip
+            const BUTTON_TOUCHPAD: u64 = 1u64 << 32; // k_EButton_SteamVR_Touchpad
+
+            // Axis indices
+            const AXIS_TRIGGER: usize = 1;
+            const AXIS_TOUCHPAD: usize = 0;
+
+            Ok(ControllerState {
+                trigger_pressed: (state.ulButtonPressed & BUTTON_TRIGGER) != 0,
+                trigger_value: state.rAxis[AXIS_TRIGGER].x as f64,
+                grip_pressed: (state.ulButtonPressed & BUTTON_GRIP) != 0,
+                touchpad_pressed: (state.ulButtonPressed & BUTTON_TOUCHPAD) != 0,
+                touchpad_x: state.rAxis[AXIS_TOUCHPAD].x as f64,
+                touchpad_y: state.rAxis[AXIS_TOUCHPAD].y as f64,
+            })
+        }
+    }
+}
+
+#[napi(object)]
+pub struct IntersectionResult {
+    pub x: f64,
+    pub y: f64,
+    pub z: f64,
+    pub u: f64,
+    pub v: f64,
+    pub distance: f64,
+}
+
+#[napi(object)]
+pub struct ControllerState {
+    pub trigger_pressed: bool,
+    pub trigger_value: f64,
+    pub grip_pressed: bool,
+    pub touchpad_pressed: bool,
+    pub touchpad_x: f64,
+    pub touchpad_y: f64,
+}
+
