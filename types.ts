@@ -24,6 +24,7 @@ export interface KeyConfig {
     | 'clear'
     | 'send'
     | 'tab';
+  isSpacer?: boolean; // Layout placeholder / レイアウトプレースホルダー
 }
 
 // Update check interval type / 更新確認間隔の型

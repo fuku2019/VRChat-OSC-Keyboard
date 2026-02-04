@@ -32,7 +32,7 @@ export const TIMEOUTS = {
 
 // Grid layout configuration / グリッドレイアウト設定
 export const KEYBOARD_GRID = {
-  COLUMNS: 30,
+  COLUMNS: 60,
   ROW_HEIGHT: '3.5rem',
 } as const;
 
