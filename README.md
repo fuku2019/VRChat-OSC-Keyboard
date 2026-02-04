@@ -83,9 +83,25 @@ https://github.com/user-attachments/assets/988b4c58-d770-46fa-ad06-91ad71321da8
 </details>
 
 ## 手動ビルド
+
+### 1. 事前準備
+Rust を含むネイティブモジュールのビルドには、以下の環境が必要です。
+
+- **Node.js**: LTS バージョン推奨
+- **Rust**: [rustup](https://rustup.rs/) をインストールしてください
+- **C++ ビルドツール**: 
+  - Windows の場合: [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) をインストールし、「C++ によるデスクトップ開発」を選択
+- **LLVM**: Rust のバインディング生成に必要です
+  - Windows (PowerShell) の場合: `winget install -e --id LLVM.LLVM`
+
+### 2. インストールとビルド
 ```bash
 # ライブラリのインストール
 npm install
-# ビルドの実行
+
+# ネイティブモジュール (Rust) のビルド
+npm run build:native
+
+# アプリケーションのパッケージング
 npm run dist
 ```

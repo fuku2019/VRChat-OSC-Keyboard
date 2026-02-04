@@ -1,7 +1,7 @@
 {
   "name": "vrchat-osc-keyboard",
   "productName": "VRChat OSC Keyboard",
-  "version": "2.0-Dev",
+  "version": "2.0.0-dev",
   "description": "A Japanese/English virtual keyboard and chatbox interface designed for SteamVR overlays to send text to VRChat via OSC.",
   "napi": {
     "binaryName": "vr-overlay-native",
@@ -63,13 +63,19 @@
   "build": {
     "npmRebuild": false,
     "afterPack": "./scripts/removeLocales.cjs",
+    "asarUnpack": [
+      "docs/**/*"
+    ],
     "publish": null,
     "appId": "com.vrchat.osc.keyboard",
     "productName": "VRChat OSC Keyboard",
     "files": [
       "dist/**/*",
       "electron/**/*",
-      "package.json"
+      "package.json",
+      "native/index.node",
+      "native/openvr_api.dll",
+      "docs/**/*"
     ],
     "directories": {
       "output": "release"
