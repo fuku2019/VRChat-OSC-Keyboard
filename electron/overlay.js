@@ -51,7 +51,13 @@ try {
 let overlayManager = null;
 // Store overlay handle / オーバーレイハンドルを保持
 let overlayHandle = null;
-let updateInterval = null;
+let captureTimer = null;
+let paintHandler = null;
+let captureWebContents = null;
+let captureInProgress = false;
+let lastSizeMismatchTime = 0; // For log throttling / ログの間引き用
+let lastFrameBuffer = null; // Keep last buffer alive for native read safety
+let lastFrameImage = null; // Keep last image alive if buffer is a view
 
 /**
  * Initialize VR overlay / VRオーバーレイを初期化
@@ -63,6 +69,100 @@ const SPAWN_OFFSET_Z = -0.5; // 50cm forward
 const SPAWN_PITCH_ANGLE = 30 * (Math.PI / 180); // 30 degrees tilt up
 
 import { mat4, quat, vec3 } from 'gl-matrix';
+
+const DEFAULT_CAPTURE_FPS = 60;
+const MIN_CAPTURE_FPS = 1;
+const MAX_CAPTURE_FPS = 120;
+const SIZE_MISMATCH_LOG_INTERVAL_MS = 5000;
+
+function normalizeFps(fps) {
+    const parsed = Number.isFinite(fps) ? fps : Number(fps);
+    if (!Number.isFinite(parsed)) return DEFAULT_CAPTURE_FPS;
+    return Math.max(MIN_CAPTURE_FPS, Math.min(parsed, MAX_CAPTURE_FPS));
+}
+
+function getBitmapBuffer(image) {
+    if (typeof image.getBitmap === 'function') {
+        const bitmap = image.getBitmap();
+        if (bitmap && bitmap.length > 0) return bitmap;
+    }
+    return image.toBitmap();
+}
+
+function deriveSizeFromBuffer(size, bufferLength) {
+    if (bufferLength % 4 !== 0) return null;
+    const actualPixels = bufferLength / 4;
+    if (!Number.isFinite(actualPixels) || actualPixels <= 0) return null;
+
+    const aspectRatio = size.width / size.height;
+    if (!Number.isFinite(aspectRatio) || aspectRatio <= 0) return null;
+
+    const approxWidth = Math.max(1, Math.round(Math.sqrt(actualPixels * aspectRatio)));
+    let width = approxWidth;
+    let height = Math.max(1, Math.round(actualPixels / width));
+
+    if (width * height * 4 !== bufferLength) {
+        const heightFloor = Math.max(1, Math.floor(actualPixels / width));
+        if (width * heightFloor * 4 === bufferLength) {
+            height = heightFloor;
+        } else {
+            const widthFloor = Math.max(1, Math.floor(Math.sqrt(actualPixels * aspectRatio)));
+            const heightAlt = Math.max(1, Math.floor(actualPixels / widthFloor));
+            if (widthFloor * heightAlt * 4 === bufferLength) {
+                width = widthFloor;
+                height = heightAlt;
+            } else {
+                return null;
+            }
+        }
+    }
+
+    return { width, height };
+}
+
+function updateOverlayFromImage(image) {
+    if (!overlayManager || overlayHandle === null) return false;
+
+    const size = image.getSize();
+    if (!size || size.width === 0 || size.height === 0) return false;
+
+    const bgraBuffer = getBitmapBuffer(image);
+    if (!bgraBuffer || bgraBuffer.length === 0) return false;
+
+    let width = size.width;
+    let height = size.height;
+    const expectedSize = width * height * 4;
+
+    if (bgraBuffer.length !== expectedSize) {
+        const derived = deriveSizeFromBuffer(size, bgraBuffer.length);
+        if (!derived) {
+            const now = Date.now();
+            if (now - lastSizeMismatchTime > SIZE_MISMATCH_LOG_INTERVAL_MS) {
+                console.warn(`Size mismatch: getSize()=${size.width}x${size.height}, buffer=${bgraBuffer.length} bytes (expected ${expectedSize}), skipping frame`);
+                lastSizeMismatchTime = now;
+            }
+            return false;
+        }
+
+        width = derived.width;
+        height = derived.height;
+
+        const now = Date.now();
+        if (now - lastSizeMismatchTime > SIZE_MISMATCH_LOG_INTERVAL_MS) {
+            console.warn(`Size mismatch: getSize()=${size.width}x${size.height}, buffer=${bgraBuffer.length} bytes (expected ${expectedSize}), using calculated ${width}x${height}`);
+            lastSizeMismatchTime = now;
+        }
+    }
+
+    // Keep references alive in case native side reads asynchronously
+    lastFrameBuffer = bgraBuffer;
+    lastFrameImage = image;
+
+    // Update texture directly via D3D11 shared texture / D3D11共有テクスチャ経由で直接テクスチャを更新
+    // Uses GPU memory sharing - no file I/O, minimal flickering / GPUメモリ共有を使用 - ファイルI/Oなし、点滅最小化
+    overlayManager.setOverlayTextureD3D11(overlayHandle, bgraBuffer, width, height);
+    return true;
+}
 
 /**
  * Calculate spawn position relative to HMD
@@ -161,7 +261,7 @@ export function resetOverlayPosition() {
         }
 
         // Apply to overlay handle / オーバーレイハンドルに適用
-        if (overlayHandle) {
+        if (overlayHandle !== null) {
             respawnOverlay(overlayHandle, hmdPose);
         }
         
@@ -239,105 +339,122 @@ export function startCapture(webContents, fps = 60) {
     console.warn('Overlay not initialized, skipping capture');
     return;
   }
-  
-  if (updateInterval) {
-    clearInterval(updateInterval);
+
+  if (!webContents) {
+    console.warn('No webContents provided, skipping capture');
+    return;
+  }
+
+  if (webContents.isDestroyed && webContents.isDestroyed()) {
+    console.warn('webContents already destroyed, skipping capture');
+    return;
   }
   
-  const intervalMs = Math.floor(1000 / fps);
-  console.log(`Starting capture at ${fps} FPS (${intervalMs}ms interval) with GPU direct transfer`);
-  
-  let isProcessing = false;
-  let lastSizeMismatchTime = 0; // For log throttling / ログの間引き用
-  
-  updateInterval = setInterval(async () => {
-    if (isProcessing) return;
-    isProcessing = true;
-    
-    try {
-      if (webContents.isDestroyed()) {
-          stopCapture();
-          return;
-      }
+  stopCapture();
 
-      // Capture the page / ページをキャプチャ
-      const image = await webContents.capturePage();
-      // Verify webContents again after await check / await後に再度webContentsを確認
-      if (webContents.isDestroyed()) {
-          stopCapture();
-          return;
-      }
+  const clampedFps = normalizeFps(fps);
+  const intervalMs = Math.max(1, Math.floor(1000 / clampedFps));
+  const isOffscreen = typeof webContents.isOffscreen === 'function' && webContents.isOffscreen();
+  const modeLabel = isOffscreen ? 'offscreen paint' : 'polling';
+  console.log(`Starting capture at ${clampedFps} FPS (${intervalMs}ms interval) with GPU direct transfer (${modeLabel})`);
 
-      const size = image.getSize();
-      
-      if (size.width === 0 || size.height === 0) {
-        isProcessing = false;
-        return;
-      }
-      
-      // Get BGRA bitmap buffer from Electron / ElectronからBGRAビットマップバッファを取得
-      // image.toBitmap() returns BGRA format directly / image.toBitmap()はBGRA形式を直接返す
-      const bgraBuffer = image.toBitmap();
-      
-      // Calculate expected buffer size / 期待されるバッファサイズを計算
-      const expectedSize = size.width * size.height * 4; // BGRA = 4 bytes per pixel
-      
-      // Verify buffer size matches / バッファサイズが一致するか検証
-      if (bgraBuffer.length !== expectedSize) {
-        // Size mismatch - likely due to DPI scaling / サイズ不一致 - おそらくDPIスケーリングが原因
-        // Calculate actual dimensions from buffer / バッファから実際のサイズを計算
-        const actualPixels = bgraBuffer.length / 4;
-        const aspectRatio = size.width / size.height;
-        const actualHeight = Math.sqrt(actualPixels / aspectRatio);
-        const actualWidth = actualPixels / actualHeight;
-        
-        // Log warning only once every 5 seconds to avoid spam / スパム回避のため5秒に1回だけ警告をログ出力
-        const now = Date.now();
-        if (now - lastSizeMismatchTime > 5000) {
-            console.warn(`Size mismatch: getSize()=${size.width}x${size.height}, buffer=${bgraBuffer.length} bytes (expected ${expectedSize}), using calculated ${Math.round(actualWidth)}x${Math.round(actualHeight)}`);
-            lastSizeMismatchTime = now;
-        }
-        
-        size.width = Math.round(actualWidth);
-        size.height = Math.round(actualHeight);
-      }
-      
-      /* 
-       * OPTIMIZATION: Removed CPU-side pixel swapping loop.
-       * Native module now accepts BGRA format directly (DXGI_FORMAT_B8G8R8A8_UNORM).
-       * This removes overhead of Buffer.from() and the for-loop.
-       * 
-       * 最適化: CPU側のピクセル入替ループを削除しました。
-       * ネイティブモジュールがBGRA形式（DXGI_FORMAT_B8G8R8A8_UNORM）を直接受け入れるようになりました。
-       * これにより、Buffer.from() とforループのオーバーヘッドが排除されます。
-       */
-      
-      // Update texture directly via D3D11 shared texture / D3D11共有テクスチャ経由で直接テクスチャを更新
-      // Uses GPU memory sharing - no file I/O, minimal flickering / GPUメモリ共有を使用 - ファイルI/Oなし、点滅最小化
-      overlayManager.setOverlayTextureD3D11(overlayHandle, bgraBuffer, size.width, size.height);
-      
-    } catch (error) {
-      if (!error.message?.includes('destroyed')) {
-        console.error('Capture error:', error);
-      } else {
-        // Stop capture if destroyed / 破棄された場合はキャプチャを停止
-        stopCapture();
-      }
-    } finally {
-      isProcessing = false;
+  captureWebContents = webContents;
+  captureInProgress = false;
+
+  if (isOffscreen) {
+    if (typeof webContents.setFrameRate === 'function') {
+        webContents.setFrameRate(Math.round(clampedFps));
     }
-  }, intervalMs);
+    if (typeof webContents.startPainting === 'function') {
+        webContents.startPainting();
+    }
+
+    paintHandler = (_event, _dirty, image) => {
+        if (!captureWebContents || captureWebContents.isDestroyed()) {
+            stopCapture();
+            return;
+        }
+        if (captureInProgress) return;
+        captureInProgress = true;
+        try {
+            updateOverlayFromImage(image);
+        } catch (error) {
+            if (!error.message?.includes('destroyed')) {
+                console.error('Capture error:', error);
+            } else {
+                stopCapture();
+            }
+        } finally {
+            captureInProgress = false;
+        }
+    };
+
+    webContents.on('paint', paintHandler);
+    return;
+  }
+
+  async function tick() {
+    if (!captureWebContents || captureWebContents.isDestroyed()) {
+        stopCapture();
+        return;
+    }
+    if (captureInProgress) {
+        scheduleNext(intervalMs);
+        return;
+    }
+    captureInProgress = true;
+    const startedAt = Date.now();
+    try {
+        // Capture the page / ページをキャプチャ
+        const image = await captureWebContents.capturePage();
+        // Verify webContents again after await check / await後に再度webContentsを確認
+        if (!captureWebContents || captureWebContents.isDestroyed()) {
+            stopCapture();
+            return;
+        }
+        updateOverlayFromImage(image);
+    } catch (error) {
+        if (!error.message?.includes('destroyed')) {
+            console.error('Capture error:', error);
+        } else {
+            stopCapture();
+        }
+    } finally {
+        captureInProgress = false;
+        if (captureWebContents) {
+            const elapsed = Date.now() - startedAt;
+            scheduleNext(Math.max(0, intervalMs - elapsed));
+        }
+    }
+  }
+
+  function scheduleNext(delayMs) {
+    captureTimer = setTimeout(tick, delayMs);
+  }
+
+  scheduleNext(0);
 }
 
 /**
  * Stop capturing / キャプチャを停止
  */
 export function stopCapture() {
-  if (updateInterval) {
-    clearInterval(updateInterval);
-    updateInterval = null;
-    console.log('Capture stopped');
+  if (captureTimer) {
+    clearTimeout(captureTimer);
+    captureTimer = null;
   }
+  if (captureWebContents && paintHandler) {
+    captureWebContents.removeListener('paint', paintHandler);
+    if (typeof captureWebContents.stopPainting === 'function') {
+        captureWebContents.stopPainting();
+    }
+  }
+  paintHandler = null;
+  captureWebContents = null;
+  captureInProgress = false;
+  lastFrameBuffer = null;
+  lastFrameImage = null;
+  console.log('Capture stopped');
 }
 
 /**
@@ -351,7 +468,7 @@ export function getOverlayManager() {
  * Set overlay width / オーバーレイの幅を設定
  */
 export function setOverlayWidth(width) {
-    if(!overlayManager || !overlayHandle) return;
+    if(!overlayManager || overlayHandle === null) return;
     overlayManager.setOverlayWidth(overlayHandle, width);
 }
 
@@ -359,7 +476,7 @@ export function setOverlayWidth(width) {
  * Set overlay transform relative to HMD / HMD相対でオーバーレイのトランスフォームを設定
  */
 export function setOverlayTransformHmd(distance) {
-    if(!overlayManager || !overlayHandle) return;
+    if(!overlayManager || overlayHandle === null) return;
     overlayManager.setOverlayTransformHmd(overlayHandle, distance);
 }
 
