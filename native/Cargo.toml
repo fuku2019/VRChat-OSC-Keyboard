@@ -9,7 +9,18 @@ crate-type = ["cdylib"]
 [dependencies]
 napi = { version = "2.12.9", features = ["default", "napi4"] }
 napi-derive = "2.12.2"
-openvr_sys = "2.0" 
+openvr_sys = "2.0"
+
+[dependencies.windows]
+version = "0.58"
+features = [
+    "Win32_Graphics_Direct3D",
+    "Win32_Graphics_Direct3D11",
+    "Win32_Graphics_Dxgi",
+    "Win32_Graphics_Dxgi_Common",
+    "Win32_Foundation",
+]
 
 [build-dependencies]
 napi-build = "2.0.1"
+

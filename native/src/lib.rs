@@ -1,19 +1,43 @@
 use napi_derive::napi;
 use napi::bindgen_prelude::*;
 use std::ffi::CString;
+use std::cell::RefCell;
 use openvr_sys as vr;
+
+// DirectX11 imports / DirectX11インポート
+use windows::Win32::Graphics::Direct3D::D3D_DRIVER_TYPE_HARDWARE;
+use windows::Win32::Graphics::Direct3D11::{
+    D3D11CreateDevice, ID3D11Device, ID3D11DeviceContext, ID3D11Texture2D,
+    D3D11_BIND_SHADER_RESOURCE, D3D11_CPU_ACCESS_WRITE, D3D11_CREATE_DEVICE_FLAG,
+    D3D11_MAPPED_SUBRESOURCE, D3D11_MAP_WRITE_DISCARD, D3D11_SDK_VERSION,
+    D3D11_TEXTURE2D_DESC, D3D11_USAGE_DYNAMIC,
+};
+use windows::Win32::Graphics::Dxgi::Common::{DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_SAMPLE_DESC};
+use windows::core::Interface;
 
 struct VrContext {
     system: *mut vr::VR_IVRSystem_FnTable,
     overlay: *mut vr::VR_IVROverlay_FnTable,
 }
 
+// D3D11 context for texture management / テクスチャ管理用のD3D11コンテキスト
+struct D3D11Context {
+    device: ID3D11Device,
+    context: ID3D11DeviceContext,
+    texture: Option<ID3D11Texture2D>,
+    texture_width: u32,
+    texture_height: u32,
+}
+
 unsafe impl Send for VrContext {}
 unsafe impl Sync for VrContext {}
+unsafe impl Send for D3D11Context {}
+unsafe impl Sync for D3D11Context {}
 
 #[napi]
 pub struct OverlayManager {
     context: VrContext,
+    d3d11: Option<RefCell<D3D11Context>>,
 }
 
 #[napi]
@@ -55,11 +79,46 @@ impl OverlayManager {
                  // Error handling omitted // エラーハンドリングは省略
             }
 
+            // Initialize D3D11 device for texture sharing / テクスチャ共有用のD3D11デバイスを初期化
+            let d3d11_ctx = Self::init_d3d11().ok().map(|ctx| RefCell::new(ctx));
+
             Ok(OverlayManager {
                 context: VrContext {
                     system: system_ptr,
                     overlay: overlay_ptr,
-                }
+                },
+                d3d11: d3d11_ctx,
+            })
+        }
+    }
+
+    // Initialize D3D11 device and context / D3D11デバイスとコンテキストを初期化
+    fn init_d3d11() -> napi::Result<D3D11Context> {
+        unsafe {
+            let mut device: Option<ID3D11Device> = None;
+            let mut context: Option<ID3D11DeviceContext> = None;
+
+            D3D11CreateDevice(
+                None,
+                D3D_DRIVER_TYPE_HARDWARE,
+                None,
+                D3D11_CREATE_DEVICE_FLAG(0),
+                None,
+                D3D11_SDK_VERSION,
+                Some(&mut device),
+                None,
+                Some(&mut context),
+            ).map_err(|e| napi::Error::from_reason(format!("D3D11CreateDevice failed: {:?}", e)))?;
+
+            let device = device.ok_or_else(|| napi::Error::from_reason("D3D11 device is null"))?;
+            let context = context.ok_or_else(|| napi::Error::from_reason("D3D11 context is null"))?;
+
+            Ok(D3D11Context {
+                device,
+                context,
+                texture: None,
+                texture_width: 0,
+                texture_height: 0,
             })
         }
     }
@@ -293,6 +352,97 @@ impl OverlayManager {
             
             if err != vr::EVROverlayError_VROverlayError_None {
                 return Err(napi::Error::from_reason(format!("SetOverlayRaw failed: {:?}", err)));
+            }
+        }
+        Ok(())
+    }
+
+    #[napi]
+    pub fn set_overlay_texture_d3d11(&self, handle: i64, buffer: Buffer, width: u32, height: u32) -> napi::Result<()> {
+        // Set overlay texture using D3D11 shared texture / D3D11共有テクスチャを使用してオーバーレイテクスチャを設定
+        // This bypasses file I/O completely and uses GPU memory / ファイルI/Oを完全にバイパスし、GPUメモリを使用
+        unsafe {
+            if self.context.overlay.is_null() {
+                return Err(napi::Error::from_reason("Overlay interface is null"));
+            }
+
+            let d3d11_ref = self.d3d11.as_ref()
+                .ok_or_else(|| napi::Error::from_reason("D3D11 context not initialized"))?;
+            
+            let mut d3d11 = d3d11_ref.borrow_mut();
+
+            // Buffer is RGBA, 4 bytes per pixel / バッファはRGBA、ピクセルあたり4バイト
+            let expected_size = (width * height * 4) as usize;
+            if buffer.len() != expected_size {
+                return Err(napi::Error::from_reason(format!(
+                    "Buffer size mismatch: expected {} bytes ({}x{}x4), got {} bytes",
+                    expected_size, width, height, buffer.len()
+                )));
+            }
+
+            // Recreate texture if size changed / サイズが変わった場合はテクスチャを再作成
+            if d3d11.texture.is_none() || d3d11.texture_width != width || d3d11.texture_height != height {
+                let desc = D3D11_TEXTURE2D_DESC {
+                    Width: width,
+                    Height: height,
+                    MipLevels: 1,
+                    ArraySize: 1,
+                    Format: DXGI_FORMAT_R8G8B8A8_UNORM,
+                    SampleDesc: DXGI_SAMPLE_DESC { Count: 1, Quality: 0 },
+                    Usage: D3D11_USAGE_DYNAMIC,
+                    BindFlags: D3D11_BIND_SHADER_RESOURCE.0 as u32,
+                    CPUAccessFlags: D3D11_CPU_ACCESS_WRITE.0 as u32,
+                    MiscFlags: 0,
+                };
+
+                let mut texture: Option<ID3D11Texture2D> = None;
+                d3d11.device.CreateTexture2D(&desc, None, Some(&mut texture))
+                    .map_err(|e| napi::Error::from_reason(format!("CreateTexture2D failed: {:?}", e)))?;
+
+                d3d11.texture = texture;
+                d3d11.texture_width = width;
+                d3d11.texture_height = height;
+            }
+
+            // Update texture data / テクスチャデータを更新
+            let texture = d3d11.texture.as_ref().unwrap();
+            
+            let mut mapped = D3D11_MAPPED_SUBRESOURCE::default();
+            d3d11.context.Map(texture, 0, D3D11_MAP_WRITE_DISCARD, 0, Some(&mut mapped))
+                .map_err(|e| napi::Error::from_reason(format!("Map failed: {:?}", e)))?;
+
+            // Copy buffer to texture / バッファをテクスチャにコピー
+            let row_pitch = width * 4;
+            let src = buffer.as_ptr();
+            let dst = mapped.pData as *mut u8;
+            
+            for y in 0..height {
+                std::ptr::copy_nonoverlapping(
+                    src.add((y * row_pitch) as usize),
+                    dst.add((y * mapped.RowPitch) as usize),
+                    row_pitch as usize,
+                );
+            }
+
+            d3d11.context.Unmap(texture, 0);
+
+            // Set overlay texture using SetOverlayTexture / SetOverlayTextureを使用してオーバーレイテクスチャを設定
+            let set_texture_fn = (*self.context.overlay).SetOverlayTexture
+                .ok_or_else(|| napi::Error::from_reason("SetOverlayTexture not available"))?;
+
+            // Get raw pointer for OpenVR / OpenVR用の生ポインタを取得
+            let texture_ptr = texture.as_raw();
+
+            let vr_texture = vr::Texture_t {
+                handle: texture_ptr as *mut std::ffi::c_void,
+                eType: vr::ETextureType_TextureType_DirectX,
+                eColorSpace: vr::EColorSpace_ColorSpace_Auto,
+            };
+
+            let err = set_texture_fn(handle as u64, &vr_texture as *const _ as *mut _);
+
+            if err != vr::EVROverlayError_VROverlayError_None {
+                return Err(napi::Error::from_reason(format!("SetOverlayTexture failed: {:?}", err)));
             }
         }
         Ok(())

@@ -64,7 +64,8 @@
     "npmRebuild": false,
     "afterPack": "./scripts/removeLocales.cjs",
     "asarUnpack": [
-      "docs/**/*"
+      "docs/**/*",
+      "native/**/*"
     ],
     "publish": null,
     "appId": "com.vrchat.osc.keyboard",
