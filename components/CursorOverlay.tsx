@@ -4,7 +4,9 @@ import { useState, useEffect } from 'react';
 declare global {
   interface Window {
     electronAPI?: {
-      onCursorMove: (callback: (data: { u: number, v: number }) => void) => void;
+      onCursorMove: (callback: (data: { u: number; v: number; controllerId?: number }) => void) => void;
+      onCursorHide?: (callback: (data: { controllerId?: number }) => void) => void;
+      removeCursorHideListener?: (callback: (data: { controllerId?: number }) => void) => void;
       sendWindowSize?: (width: number, height: number) => void;
       sendRendererMetrics?: (metrics: { width: number; height: number; devicePixelRatio: number }) => void;
     };
@@ -12,30 +14,62 @@ declare global {
 }
 
 const CursorOverlay = () => {
-  const [position, setPosition] = useState<{u: number, v: number} | null>(null);
-  const [visible, setVisible] = useState(false);
-  
+  const [cursors, setCursors] = useState<Record<number, { u: number; v: number; visible: boolean }>>({});
+
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
+    const hideTimeouts: Record<number, NodeJS.Timeout> = {};
     let dprQuery: MediaQueryList | null = null;
     
-    const handleCursorMove = ({ u, v }: { u: number, v: number }) => {
+    const handleCursorMove = ({ u, v, controllerId }: { u: number; v: number; controllerId?: number }) => {
       // OpenVR UV: (0,0) is bottom-left, screen (0,0) is top-left
       // Flip V for screen coordinates
       // console.log('Renderer received cursor:', u.toFixed(2), v.toFixed(2));
-      
-      setPosition({ u, v: 1.0 - v }); // Flip V
-      setVisible(true);
-      
-      // Hide cursor if no movement for 1 second
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(() => {
-        setVisible(false);
-      }, 1000);
+
+      const id = Number.isFinite(controllerId) ? Number(controllerId) : 0;
+      const flippedV = 1.0 - v;
+
+      setCursors((prev) => ({
+        ...prev,
+        [id]: { u, v: flippedV, visible: true },
+      }));
+
+      // Hide cursor if no movement for a short time
+      if (hideTimeouts[id]) {
+        clearTimeout(hideTimeouts[id]);
+      }
+      hideTimeouts[id] = setTimeout(() => {
+        setCursors((prev) => {
+          const current = prev[id];
+          if (!current) return prev;
+          return {
+            ...prev,
+            [id]: { ...current, visible: false },
+          };
+        });
+      }, 200);
     };
 
     if (window.electronAPI?.onCursorMove) {
         window.electronAPI.onCursorMove(handleCursorMove);
+    }
+
+    const handleCursorHide = ({ controllerId }: { controllerId?: number }) => {
+      const id = Number.isFinite(controllerId) ? Number(controllerId) : 0;
+      if (hideTimeouts[id]) {
+        clearTimeout(hideTimeouts[id]);
+      }
+      setCursors((prev) => {
+        const current = prev[id];
+        if (!current) return prev;
+        return {
+          ...prev,
+          [id]: { ...current, visible: false },
+        };
+      });
+    };
+
+    if (window.electronAPI?.onCursorHide) {
+      window.electronAPI.onCursorHide(handleCursorHide);
     }
     
     const sendMetrics = () => {
@@ -80,30 +114,39 @@ const CursorOverlay = () => {
         if (dprQuery) {
             dprQuery.removeEventListener('change', handleDprChange);
         }
-        clearTimeout(timeoutId);
+        if (window.electronAPI?.removeCursorHideListener) {
+          window.electronAPI.removeCursorHideListener(handleCursorHide);
+        }
+        Object.values(hideTimeouts).forEach((timeoutId) => clearTimeout(timeoutId));
     };
   }, []);
 
-  if (!visible || !position) return null;
+  const visibleCursors = Object.entries(cursors).filter(([, cursor]) => cursor.visible);
+  if (visibleCursors.length === 0) return null;
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        top: `${position.v * 100}%`,
-        left: `${position.u * 100}%`,
-        width: '20px',
-        height: '20px',
-        borderRadius: '50%',
-        backgroundColor: 'rgba(255, 0, 0, 0.8)',
-        border: '2px solid white',
-        boxShadow: '0 0 10px rgba(255, 0, 0, 0.5)',
-        transform: 'translate(-50%, -50%)',
-        pointerEvents: 'none',
-        zIndex: 9999,
-        // transition: 'top 0.05s linear, left 0.05s linear' // Removed for better responsiveness / 応答性向上のため削除
-      }}
-    />
+    <>
+      {visibleCursors.map(([id, cursor]) => (
+        <div
+          key={id}
+          style={{
+            position: 'fixed',
+            top: `${cursor.v * 100}%`,
+            left: `${cursor.u * 100}%`,
+            width: '18px',
+            height: '18px',
+            borderRadius: '50%',
+            backgroundColor: 'rgb(var(--rgb-primary-500))',
+            border: '2px solid rgb(var(--rgb-primary-500))',
+            boxShadow: '0 0 10px rgba(var(--rgb-primary-500), 0.5)',
+            transform: 'translate(-50%, -50%)',
+            pointerEvents: 'none',
+            zIndex: 9999,
+            // transition: 'top 0.05s linear, left 0.05s linear' // Removed for better responsiveness / 応答性向上のため削除
+          }}
+        />
+      ))}
+    </>
   );
 };
 

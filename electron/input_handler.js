@@ -6,6 +6,7 @@ let captureSyncUnsubscribe = null;
 let inputInProgress = false;
 let inputFallbackInterval = null;
 let lastCaptureFrameAt = 0;
+const lastCursorHitState = {};
 const TRIGGER_DRAG_THRESHOLD = 0.015;
 const TRIGGER_SCROLL_MULTIPLIER = 0.9;
 const TRIGGER_SCROLL_MAX = 180;
@@ -78,13 +79,23 @@ export function startInputLoop(fps = 120, webContents = null, options = {}) {
 
 let targetWebContents = null;
 
-function sendMouseEvent(u, v) {
+function sendCursorEvent(controllerId, u, v) {
     if (targetWebContents && !targetWebContents.isDestroyed()) {
         try {
             // console.log(`Sending cursor to renderer: ${u.toFixed(2)}, ${v.toFixed(2)}`);
-            targetWebContents.send('input-cursor-move', { u, v });
+            targetWebContents.send('input-cursor-move', { controllerId, u, v });
         } catch (e) {
             console.error('Failed to send cursor event', e);
+        }
+    }
+}
+
+function sendCursorHideEvent(controllerId) {
+    if (targetWebContents && !targetWebContents.isDestroyed()) {
+        try {
+            targetWebContents.send('input-cursor-hide', { controllerId });
+        } catch (e) {
+            console.error('Failed to send cursor hide event', e);
         }
     }
 }
@@ -148,7 +159,15 @@ function updateInput() {
       }
       // Use absolute tracking pose directly with ComputeOverlayIntersection
       // ComputeOverlayIntersectionは絶対座標を受け取るため、変換不要
-      processController(id, poseData, activeHandle, state);
+      const hit = computeHitFromPose(poseData, activeHandle);
+      processController(id, poseData, activeHandle, state, hit);
+      if (hit) {
+        sendCursorEvent(id, hit.u, hit.v);
+        lastCursorHitState[id] = true;
+      } else if (lastCursorHitState[id]) {
+        sendCursorHideEvent(id);
+        lastCursorHitState[id] = false;
+      }
     }
     
   } catch (error) {
@@ -174,35 +193,36 @@ let draggingControllerId = null;
 let startControllerInverse = mat4.create();
 let startOverlayTransform = mat4.create();
 
-function processController(id, poseMatrix, overlayHandle, state) {
-  // Extract position and forward direction
-  
-  // Position (Tx, Ty, Tz)
-  const px = poseMatrix[3];
-  const py = poseMatrix[7];
-  const pz = poseMatrix[11];
-  
-  // Forward vector (-Z axis column of rotation)
-  const dirX = -poseMatrix[2];
-  const dirY = -poseMatrix[6];
-  const dirZ = -poseMatrix[10];
-  
+function computeHitFromPose(poseMatrix, overlayHandle) {
   try {
-      // 1. Raycast Intersection (Click / Cursor)
-      // Call standard OpenVR intersection
-      const hit = overlayManager.computeOverlayIntersection(
-          overlayHandle, 
-          [px, py, pz], 
-          [dirX, dirY, dirZ]
-      );
+      // Extract position and forward direction
+      // Position (Tx, Ty, Tz)
+      const px = poseMatrix[3];
+      const py = poseMatrix[7];
+      const pz = poseMatrix[11];
+      
+      // Forward vector (-Z axis column of rotation)
+      const dirX = -poseMatrix[2];
+      const dirY = -poseMatrix[6];
+      const dirZ = -poseMatrix[10];
 
+      // Raycast Intersection (Click / Cursor)
+      // Call standard OpenVR intersection
+      return overlayManager.computeOverlayIntersection(
+          overlayHandle,
+          [px, py, pz],
+          [dirX, dirY, dirZ],
+      );
+  } catch (e) {
+      console.error("Controller hit test error:", e);
+      return null;
+  }
+}
+
+function processController(id, poseMatrix, overlayHandle, state, hit) {
+  try {
       handleTriggerInput(id, state, hit);
       
-      if (hit) {
-          // Send mouse move event
-          sendMouseEvent(hit.u, hit.v);
-      }
-
       // 2. Grip Interaction (Move Overlay)
       // Priority: If already dragging, continue. If not, checking grip press.
       
@@ -226,7 +246,6 @@ function processController(id, poseMatrix, overlayHandle, state) {
       }
   }
 }
-
 
 
 function getOverlayWorldTransform(handle) {
