@@ -25,12 +25,131 @@ let tempFilePaths = [];
  * 点滅を防ぐためにダブルバッファリング用の2つのオーバーレイを作成
  * @returns {Array<number>|null} Overlay handles or null on failure
  */
+import { mat4, quat, vec3 } from 'gl-matrix';
+
+/**
+ * Calculate spawn position relative to HMD
+ * HMDに対して相対的なスポーン位置を計算
+ */
+function getSpawnTransform(hmdPose) {
+    // Configuration for "Ideal Position"
+    const OFFSET_Y = -0.3; // 30cm down
+    const OFFSET_Z = -0.5; // 50cm forward
+    const PITCH_ANGLE = 30 * (Math.PI / 180); // 30 degrees tilt up
+
+    const hmdMat = mat4.clone(hmdPose);
+    
+    // 1. Calculate position
+    // Get HMD position and rotation
+    const hmdPos = vec3.create();
+    const hmdRot = quat.create();
+    mat4.getTranslation(hmdPos, hmdMat);
+    mat4.getRotation(hmdRot, hmdMat);
+
+    // Create offset vector (in HMD local space)
+    // HMDローカル空間でのオフセットベクトルを作成
+    // Forward is -Z in OpenVR/OpenGL
+    const offset = vec3.fromValues(0, OFFSET_Y, OFFSET_Z);
+    
+    // Rotate offset by HMD rotation to get World offset
+    // HMDの回転でオフセットを回転させ、ワールドオフセットを取得
+    vec3.transformQuat(offset, offset, hmdRot);
+    
+    // Add to HMD position to get Target World Position
+    // HMD位置に加算してターゲットワールド位置を取得
+    const targetPos = vec3.create();
+    vec3.add(targetPos, hmdPos, offset);
+
+    // 2. Calculate Rotation
+    // Start with HMD rotation (billboard-like)
+    // HMDの回転から開始（ビルボード風）
+    // But we want to tilt it up by 30 degrees locally
+    // しかし、ローカルで30度上に傾けたい
+    
+    // Extract Yaw from HMD rotation to keep it level (remove roll/pitch from HMD if desired)
+    // Or just use HMD rotation directly and apply local pitch.
+    // simpler: Use HMD rotation, then rotate X axis locally.
+    
+    const targetRot = quat.clone(hmdRot);
+    
+    // Local X axis rotation for Tilt
+    const tilt = quat.create();
+    quat.setAxisAngle(tilt, vec3.fromValues(1, 0, 0), PITCH_ANGLE);
+    
+    // Apply tilt: NewRot = HMD_Rot * Tilt
+    quat.multiply(targetRot, targetRot, tilt);
+
+    // 3. Compose Matrix
+    const targetMat = mat4.create();
+    mat4.fromRotationTranslation(targetMat, targetRot, targetPos);
+    
+    return targetMat;
+}
+
+/**
+ * Respawn overlay at ideal position relative to HMD
+ * HMDに対する理想的な位置にオーバーレイを再スポーン
+ */
+function respawnOverlay(handle, hmdPose) {
+    try {
+        const targetMat = getSpawnTransform(hmdPose);
+        overlayManager.setOverlayTransformAbsolute(handle, Array.from(targetMat));
+    } catch (e) {
+        console.error("Failed to respawn overlay:", e);
+    }
+}
+
+/**
+ * Reset overlay position to ideal spot
+ * オーバーレイ位置を理想的な場所にリセット
+ */
+export function resetOverlayPosition() {
+    if (!overlayManager) return;
+    
+    try {
+        // Get HMD Pose (Device 0)
+        let hmdPose = overlayManager.getControllerPose(0);
+        
+        // If HMD pose invalid, try to find it again or wait? 
+        // If completely lost, maybe just set to identity or skip.
+        if (!hmdPose || hmdPose.length === 0) {
+            console.warn("HMD Pose not found, cannot reset position.");
+            return;
+        }
+
+        // Apply to ALL handles
+        overlayHandles.forEach(handle => {
+            if (handle) {
+                respawnOverlay(handle, hmdPose);
+            }
+        });
+        
+        console.log("Overlay position reset.");
+    } catch (e) {
+        console.error("Error resetting overlay position:", e);
+    }
+}
+
+/**
+ * Initialize VR overlay / VRオーバーレイを初期化
+ * Creates two overlays for double buffering to prevent flickering
+ * 点滅を防ぐためにダブルバッファリング用の2つのオーバーレイを作成
+ * @returns {Array<number>|null} Overlay handles or null on failure
+ */
 export function initOverlay() {
   try {
     console.log('Initializing VR Overlay (Double Buffering)...');
     overlayManager = new OverlayManager();
     console.log('VR System Initialized');
     
+    // Get HMD pose for initial spawn
+    let hmdPose = null;
+    try {
+        hmdPose = overlayManager.getControllerPose(0);
+    } catch (e) {
+        console.warn("Could not get HMD pose for initial spawn:", e);
+    }
+
     // Create two overlays with suffixes
     // サフィックス付きで2つのオーバーレイを作成
     for (let i = 0; i < 2; i++) {
@@ -42,7 +161,16 @@ export function initOverlay() {
         // Initial setup for both
         // 両方の初期設定
         overlayManager.setOverlayWidth(overlayHandles[i], 0.5);
-        overlayManager.setOverlayTransformHmd(overlayHandles[i], 1.5);
+        
+        // Initial Placement: World Fixed (Absolute)
+        if (hmdPose && hmdPose.length > 0) {
+            respawnOverlay(overlayHandles[i], hmdPose);
+        } else {
+             // Fallback: Relative to HMD (Device 0) if pose missing
+             // ポーズがない場合のフォールバック: HMD相対
+             console.log("HMD Pose missing, falling back to relative attachment");
+             overlayManager.setOverlayTransformHmd(overlayHandles[i], 0.5); // Use 0.5m (closer)
+        }
         
         // Set initial texture
         const texturePath = path.resolve(__dirname, '..', 'docs', 'fake_logo_3.png');
@@ -186,5 +314,12 @@ export function getOverlayHandle() {
  */
 export function getActiveOverlayHandle() {
     return overlayHandles[activeOverlayIndex];
+}
+
+/**
+ * Get all overlay handles
+ */
+export function getAllOverlayHandles() {
+    return overlayHandles;
 }
 

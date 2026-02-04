@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Settings, Zap, ZapOff } from 'lucide-react';
+import { Settings, Zap, ZapOff, RefreshCw } from 'lucide-react';
 import VirtualKeyboard from './components/VirtualKeyboard';
 import SettingsModal from './components/SettingsModal';
 import TutorialOverlay from './components/TutorialOverlay';
@@ -185,6 +185,14 @@ const App = () => {
             <span className='text-xs font-bold hidden md:inline'>
               {config.autoSend ? 'AUTO' : 'MANUAL'}
             </span>
+          </button>
+
+          <button
+            onClick={() => window.electronAPI.resetOverlayPosition()}
+            className='relative p-2 dark:bg-slate-800/80 bg-white/80 rounded-full dark:hover:bg-slate-700 hover:bg-slate-100 dark:text-slate-300 text-slate-500 transition-colors border dark:border-slate-700 border-slate-200 shadow-sm'
+            title="Reset Overlay to Front"
+          >
+             <RefreshCw size={20} />
           </button>
 
           <button

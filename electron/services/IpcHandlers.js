@@ -10,6 +10,7 @@ import {
   getActiveWsPort,
   sendTypingStatus,
 } from './OscBridgeService.js';
+import { resetOverlayPosition } from '../overlay.js';
 
 // GitHub repository info / GitHubリポジトリ情報
 const GITHUB_API_URL =
@@ -141,5 +142,11 @@ export function registerIpcHandlers(APP_VERSION) {
   // Send typing status to VRChat chatbox / VRChatチャットボックスにタイピング状態を送信
   ipcMain.handle('send-typing-status', async (event, isTyping) => {
     return await sendTypingStatus(isTyping);
+  });
+
+  // Reset overlay position / オーバーレイ位置をリセット
+  ipcMain.handle('reset-overlay-position', () => {
+    resetOverlayPosition();
+    return { success: true };
   });
 }

@@ -1,4 +1,4 @@
-import { getActiveOverlayHandle, getOverlayManager } from './overlay.js';
+import { getActiveOverlayHandle, getOverlayManager, getAllOverlayHandles } from './overlay.js';
 
 let inputInterval = null;
 let overlayManager = null;
@@ -272,7 +272,15 @@ function updateDrag(controllerId, poseMatrix, overlayHandle) {
         mat4.multiply(newOverlay, startOverlayTransform, delta);
         
         // Apply to Native
-        overlayManager.setOverlayTransformAbsolute(overlayHandle, Array.from(newOverlay));
+        // Apply to ALL overlay handles to prevent shaking due to double buffering
+        const allHandles = getAllOverlayHandles();
+        if (allHandles && allHandles.length > 0) {
+            allHandles.forEach(handle => {
+                if (handle) {
+                     overlayManager.setOverlayTransformAbsolute(handle, Array.from(newOverlay));
+                }
+            });
+        }
         
     } catch (e) {
         console.error("Error updating drag:", e);

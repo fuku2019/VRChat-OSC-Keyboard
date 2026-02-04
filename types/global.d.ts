@@ -32,6 +32,10 @@ interface ElectronAPI {
     newValue: any,
   ) => Promise<{ success: boolean; error?: string }>;
   sendTypingStatus: (isTyping: boolean) => Promise<{ success: boolean; error?: string }>;
+  resetOverlayPosition: () => Promise<{ success: boolean }>;
+  sendWindowSize: (width: number, height: number) => void;
+  onCursorMove: (callback: (data: { u: number; v: number }) => void) => void;
+  removeCursorMoveListener: (callback: (data: { u: number; v: number }) => void) => void;
 }
 
 declare global {

@@ -35,4 +35,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   removeCursorMoveListener: (callback) => {
     ipcRenderer.removeListener('input-cursor-move', callback);
   },
+  
+  // Reset overlay position
+  resetOverlayPosition: () => ipcRenderer.invoke('reset-overlay-position'),
 });
