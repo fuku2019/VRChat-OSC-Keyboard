@@ -18,7 +18,7 @@ const GITHUB_API_URL =
 /**
  * Helper for semantic version comparison / セマンティックバージョン比較用ヘルパー
  */
-function compareVersions(v1, v2) {
+export function compareVersions(v1, v2) {
   // Handle non-string inputs / 文字列以外が渡された場合の対処
   if (typeof v1 !== 'string' || typeof v2 !== 'string') return 0;
 

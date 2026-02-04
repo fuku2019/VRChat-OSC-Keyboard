@@ -134,6 +134,67 @@ describe('useIME', () => {
       });
       expect(result.current.input).toBe('1');
     });
+
+    // Buffer preservation test / バッファ保持テスト
+    // Reproduces: k → 1 input should result in "k1", not "1" / 再現: k → 1 の入力は "k1" になるべき、"1" ではない
+    it('preserves buffer when non-IME character is input (buffer → non-IME)', () => {
+      const { result } = renderHook(() => useIME(InputMode.HIRAGANA));
+      
+      // Input 'k' (goes to buffer) / 'k' を入力（バッファに入る）
+      act(() => {
+        result.current.handleCharInput('k');
+      });
+      expect(result.current.buffer).toBe('k');
+      expect(result.current.input).toBe('');
+
+      // Input '1' (non-IME character) / '1' を入力（非IME文字）
+      act(() => {
+        result.current.handleCharInput('1');
+      });
+      
+      // Buffer 'k' should be committed before '1' is added / バッファの 'k' が確定されてから '1' が追加されるべき
+      expect(result.current.buffer).toBe('');
+      expect(result.current.input).toBe('k1');
+    });
+
+    it('preserves buffer when uppercase letter is input (buffer → uppercase)', () => {
+      const { result } = renderHook(() => useIME(InputMode.HIRAGANA));
+      
+      // Input 'k' (goes to buffer) / 'k' を入力（バッファに入る）
+      act(() => {
+        result.current.handleCharInput('k');
+      });
+      expect(result.current.buffer).toBe('k');
+
+      // Input 'A' (non-IME uppercase) / 'A' を入力（非IME大文字）
+      act(() => {
+        result.current.handleCharInput('A');
+      });
+      
+      // Buffer 'k' should be committed before 'A' is added / バッファの 'k' が確定されてから 'A' が追加されるべき
+      expect(result.current.buffer).toBe('');
+      expect(result.current.input).toBe('kA');
+    });
+
+    it('preserves converted kana when followed by non-IME character', () => {
+      const { result } = renderHook(() => useIME(InputMode.HIRAGANA));
+      
+      // Input 'ka' → 'か' / 'ka' を入力 → 'か'
+      act(() => { result.current.handleCharInput('k'); });
+      act(() => { result.current.handleCharInput('a'); });
+      expect(result.current.input).toBe('か');
+      
+      // Input 'k' (goes to buffer) / 'k' を入力（バッファに入る）
+      act(() => { result.current.handleCharInput('k'); });
+      expect(result.current.buffer).toBe('k');
+      
+      // Input '1' (non-IME) / '1' を入力（非IME）
+      act(() => { result.current.handleCharInput('1'); });
+      
+      // Should be 'かk1' / 'かk1' になるべき
+      expect(result.current.input).toBe('かk1');
+      expect(result.current.buffer).toBe('');
+    });
   });
 
   // handleCharInput in Katakana mode / カタカナモードでの文字入力
