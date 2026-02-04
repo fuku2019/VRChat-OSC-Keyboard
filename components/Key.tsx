@@ -9,6 +9,8 @@ interface KeyProps {
   highlight?: boolean;
   isShiftActive?: boolean;
   isCapsLock?: boolean;
+  className?: string; // Additional classes / 追加のクラス
+  style?: React.CSSProperties; // Additional styles / 追加のスタイル
 }
 
 const Key: FC<KeyProps> = ({
@@ -18,6 +20,8 @@ const Key: FC<KeyProps> = ({
   highlight = false,
   isShiftActive = false,
   isCapsLock = false,
+  className = '',
+  style = {},
 }) => {
   const baseClasses =
     'rounded-lg font-bold text-xl transition-all duration-75 active:scale-95 select-none flex shadow-lg border-b-4 dark:border-slate-700 border-slate-300 active:border-b-0 active:translate-y-1 relative items-center justify-center';
@@ -102,11 +106,12 @@ const Key: FC<KeyProps> = ({
 
   return (
     <button
-      className={`${baseClasses} ${colorClasses}`}
+      className={`${baseClasses} ${colorClasses} ${className}`}
       style={{
         gridColumn: `span ${config.gridCols || 2}`,
         gridRow: `span ${config.gridRows || 1}`,
         height: '100%',
+        ...style,
       }}
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
