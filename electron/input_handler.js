@@ -7,6 +7,12 @@ let inputInProgress = false;
 let inputFallbackInterval = null;
 let lastCaptureFrameAt = 0;
 const lastCursorHitState = {};
+let lastMouseHit = false;
+let lastMouseControllerId = null;
+let lastMousePosition = { x: 0, y: 0 };
+const lastHitByController = {};
+const lastMoveAtByController = {};
+const CURSOR_MOVE_EPSILON = 0.0005;
 const TRIGGER_DRAG_THRESHOLD = 0.015;
 const TRIGGER_SCROLL_MULTIPLIER = 0.9;
 const TRIGGER_SCROLL_MAX = 180;
@@ -143,6 +149,8 @@ function updateInput() {
 
     // 1. Get active controllers
     const controllerIds = overlayManager.getControllerIds();
+    const hitCandidates = [];
+    const now = Date.now();
     // 2. Process each controller
     for (const id of controllerIds) {
       if (id === 0) continue; // Skip HMD
@@ -163,11 +171,53 @@ function updateInput() {
       processController(id, poseData, activeHandle, state, hit);
       if (hit) {
         sendCursorEvent(id, hit.u, hit.v);
+        hitCandidates.push({ controllerId: id, u: hit.u, v: hit.v });
+        const previous = lastHitByController[id];
+        if (
+          !previous ||
+          Math.abs(hit.u - previous.u) > CURSOR_MOVE_EPSILON ||
+          Math.abs(hit.v - previous.v) > CURSOR_MOVE_EPSILON
+        ) {
+          lastMoveAtByController[id] = now;
+        }
+        lastHitByController[id] = { u: hit.u, v: hit.v };
         lastCursorHitState[id] = true;
       } else if (lastCursorHitState[id]) {
         sendCursorHideEvent(id);
         lastCursorHitState[id] = false;
+        delete lastHitByController[id];
+        delete lastMoveAtByController[id];
       }
+    }
+
+    if (hitCandidates.length > 0) {
+      let primary = null;
+      let latestMoveAt = -1;
+      for (const candidate of hitCandidates) {
+        const movedAt = lastMoveAtByController[candidate.controllerId] ?? 0;
+        if (movedAt > latestMoveAt) {
+          latestMoveAt = movedAt;
+          primary = candidate;
+        }
+      }
+      if (!primary) {
+        primary =
+          hitCandidates.find((candidate) => candidate.controllerId === lastMouseControllerId) ??
+          hitCandidates[0];
+      }
+      const movePosition = sendMouseMoveEvent(primary.u, primary.v);
+      if (movePosition) {
+        if (!lastMouseHit) {
+          sendMouseEnterEvent(movePosition);
+        }
+        lastMousePosition = movePosition;
+        lastMouseHit = true;
+        lastMouseControllerId = primary.controllerId;
+      }
+    } else if (lastMouseHit) {
+      sendMouseLeaveEvent(lastMousePosition);
+      lastMouseHit = false;
+      lastMouseControllerId = null;
     }
     
   } catch (error) {
@@ -390,15 +440,29 @@ function handleTriggerInput(controllerId, state, hit) {
                 lastU: hit.u,
                 lastV: hit.v,
                 dragging: false,
+                mouseDownSent: false,
+                mouseUpSent: false,
             };
+            sendClickEvent(hit.u, hit.v, 'mouseDown');
+            triggerDragState[controllerId].mouseDownSent = true;
             return;
         }
 
-        if (!hit) return;
+        if (!hit) {
+            if (existing.mouseDownSent && !existing.mouseUpSent) {
+                sendClickEvent(existing.lastU, existing.lastV, 'mouseUp');
+                existing.mouseUpSent = true;
+            }
+            return;
+        }
         const totalV = hit.v - existing.startV;
         const deltaV = hit.v - existing.lastV;
         if (!existing.dragging && Math.abs(totalV) > TRIGGER_DRAG_THRESHOLD) {
             existing.dragging = true;
+            if (existing.mouseDownSent && !existing.mouseUpSent) {
+                sendClickEvent(existing.startU, existing.startV, 'mouseUp');
+                existing.mouseUpSent = true;
+            }
         }
         if (existing.dragging) {
             const height = windowSize.height > 0 ? windowSize.height : 700;
@@ -415,8 +479,14 @@ function handleTriggerInput(controllerId, state, hit) {
 
     if (existing) {
         if (!existing.dragging) {
-            sendClickEvent(existing.startU, existing.startV, 'mouseDown');
-            sendClickEvent(existing.startU, existing.startV, 'mouseUp');
+            if (!existing.mouseDownSent) {
+                sendClickEvent(existing.startU, existing.startV, 'mouseDown');
+            }
+            if (!existing.mouseUpSent) {
+                sendClickEvent(existing.startU, existing.startV, 'mouseUp');
+            }
+        } else if (existing.mouseDownSent && !existing.mouseUpSent) {
+            sendClickEvent(existing.lastU, existing.lastV, 'mouseUp');
         }
         delete triggerDragState[controllerId];
     }
@@ -439,26 +509,98 @@ export function updateWindowSize(width, height, devicePixelRatio = null, zoomFac
     );
 }
 
+function clamp(value, min, max) {
+    return Math.min(max, Math.max(min, value));
+}
+
+function getInputSurfaceSize() {
+    if (!targetWebContents || targetWebContents.isDestroyed()) return null;
+    if (windowSize.width > 0 && windowSize.height > 0) {
+        const zoom = Number.isFinite(windowScale.zoomFactor) && windowScale.zoomFactor > 0
+            ? windowScale.zoomFactor
+            : 1;
+        return {
+            width: Math.max(1, Math.round(windowSize.width * zoom)),
+            height: Math.max(1, Math.round(windowSize.height * zoom)),
+        };
+    }
+
+    try {
+        const owner = targetWebContents.getOwnerBrowserWindow();
+        if (!owner) return null;
+        const bounds = owner.getBounds();
+        return {
+            width: Math.max(1, Math.round(bounds.width)),
+            height: Math.max(1, Math.round(bounds.height)),
+        };
+    } catch (e) {
+        console.error('Failed to resolve input surface size:', e);
+        return null;
+    }
+}
+
+function mapUvToClient(u, v) {
+    const size = getInputSurfaceSize();
+    if (!size) return null;
+
+    const clampedU = clamp(u, 0, 1);
+    const clampedV = clamp(v, 0, 1);
+    const width = size.width;
+    const height = size.height;
+    const x = Math.round(clampedU * (width - 1));
+    const y = Math.round((1.0 - clampedV) * (height - 1));
+    return { x, y };
+}
+
+function sendMouseMoveEvent(u, v) {
+    if (!targetWebContents || targetWebContents.isDestroyed()) return null;
+    const position = mapUvToClient(u, v);
+    if (!position) return null;
+    try {
+        targetWebContents.sendInputEvent({
+            type: 'mouseMove',
+            x: position.x,
+            y: position.y,
+        });
+    } catch (e) {
+        console.error('Failed to send mouseMove event:', e);
+    }
+    return position;
+}
+
+function sendMouseEnterEvent(position) {
+    if (!position || !targetWebContents || targetWebContents.isDestroyed()) return;
+    try {
+        targetWebContents.sendInputEvent({
+            type: 'mouseEnter',
+            x: position.x,
+            y: position.y,
+        });
+    } catch (e) {
+        console.error('Failed to send mouseEnter event:', e);
+    }
+}
+
+function sendMouseLeaveEvent(position) {
+    if (!position || !targetWebContents || targetWebContents.isDestroyed()) return;
+    try {
+        targetWebContents.sendInputEvent({
+            type: 'mouseLeave',
+            x: position.x,
+            y: position.y,
+        });
+    } catch (e) {
+        console.error('Failed to send mouseLeave event:', e);
+    }
+}
+
 function sendClickEvent(u, v, type) {
     if (!targetWebContents || targetWebContents.isDestroyed()) return;
     
     try {
-        // Convert UV (0-1) to pixel coordinates
-        // Use client area size if available, otherwise fallback to window bounds
-        let width, height;
-        
-        if (windowSize.width > 0 && windowSize.height > 0) {
-            width = windowSize.width;
-            height = windowSize.height;
-        } else {
-            const bounds = targetWebContents.getOwnerBrowserWindow().getBounds();
-            width = bounds.width;
-            height = bounds.height;
-        }
-        
-        const x = Math.floor(u * width);
-        const y = Math.floor((1.0 - v) * height); // Invert V to match screen coordinates
-        
+        const position = mapUvToClient(u, v);
+        if (!position) return;
+        const { x, y } = position;
         console.log(`Sending ${type} at pixel (${x}, ${y}) from UV (${u.toFixed(2)}, ${v.toFixed(2)})`);
         
         targetWebContents.sendInputEvent({
