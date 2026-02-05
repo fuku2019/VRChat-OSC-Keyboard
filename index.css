@@ -82,4 +82,14 @@
   #root { 
     height: 100%; 
   }
+
+  button[data-vr-key].vr-hover {
+    outline: 2px solid rgba(var(--rgb-primary-500), 0.5);
+    outline-offset: -2px;
+    filter: brightness(1.08);
+  }
+
+  :root.dark button[data-vr-key].vr-hover {
+    filter: brightness(1.15);
+  }
 }

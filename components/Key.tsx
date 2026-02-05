@@ -113,6 +113,7 @@ const Key: FC<KeyProps> = ({
         height: '100%',
         ...style,
       }}
+      data-vr-key='true'
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerLeave}

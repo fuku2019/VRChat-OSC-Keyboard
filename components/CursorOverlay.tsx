@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 // Extend Window interface for electronAPI
 declare global {
@@ -15,10 +15,64 @@ declare global {
 
 const CursorOverlay = () => {
   const [cursors, setCursors] = useState<Record<number, { u: number; v: number; visible: boolean }>>({});
+  const hoveredByControllerRef = useRef<Map<number, HTMLElement>>(new Map());
+  const hoverCountRef = useRef<Map<HTMLElement, number>>(new Map());
 
   useEffect(() => {
     const hideTimeouts: Record<number, NodeJS.Timeout> = {};
     let dprQuery: MediaQueryList | null = null;
+
+    const addHover = (element: HTMLElement) => {
+      const hoverCount = hoverCountRef.current.get(element) ?? 0;
+      if (hoverCount === 0) {
+        element.classList.add('vr-hover');
+      }
+      hoverCountRef.current.set(element, hoverCount + 1);
+    };
+
+    const removeHover = (element: HTMLElement) => {
+      const hoverCount = hoverCountRef.current.get(element);
+      if (!hoverCount) return;
+      if (hoverCount <= 1) {
+        hoverCountRef.current.delete(element);
+        element.classList.remove('vr-hover');
+      } else {
+        hoverCountRef.current.set(element, hoverCount - 1);
+      }
+    };
+
+    const clearHoverForController = (controllerId: number) => {
+      const previous = hoveredByControllerRef.current.get(controllerId);
+      if (previous) {
+        removeHover(previous);
+        hoveredByControllerRef.current.delete(controllerId);
+      }
+    };
+
+    const getHoverTarget = (u: number, v: number) => {
+      if (typeof document === 'undefined') return null;
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      if (width <= 0 || height <= 0) return null;
+      const x = Math.min(width - 1, Math.max(0, Math.round(u * (width - 1))));
+      const y = Math.min(height - 1, Math.max(0, Math.round((1.0 - v) * (height - 1))));
+      const element = document.elementFromPoint(x, y) as HTMLElement | null;
+      if (!element) return null;
+      return element.closest('button[data-vr-key]') as HTMLElement | null;
+    };
+
+    const updateHoverForController = (controllerId: number, u: number, v: number) => {
+      const target = getHoverTarget(u, v);
+      const previous = hoveredByControllerRef.current.get(controllerId) ?? null;
+      if (previous === target) return;
+      if (previous) removeHover(previous);
+      if (target) {
+        addHover(target);
+        hoveredByControllerRef.current.set(controllerId, target);
+      } else {
+        hoveredByControllerRef.current.delete(controllerId);
+      }
+    };
     
     const handleCursorMove = ({ u, v, controllerId }: { u: number; v: number; controllerId?: number }) => {
       // OpenVR UV: (0,0) is bottom-left, screen (0,0) is top-left
@@ -32,6 +86,7 @@ const CursorOverlay = () => {
         ...prev,
         [id]: { u, v: flippedV, visible: true },
       }));
+      updateHoverForController(id, u, v);
 
       // Hide cursor if no movement for a short time
       if (hideTimeouts[id]) {
@@ -58,6 +113,7 @@ const CursorOverlay = () => {
       if (hideTimeouts[id]) {
         clearTimeout(hideTimeouts[id]);
       }
+      clearHoverForController(id);
       setCursors((prev) => {
         const current = prev[id];
         if (!current) return prev;
@@ -118,6 +174,7 @@ const CursorOverlay = () => {
           window.electronAPI.removeCursorHideListener(handleCursorHide);
         }
         Object.values(hideTimeouts).forEach((timeoutId) => clearTimeout(timeoutId));
+        Array.from(hoveredByControllerRef.current.keys()).forEach(clearHoverForController);
     };
   }, []);
 
