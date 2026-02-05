@@ -1,3 +1,4 @@
+#![allow(non_snake_case)]
 use napi_derive::napi;
 
 #[napi(object)]
@@ -24,6 +25,7 @@ pub struct ControllerState {
 }
 
 #[napi(object)]
+
 pub struct OverlayRelativeTransform {
     pub trackedDeviceIndex: u32,
     pub transform: Vec<f64>, // 4x4 flattened
