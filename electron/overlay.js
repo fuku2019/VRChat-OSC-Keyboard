@@ -169,11 +169,21 @@ export function initOverlay() {
     }
 
     // Set initial texture / 初期テクスチャを設定
-    const texturePath = getAssetPath(path.join('docs', 'fake_logo_3.png'));
+    const texturePath = getAssetPath(path.join('img', 'logo.png'));
     console.log(`Setting overlay texture from: ${texturePath}`);
-    state.overlayManager.setOverlayFromFile(state.overlayHandle, texturePath);
+    
+    try {
+      state.overlayManager.setOverlayFromFile(state.overlayHandle, texturePath);
+    } catch (e) {
+      console.error(`Failed to set initial texture from ${texturePath}:`, e);
+    }
+
     if (state.overlayHandleBack !== null) {
-      state.overlayManager.setOverlayFromFile(state.overlayHandleBack, texturePath);
+      try {
+        state.overlayManager.setOverlayFromFile(state.overlayHandleBack, texturePath);
+      } catch (e) {
+        console.error(`Failed to set back initial texture from ${texturePath}:`, e);
+      }
     }
 
     console.log('Overlay Initial Props Set');
