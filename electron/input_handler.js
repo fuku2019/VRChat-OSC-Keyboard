@@ -10,12 +10,15 @@ const lastCursorHitState = {};
 let lastMouseHit = false;
 let lastMouseControllerId = null;
 let lastMousePosition = { x: 0, y: 0 };
+let suppressMouseHover = false;
 const lastHitByController = {};
 const lastMoveAtByController = {};
+const lastTriggerPressedState = {};
 const CURSOR_MOVE_EPSILON = 0.0005;
 const TRIGGER_DRAG_THRESHOLD = 0.015;
-const TRIGGER_SCROLL_MULTIPLIER = 0.9;
-const TRIGGER_SCROLL_MAX = 180;
+const TRIGGER_CLICK_CANCEL_THRESHOLD = 0.03;
+const TRIGGER_SCROLL_MULTIPLIER = 0.6;
+const TRIGGER_SCROLL_MAX = 140;
 
 /**
  * Start the input handling loop
@@ -106,6 +109,16 @@ function sendCursorHideEvent(controllerId) {
     }
 }
 
+function sendTriggerStateEvent(controllerId, pressed) {
+    if (targetWebContents && !targetWebContents.isDestroyed()) {
+        try {
+            targetWebContents.send('input-trigger-state', { controllerId, pressed });
+        } catch (e) {
+            console.error('Failed to send trigger state event', e);
+        }
+    }
+}
+
 function sendScrollEvent(deltaY) {
     if (targetWebContents && !targetWebContents.isDestroyed()) {
         try {
@@ -165,6 +178,11 @@ function updateInput() {
       if (!state) {
           continue;
       }
+      const pressedNow = !!state.triggerPressed;
+      if (lastTriggerPressedState[id] !== pressedNow) {
+        sendTriggerStateEvent(id, pressedNow);
+        lastTriggerPressedState[id] = pressedNow;
+      }
       // Use absolute tracking pose directly with ComputeOverlayIntersection
       // ComputeOverlayIntersectionは絶対座標を受け取るため、変換不要
       const hit = computeHitFromPose(poseData, activeHandle);
@@ -188,6 +206,23 @@ function updateInput() {
         delete lastHitByController[id];
         delete lastMoveAtByController[id];
       }
+    }
+
+    const multiCursor = hitCandidates.length > 1;
+    if (multiCursor) {
+      if (!suppressMouseHover) {
+        if (lastMouseHit) {
+          sendMouseLeaveEvent(lastMousePosition);
+        }
+        lastMouseHit = false;
+        lastMouseControllerId = null;
+        suppressMouseHover = true;
+      }
+      return;
+    }
+
+    if (suppressMouseHover) {
+      suppressMouseHover = false;
     }
 
     if (hitCandidates.length > 0) {
@@ -440,29 +475,23 @@ function handleTriggerInput(controllerId, state, hit) {
                 lastU: hit.u,
                 lastV: hit.v,
                 dragging: false,
-                mouseDownSent: false,
-                mouseUpSent: false,
+                moved: false,
             };
-            sendClickEvent(hit.u, hit.v, 'mouseDown');
-            triggerDragState[controllerId].mouseDownSent = true;
             return;
         }
 
         if (!hit) {
-            if (existing.mouseDownSent && !existing.mouseUpSent) {
-                sendClickEvent(existing.lastU, existing.lastV, 'mouseUp');
-                existing.mouseUpSent = true;
-            }
+            existing.moved = true;
             return;
         }
+        const totalU = hit.u - existing.startU;
         const totalV = hit.v - existing.startV;
+        if (!existing.moved && Math.abs(totalU) + Math.abs(totalV) > TRIGGER_CLICK_CANCEL_THRESHOLD) {
+            existing.moved = true;
+        }
         const deltaV = hit.v - existing.lastV;
         if (!existing.dragging && Math.abs(totalV) > TRIGGER_DRAG_THRESHOLD) {
             existing.dragging = true;
-            if (existing.mouseDownSent && !existing.mouseUpSent) {
-                sendClickEvent(existing.startU, existing.startV, 'mouseUp');
-                existing.mouseUpSent = true;
-            }
         }
         if (existing.dragging) {
             const height = windowSize.height > 0 ? windowSize.height : 700;
@@ -478,15 +507,9 @@ function handleTriggerInput(controllerId, state, hit) {
     }
 
     if (existing) {
-        if (!existing.dragging) {
-            if (!existing.mouseDownSent) {
-                sendClickEvent(existing.startU, existing.startV, 'mouseDown');
-            }
-            if (!existing.mouseUpSent) {
-                sendClickEvent(existing.startU, existing.startV, 'mouseUp');
-            }
-        } else if (existing.mouseDownSent && !existing.mouseUpSent) {
-            sendClickEvent(existing.lastU, existing.lastV, 'mouseUp');
+        if (!existing.dragging && !existing.moved) {
+            sendClickEvent(existing.startU, existing.startV, 'mouseDown');
+            sendClickEvent(existing.startU, existing.startV, 'mouseUp', 1);
         }
         delete triggerDragState[controllerId];
     }
@@ -594,7 +617,7 @@ function sendMouseLeaveEvent(position) {
     }
 }
 
-function sendClickEvent(u, v, type) {
+function sendClickEvent(u, v, type, clickCount = 1) {
     if (!targetWebContents || targetWebContents.isDestroyed()) return;
     
     try {
@@ -608,7 +631,7 @@ function sendClickEvent(u, v, type) {
             x: x,
             y: y,
             button: 'left',
-            clickCount: 1
+            clickCount
         });
     } catch (e) {
         console.error(`Failed to send ${type} event:`, e);

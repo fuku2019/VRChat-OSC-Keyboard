@@ -83,7 +83,7 @@ const rendererMetrics = {
 // Configuration for "Ideal Position" / "理想的な位置"の設定
 const SPAWN_OFFSET_Y = -0.3; // 30cm down
 const SPAWN_OFFSET_Z = -0.5; // 50cm forward
-const SPAWN_PITCH_ANGLE = 30 * (Math.PI / 180); // 30 degrees tilt up
+const SPAWN_PITCH_ANGLE = -30 * (Math.PI / 180); // 30 degrees tilt up (invert to fix downward tilt)
 
 import { mat4, quat, vec3 } from 'gl-matrix';
 

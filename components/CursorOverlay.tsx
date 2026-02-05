@@ -7,6 +7,8 @@ declare global {
       onCursorMove: (callback: (data: { u: number; v: number; controllerId?: number }) => void) => void;
       onCursorHide?: (callback: (data: { controllerId?: number }) => void) => void;
       removeCursorHideListener?: (callback: (data: { controllerId?: number }) => void) => void;
+      onTriggerState?: (callback: (data: { controllerId?: number; pressed?: boolean }) => void) => void;
+      removeTriggerStateListener?: (callback: (data: { controllerId?: number; pressed?: boolean }) => void) => void;
       sendWindowSize?: (width: number, height: number) => void;
       sendRendererMetrics?: (metrics: { width: number; height: number; devicePixelRatio: number }) => void;
     };
@@ -17,6 +19,9 @@ const CursorOverlay = () => {
   const [cursors, setCursors] = useState<Record<number, { u: number; v: number; visible: boolean }>>({});
   const hoveredByControllerRef = useRef<Map<number, HTMLElement>>(new Map());
   const hoverCountRef = useRef<Map<HTMLElement, number>>(new Map());
+  const pressedByControllerRef = useRef<Map<number, HTMLElement>>(new Map());
+  const pressedCountRef = useRef<Map<HTMLElement, number>>(new Map());
+  const pressedControllersRef = useRef<Set<number>>(new Set());
 
   useEffect(() => {
     const hideTimeouts: Record<number, NodeJS.Timeout> = {};
@@ -41,12 +46,40 @@ const CursorOverlay = () => {
       }
     };
 
+    const addPressed = (element: HTMLElement) => {
+      const pressedCount = pressedCountRef.current.get(element) ?? 0;
+      if (pressedCount === 0) {
+        element.classList.add('vr-pressed');
+      }
+      pressedCountRef.current.set(element, pressedCount + 1);
+    };
+
+    const removePressed = (element: HTMLElement) => {
+      const pressedCount = pressedCountRef.current.get(element);
+      if (!pressedCount) return;
+      if (pressedCount <= 1) {
+        pressedCountRef.current.delete(element);
+        element.classList.remove('vr-pressed');
+      } else {
+        pressedCountRef.current.set(element, pressedCount - 1);
+      }
+    };
+
     const clearHoverForController = (controllerId: number) => {
       const previous = hoveredByControllerRef.current.get(controllerId);
       if (previous) {
         removeHover(previous);
         hoveredByControllerRef.current.delete(controllerId);
       }
+    };
+
+    const clearPressedForController = (controllerId: number) => {
+      const previous = pressedByControllerRef.current.get(controllerId);
+      if (previous) {
+        removePressed(previous);
+        pressedByControllerRef.current.delete(controllerId);
+      }
+      pressedControllersRef.current.delete(controllerId);
     };
 
     const getHoverTarget = (u: number, v: number) => {
@@ -58,7 +91,7 @@ const CursorOverlay = () => {
       const y = Math.min(height - 1, Math.max(0, Math.round((1.0 - v) * (height - 1))));
       const element = document.elementFromPoint(x, y) as HTMLElement | null;
       if (!element) return null;
-      return element.closest('button[data-vr-key]') as HTMLElement | null;
+      return element.closest('button, [role="button"]') as HTMLElement | null;
     };
 
     const updateHoverForController = (controllerId: number, u: number, v: number) => {
@@ -69,6 +102,13 @@ const CursorOverlay = () => {
       if (target) {
         addHover(target);
         hoveredByControllerRef.current.set(controllerId, target);
+        if (
+          pressedControllersRef.current.has(controllerId) &&
+          !pressedByControllerRef.current.has(controllerId)
+        ) {
+          addPressed(target);
+          pressedByControllerRef.current.set(controllerId, target);
+        }
       } else {
         hoveredByControllerRef.current.delete(controllerId);
       }
@@ -114,6 +154,7 @@ const CursorOverlay = () => {
         clearTimeout(hideTimeouts[id]);
       }
       clearHoverForController(id);
+      clearPressedForController(id);
       setCursors((prev) => {
         const current = prev[id];
         if (!current) return prev;
@@ -126,6 +167,32 @@ const CursorOverlay = () => {
 
     if (window.electronAPI?.onCursorHide) {
       window.electronAPI.onCursorHide(handleCursorHide);
+    }
+
+    const handleTriggerState = ({
+      controllerId,
+      pressed,
+    }: {
+      controllerId?: number;
+      pressed?: boolean;
+    }) => {
+      const id = Number.isFinite(controllerId) ? Number(controllerId) : 0;
+      if (pressed) {
+        pressedControllersRef.current.add(id);
+        if (!pressedByControllerRef.current.has(id)) {
+          const target = hoveredByControllerRef.current.get(id);
+          if (target) {
+            addPressed(target);
+            pressedByControllerRef.current.set(id, target);
+          }
+        }
+      } else {
+        clearPressedForController(id);
+      }
+    };
+
+    if (window.electronAPI?.onTriggerState) {
+      window.electronAPI.onTriggerState(handleTriggerState);
     }
     
     const sendMetrics = () => {
@@ -173,8 +240,12 @@ const CursorOverlay = () => {
         if (window.electronAPI?.removeCursorHideListener) {
           window.electronAPI.removeCursorHideListener(handleCursorHide);
         }
+        if (window.electronAPI?.removeTriggerStateListener) {
+          window.electronAPI.removeTriggerStateListener(handleTriggerState);
+        }
         Object.values(hideTimeouts).forEach((timeoutId) => clearTimeout(timeoutId));
         Array.from(hoveredByControllerRef.current.keys()).forEach(clearHoverForController);
+        Array.from(pressedByControllerRef.current.keys()).forEach(clearPressedForController);
     };
   }, []);
 

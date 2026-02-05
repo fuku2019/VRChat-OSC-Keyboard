@@ -43,6 +43,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   removeCursorHideListener: (callback) => {
     ipcRenderer.removeListener('input-cursor-hide', callback);
   },
+  onTriggerState: (callback) => {
+    ipcRenderer.on('input-trigger-state', (event, data) => callback(data));
+  },
+  removeTriggerStateListener: (callback) => {
+    ipcRenderer.removeListener('input-trigger-state', callback);
+  },
 
   // VR Controller scroll events / VRコントローラスクロールイベント
   onInputScroll: (callback) => {
