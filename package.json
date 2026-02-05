@@ -64,7 +64,7 @@
     "npmRebuild": false,
     "afterPack": "./scripts/removeLocales.cjs",
     "asarUnpack": [
-      "docs/**/*",
+      "img/**/*",
       "native/**/*"
     ],
     "publish": null,
@@ -76,7 +76,7 @@
       "package.json",
       "native/index.node",
       "native/openvr_api.dll",
-      "docs/**/*"
+      "img/**/*"
     ],
     "directories": {
       "output": "release"
