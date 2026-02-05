@@ -136,6 +136,10 @@ const SettingsModal: FC<SettingsModalProps> = ({
     saveConfigImmediately(newConfig);
   };
 
+  const handleDisableOverlayToggle = (value: boolean) => {
+    const newConfig = { ...localConfig, disableOverlay: value };
+    saveConfigImmediately(newConfig);
+  };
   return (
     <div
       className={`fixed inset-0 z-[110] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 ${animationClass}`}
@@ -143,7 +147,6 @@ const SettingsModal: FC<SettingsModalProps> = ({
       <div
         className={`dark:bg-slate-800 pure-black:bg-black bg-white w-full max-w-lg max-h-[90vh] flex flex-col rounded-2xl border dark:border-slate-600 pure-black:border-slate-800 border-slate-200 shadow-2xl overflow-hidden transition-colors duration-300 ${modalAnimationClass}`}
       >
-        {/* Header / ヘッダー */}
         <div className='flex justify-between items-center p-6 border-b dark:border-slate-700 pure-black:border-slate-800 border-slate-200 dark:bg-slate-800 pure-black:bg-black bg-white transition-colors duration-300'>
           <h2 className='text-2xl font-bold dark:text-primary-400 text-primary-600'>
             {t.title}
@@ -203,6 +206,7 @@ const SettingsModal: FC<SettingsModalProps> = ({
             t={t}
             onToggleOffscreenCapture={handleOffscreenCaptureToggle}
             onToggleForceOpaqueAlpha={handleForceOpaqueAlphaToggle}
+            onToggleDisableOverlay={handleDisableOverlayToggle}
           />
 
           <UpdateCheckSection

@@ -12,6 +12,8 @@ export interface TranslationStrings {
     offscreenCaptureDesc: string;
     forceOpaqueAlpha: string;
     forceOpaqueAlphaDesc: string;
+    disableOverlay: string;
+    disableOverlayDesc: string;
     instructionsTitle: string;
     resetWelcome: string;
     save: string;
@@ -83,6 +85,8 @@ export const TRANSLATIONS: TranslationsMap = {
       offscreenCaptureDesc: 'paintイベント駆動で安定化します。変更は再起動後に反映されます。',
       forceOpaqueAlpha: 'アルファを不透明に固定',
       forceOpaqueAlphaDesc: '黒縁やちらつきが出る場合の暫定対策。画質に影響する可能性があります。',
+      disableOverlay: 'VRオーバーレイを起動しない',
+      disableOverlayDesc: 'VR上に画面を表示しません（デスクトップ使用時など）。変更は再起動後に反映されます。',
       instructionsTitle: 'ヘルプ',
       resetWelcome: 'チュートリアルを表示する',
       save: '閉じる',
@@ -150,6 +154,8 @@ export const TRANSLATIONS: TranslationsMap = {
       offscreenCaptureDesc: 'Enables paint-driven capture for stability. Takes effect after restart.',
       forceOpaqueAlpha: 'Force Opaque Alpha',
       forceOpaqueAlphaDesc: 'Workaround for black fringes or flicker. May affect visual quality.',
+      disableOverlay: 'Disable VR Overlay',
+      disableOverlayDesc: 'Do not launch VR overlay (for desktop use). Takes effect after restart.',
       instructionsTitle: 'Help',
       resetWelcome: 'Show Tutorial',
       save: 'Close',
