@@ -61,7 +61,7 @@ https://github.com/user-attachments/assets/988b4c58-d770-46fa-ad06-91ad71321da8
 <details>
   <summary>その他</summary>
   
-  ミュートを解除することをお勧めします。
+  ミュートを解除することをお勧めします。 VSC X VRC O
   CV VOICEVOX ずんだもん
 
   https://github.com/user-attachments/assets/8a650dfa-ebf4-455d-91ce-c526d8e19e1a
