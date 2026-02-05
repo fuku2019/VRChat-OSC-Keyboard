@@ -18,6 +18,8 @@ dist-ssr/
 release/
 build/
 out/
+native/index.node
+native/index-win32-x64-msvc.node
 
 # Local Environment
 .env
