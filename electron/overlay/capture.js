@@ -14,10 +14,6 @@ function normalizeFps(fps) {
 }
 
 function getBitmapBuffer(image) {
-  if (typeof image.getBitmap === 'function') {
-    const bitmap = image.getBitmap();
-    if (bitmap && bitmap.length > 0) return bitmap;
-  }
   return image.toBitmap();
 }
 
