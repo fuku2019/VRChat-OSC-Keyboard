@@ -27,7 +27,7 @@ OSC経由で、物理・仮想キーボードからチャットボックスへ�
 + **洗練されたUI:** 美しいアニメーションとカスタムテーマ機能を搭載。
 
 ## クイックスタート
-1. [Releases](github.com/fuku2019/VRC-OSC-Keyboard/releases) から .exe をダウンロードして実行。
+1. [Releases](https://github.com/fuku2019/VRC-OSC-Keyboard/releases) から .exe をダウンロードして実行。
 2. ウィザードに従ってインストールが完了したら起動。
 3. VRChatの設定で **OSCを有効** にする。
 4. ソフトウェア上のテキストボックスに入力して送信！
