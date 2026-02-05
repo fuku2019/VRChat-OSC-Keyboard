@@ -4,6 +4,8 @@ OSC経由で、物理・仮想キーボードからチャットボックスへ�
 
 ![logo](/docs/fake_logo_3.png)
 
+https://github.com/user-attachments/assets/cd2ba263-f580-4a85-8861-cc934f06c34e
+
 <div align="center">
 
   [![made_with](https://img.shields.io/badge/MADE_WITH%E2%99%A1-A2A2FF?logo=google)](https://antigravity.google)
