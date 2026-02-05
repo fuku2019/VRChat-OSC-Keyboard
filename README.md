@@ -1,4 +1,4 @@
-# VRC-OSC-Keyboard(Dev-VR)
+# VRC-OSC-Keyboard<br>(Dev-VR)
 VRChatのチャットボックスにソフトウェアキーボードや物理キーボードを使用して<br>
 OSC経由でメッセージを送信するツール
 
