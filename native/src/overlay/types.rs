@@ -13,15 +13,15 @@ pub struct IntersectionResult {
 
 #[napi(object)]
 pub struct ControllerState {
-    pub trigger_pressed: bool,
-    pub trigger_value: f64,
-    pub grip_pressed: bool,
-    pub touchpad_pressed: bool,
-    pub touchpad_x: f64,
-    pub touchpad_y: f64,
-    pub joystick_pressed: bool,
-    pub joystick_x: f64,
-    pub joystick_y: f64,
+    pub triggerPressed: bool,
+    pub triggerValue: f64,
+    pub gripPressed: bool,
+    pub touchpadPressed: bool,
+    pub touchpadX: f64,
+    pub touchpadY: f64,
+    pub joystickPressed: bool,
+    pub joystickX: f64,
+    pub joystickY: f64,
 }
 
 #[napi(object)]
