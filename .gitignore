@@ -19,7 +19,7 @@ release/
 build/
 out/
 native/index.node
-native/index-win32-x64-msvc.node
+native/vr-overlay-native.win32-x64-msvc.node
 
 # Local Environment
 .env
