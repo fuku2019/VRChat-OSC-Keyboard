@@ -274,8 +274,8 @@ impl OverlayManager {
                     error
                 )));
             }
-            let overlay_ptr =
-                NonNull::new(overlay_raw).expect("overlay interface pointer must be non-null");
+            let overlay_ptr = NonNull::new(overlay_raw)
+                .ok_or_else(|| napi::Error::from_reason("overlay interface pointer must be non-null"))?;
 
             // Get IVRSystem interface // IVRSystem interface取得 (必要であれば)
             let mut error = vr::EVRInitError_VRInitError_None;
@@ -698,32 +698,34 @@ impl OverlayManager {
                     let src_row = src.add((y as usize) * row_pitch) as *const u32;
                     let dst_row = dst.add((y as usize) * dst_pitch) as *mut u32;
 
-                    for x in 0..width {
-                        let v = *src_row.add(x as usize);
+                    let src_slice = std::slice::from_raw_parts(src_row, width as usize);
+                    let dst_slice = std::slice::from_raw_parts_mut(dst_row, width as usize);
+
+                    for (v, d) in src_slice.iter().zip(dst_slice.iter_mut()) {
                         // v is AARRGGBB (little-endian bytes: B,G,R,A)
                         // swap R and B => AABBGGRR (bytes: R,G,B,A)
-                        let rb_swapped = (v & 0xFF00FF00)
-                            | ((v & 0x00FF0000) >> 16)
-                            | ((v & 0x000000FF) << 16);
-                        *dst_row.add(x as usize) = rb_swapped;
+                        let rb_swapped = (*v & 0xFF00FF00)
+                            | ((*v & 0x00FF0000) >> 16)
+                            | ((*v & 0x000000FF) << 16);
+                        *d = rb_swapped;
                     }
                 }
             } else {
                 // Safe fallback for unaligned pointers
                 for y in 0..height {
-                    let src_row = src.add((y as usize) * row_pitch);
-                    let dst_row = dst.add((y as usize) * dst_pitch);
+                    let src_ptr = src.add((y as usize) * row_pitch);
+                    let dst_ptr = dst.add((y as usize) * dst_pitch);
 
-                    for x in 0..width {
-                        let offset = (x as usize) * (BYTES_PER_PIXEL as usize);
-                        let p = src_row.add(offset);
-                        let d = dst_row.add(offset);
+                    let row_len = (width as usize) * (BYTES_PER_PIXEL as usize);
+                    let src_slice = std::slice::from_raw_parts(src_ptr, row_len);
+                    let dst_slice = std::slice::from_raw_parts_mut(dst_ptr, row_len);
 
+                    for (s, d) in src_slice.chunks_exact(4).zip(dst_slice.chunks_exact_mut(4)) {
                         // BGRA -> RGBA
-                        *d.add(0) = *p.add(2);
-                        *d.add(1) = *p.add(1);
-                        *d.add(2) = *p.add(0);
-                        *d.add(3) = *p.add(3);
+                        d[0] = s[2];
+                        d[1] = s[1];
+                        d[2] = s[0];
+                        d[3] = s[3];
                     }
                 }
             }
