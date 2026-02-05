@@ -43,17 +43,22 @@ try {
 
   // Temporarily change CWD to native directory to find DLLs / DLLを見つけるために一時的にCWDをnativeディレクトリに変更
   const originalCwd = process.cwd();
-  process.chdir(nativeDir);
+  try {
+    process.chdir(nativeDir);
 
-  ({ OverlayManager } = require(nativePath));
-
-  // Restore CWD / CWDを復元
-  process.chdir(originalCwd);
-  console.log('Native module loaded from:', nativePath);
+    ({ OverlayManager } = require(nativePath));
+    console.log('Native module loaded from:', nativePath);
+  } finally {
+    // Restore CWD / CWDを復元
+    process.chdir(originalCwd);
+  }
 } catch (error) {
   console.error('Failed to load native module:', error);
 }
 
 export function createOverlayManager() {
+  if (!OverlayManager) {
+    throw new Error('OverlayManager is not available (native module failed to load)');
+  }
   return new OverlayManager();
 }
