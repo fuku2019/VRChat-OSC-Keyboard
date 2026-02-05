@@ -40,4 +40,5 @@ export interface OscConfig {
   updateCheckInterval: UpdateCheckInterval;
   useOffscreenCapture: boolean;
   forceOpaqueAlpha: boolean;
+  disableOverlay: boolean;
 }

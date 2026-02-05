@@ -1,20 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 
-// Extend Window interface for electronAPI
-declare global {
-  interface Window {
-    electronAPI?: {
-      onCursorMove: (callback: (data: { u: number; v: number; controllerId?: number }) => void) => void;
-      onCursorHide?: (callback: (data: { controllerId?: number }) => void) => void;
-      removeCursorHideListener?: (callback: (data: { controllerId?: number }) => void) => void;
-      onTriggerState?: (callback: (data: { controllerId?: number; pressed?: boolean }) => void) => void;
-      removeTriggerStateListener?: (callback: (data: { controllerId?: number; pressed?: boolean }) => void) => void;
-      sendWindowSize?: (width: number, height: number) => void;
-      sendRendererMetrics?: (metrics: { width: number; height: number; devicePixelRatio: number }) => void;
-    };
-  }
-}
-
 const CursorOverlay = () => {
   const [cursors, setCursors] = useState<Record<number, { u: number; v: number; visible: boolean }>>({});
   const hoveredByControllerRef = useRef<Map<number, HTMLElement>>(new Map());

@@ -400,7 +400,10 @@ function respawnOverlay(handle, hmdPose) {
  * オーバーレイ位置を理想的な場所にリセット
  */
 export function resetOverlayPosition() {
-    if (!overlayManager) return;
+    if (!overlayManager) {
+        console.warn('Cannot reset overlay position: Manager is null (overlay disabled?)');
+        return;
+    }
     
     try {
         // Get HMD Pose (Device 0)
@@ -511,7 +514,7 @@ export function initOverlay() {
  */
 export function startCapture(webContents, fps = 60) {
   if (!overlayManager || overlayHandle === null) {
-    console.warn('Overlay not initialized, skipping capture');
+    console.warn('Overlay not initialized (or disabled), skipping capture');
     return;
   }
 

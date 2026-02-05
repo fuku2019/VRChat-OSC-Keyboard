@@ -57,9 +57,15 @@ if (!gotTheLock) {
     startBridge();
     createWindow();
     setOverlayPreferences(getOverlaySettings());
-    
+
     // Initialize VR overlay / VRオーバーレイを初期化
-    const overlayHandles = initOverlay();
+    const settings = getOverlaySettings();
+    let overlayHandles = null;
+    if (!settings.disableOverlay) {
+        overlayHandles = initOverlay();
+    } else {
+        console.log('VR Overlay is disabled by settings.');
+    }
     
     // Start capturing window content to VR overlay / ウィンドウ内容のVRオーバーレイへのキャプチャを開始
     if (overlayHandles !== null) {

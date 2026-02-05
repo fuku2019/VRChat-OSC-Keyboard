@@ -15,9 +15,12 @@ interface OverlaySectionProps {
     offscreenCaptureDesc: string;
     forceOpaqueAlpha: string;
     forceOpaqueAlphaDesc: string;
+    disableOverlay: string;
+    disableOverlayDesc: string;
   };
   onToggleOffscreenCapture: (value: boolean) => void;
   onToggleForceOpaqueAlpha: (value: boolean) => void;
+  onToggleDisableOverlay: (value: boolean) => void;
 }
 
 const ToggleRow: FC<{
@@ -62,12 +65,19 @@ export const OverlaySection: FC<OverlaySectionProps> = ({
   t,
   onToggleOffscreenCapture,
   onToggleForceOpaqueAlpha,
+  onToggleDisableOverlay,
 }) => {
   return (
     <section className='pt-4 border-t dark:border-slate-700/50 border-slate-200 space-y-5'>
       <label className='block dark:text-slate-300 text-slate-600 mb-1 text-sm font-semibold uppercase tracking-wider'>
         {t.overlayTitle}
       </label>
+      <ToggleRow
+        label={t.disableOverlay}
+        description={t.disableOverlayDesc}
+        enabled={localConfig.disableOverlay}
+        onToggle={onToggleDisableOverlay}
+      />
       <ToggleRow
         label={t.offscreenCapture}
         description={t.offscreenCaptureDesc}

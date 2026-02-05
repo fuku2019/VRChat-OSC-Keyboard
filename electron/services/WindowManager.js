@@ -24,6 +24,7 @@ const store = new Store({
     overlaySettings: {
       useOffscreenCapture: false,
       forceOpaqueAlpha: false,
+      disableOverlay: false,
     },
   },
 });
@@ -55,7 +56,11 @@ export function getOverlaySettings() {
     settings && typeof settings.forceOpaqueAlpha === 'boolean'
       ? settings.forceOpaqueAlpha
       : false;
-  return { useOffscreenCapture, forceOpaqueAlpha };
+  const disableOverlay =
+    settings && typeof settings.disableOverlay === 'boolean'
+      ? settings.disableOverlay
+      : false;
+  return { useOffscreenCapture, forceOpaqueAlpha, disableOverlay };
 }
 
 /**

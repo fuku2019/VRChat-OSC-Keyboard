@@ -33,6 +33,8 @@ const loadConfigFromStorage = (): OscConfig => {
           parsed.useOffscreenCapture ?? DEFAULT_CONFIG.USE_OFFSCREEN_CAPTURE,
         forceOpaqueAlpha:
           parsed.forceOpaqueAlpha ?? DEFAULT_CONFIG.FORCE_OPAQUE_ALPHA,
+        disableOverlay:
+          parsed.disableOverlay ?? DEFAULT_CONFIG.DISABLE_OVERLAY,
       };
     }
   } catch (error) {
@@ -50,6 +52,7 @@ const loadConfigFromStorage = (): OscConfig => {
     updateCheckInterval: DEFAULT_CONFIG.UPDATE_CHECK_INTERVAL,
     useOffscreenCapture: DEFAULT_CONFIG.USE_OFFSCREEN_CAPTURE,
     forceOpaqueAlpha: DEFAULT_CONFIG.FORCE_OPAQUE_ALPHA,
+    disableOverlay: DEFAULT_CONFIG.DISABLE_OVERLAY,
   };
 };
 
@@ -98,6 +101,7 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
       electronAPI.setOverlaySettings({
         useOffscreenCapture: config.useOffscreenCapture,
         forceOpaqueAlpha: config.forceOpaqueAlpha,
+        disableOverlay: config.disableOverlay,
       });
     }
   },
@@ -125,7 +129,9 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
 
     // Sync overlay settings if changed / オーバーレイ設定を同期
     if (
-      (key === 'useOffscreenCapture' || key === 'forceOpaqueAlpha') &&
+      (key === 'useOffscreenCapture' ||
+        key === 'forceOpaqueAlpha' ||
+        key === 'disableOverlay') &&
       window.electronAPI?.setOverlaySettings
     ) {
       window.electronAPI.setOverlaySettings({ [key]: value });
@@ -154,6 +160,7 @@ if (typeof window !== 'undefined' && window.electronAPI) {
       window.electronAPI.setOverlaySettings({
         useOffscreenCapture: currentConfig.useOffscreenCapture,
         forceOpaqueAlpha: currentConfig.forceOpaqueAlpha,
+        disableOverlay: currentConfig.disableOverlay,
       });
     }
 

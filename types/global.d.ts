@@ -39,12 +39,14 @@ interface ElectronAPI {
     height: number;
     devicePixelRatio: number;
   }) => void;
-  getOverlaySettings: () => Promise<{ success: boolean; settings: { useOffscreenCapture: boolean; forceOpaqueAlpha: boolean } }>;
-  setOverlaySettings: (settings: { useOffscreenCapture?: boolean; forceOpaqueAlpha?: boolean }) => Promise<{ success: boolean; settings: { useOffscreenCapture: boolean; forceOpaqueAlpha: boolean } }>;
+  getOverlaySettings: () => Promise<{ success: boolean; settings: { useOffscreenCapture: boolean; forceOpaqueAlpha: boolean; disableOverlay: boolean } }>;
+  setOverlaySettings: (settings: { useOffscreenCapture?: boolean; forceOpaqueAlpha?: boolean; disableOverlay?: boolean }) => Promise<{ success: boolean; settings: { useOffscreenCapture: boolean; forceOpaqueAlpha: boolean; disableOverlay: boolean } }>;
   onCursorMove: (callback: (data: { u: number; v: number; controllerId?: number }) => void) => void;
   removeCursorMoveListener: (callback: (data: { u: number; v: number; controllerId?: number }) => void) => void;
   onCursorHide: (callback: (data: { controllerId?: number }) => void) => void;
   removeCursorHideListener: (callback: (data: { controllerId?: number }) => void) => void;
+  onTriggerState: (callback: (data: { controllerId?: number; pressed?: boolean; value?: number }) => void) => void;
+  removeTriggerStateListener: (callback: (data: { controllerId?: number; pressed?: boolean; value?: number }) => void) => void;
   onInputScroll: (callback: (data: { deltaY: number }) => void) => void;
   removeInputScrollListener: (callback: (data: { deltaY: number }) => void) => void;
 }
