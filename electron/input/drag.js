@@ -143,11 +143,12 @@ export function processGripDrag(
   poseMatrix,
   overlayHandle,
   controllerState,
+  hit,
 ) {
   // 2. Grip Interaction (Move Overlay)
   // Priority: If already dragging, continue. If not, checking grip press.
   if (!state.drag.isDragging) {
-    if (controllerState.gripPressed) {
+    if (controllerState.gripPressed && hit) {
       startDrag(controllerId, poseMatrix, overlayHandle);
     }
   } else if (state.drag.draggingControllerId === controllerId) {

@@ -38,7 +38,7 @@ export function processController(
 ) {
   try {
     handleTriggerInput(controllerId, controllerState, hit);
-    processGripDrag(controllerId, poseMatrix, overlayHandle, controllerState);
+    processGripDrag(controllerId, poseMatrix, overlayHandle, controllerState, hit);
   } catch (e) {
     console.error('Controller processing error:', e);
     // Reset drag if error occurs
