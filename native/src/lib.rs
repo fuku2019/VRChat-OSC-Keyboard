@@ -195,6 +195,41 @@ impl OverlayManager {
     }
 
     #[napi]
+    pub fn set_overlay_texture_bounds(
+        &self,
+        handle: i64,
+        u_min: f64,
+        v_min: f64,
+        u_max: f64,
+        v_max: f64,
+    ) -> napi::Result<()> {
+        unsafe {
+            if self.context.overlay.is_null() {
+                return Err(napi::Error::from_reason("Overlay interface is null"));
+            }
+
+            let set_bounds_fn = (*self.context.overlay).SetOverlayTextureBounds
+                .ok_or_else(|| napi::Error::from_reason("SetOverlayTextureBounds not available"))?;
+
+            let mut bounds = vr::VRTextureBounds_t {
+                uMin: u_min as f32,
+                vMin: v_min as f32,
+                uMax: u_max as f32,
+                vMax: v_max as f32,
+            };
+
+            let err = set_bounds_fn(handle as u64, &mut bounds);
+            if err != vr::EVROverlayError_VROverlayError_None {
+                return Err(napi::Error::from_reason(format!(
+                    "SetOverlayTextureBounds failed: {:?}",
+                    err
+                )));
+            }
+        }
+        Ok(())
+    }
+
+    #[napi]
     pub fn set_overlay_transform_hmd(&self, handle: i64, distance: f64) -> napi::Result<()> {
         unsafe {
             if self.context.overlay.is_null() {

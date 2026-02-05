@@ -51,6 +51,7 @@ try {
 let overlayManager = null;
 // Store overlay handle / オーバーレイハンドルを保持
 let overlayHandle = null;
+let overlayHandleBack = null;
 let captureTimer = null;
 let paintHandler = null;
 let captureWebContents = null;
@@ -266,6 +267,9 @@ function updateOverlayFromImage(image) {
     // Update texture directly via D3D11 shared texture / D3D11共有テクスチャ経由で直接テクスチャを更新
     // Uses GPU memory sharing - no file I/O, minimal flickering / GPUメモリ共有を使用 - ファイルI/Oなし、点滅最小化
     overlayManager.setOverlayTextureD3D11(overlayHandle, bgraBuffer, width, height);
+    if (overlayHandleBack !== null) {
+        overlayManager.setOverlayTextureD3D11(overlayHandleBack, bgraBuffer, width, height);
+    }
     notifyCaptureFrame({ width, height, timestamp: Date.now() });
     return true;
 }
@@ -313,16 +317,47 @@ function getSpawnTransform(hmdPose) {
     const targetPos = vec3.create();
     vec3.add(targetPos, hmdPos, offset);
 
-    // 2. Calculate Rotation
-    const targetRot = quat.clone(hmdRot);
-    
+    // 2. Calculate Rotation (Yaw-only from HMD, keep overlay horizontal)
+    // Extract HMD forward (+Z) and project onto XZ plane (invert if facing is reversed)
+    const hmdForward = vec3.fromValues(0, 0, 1);
+    vec3.transformQuat(hmdForward, hmdForward, hmdRot);
+    hmdForward[1] = 0;
+    if (vec3.length(hmdForward) < 1e-5) {
+        vec3.set(hmdForward, 0, 0, -1);
+    } else {
+        vec3.normalize(hmdForward, hmdForward);
+    }
 
-    // Local X axis rotation for Tilt
-    const tilt = quat.create();
-    quat.setAxisAngle(tilt, vec3.fromValues(1, 0, 0), SPAWN_PITCH_ANGLE);
-    
-    // Apply tilt: NewRot = HMD_Rot * Tilt
-    quat.multiply(targetRot, targetRot, tilt);
+    const worldUp = vec3.fromValues(0, 1, 0);
+    const right = vec3.create();
+    vec3.cross(right, worldUp, hmdForward);
+    if (vec3.length(right) < 1e-5) {
+        vec3.set(right, 1, 0, 0);
+    } else {
+        vec3.normalize(right, right);
+    }
+
+    const trueUp = vec3.create();
+    vec3.cross(trueUp, hmdForward, right);
+    vec3.normalize(trueUp, trueUp);
+
+    // Build yaw-only rotation matrix (column-major)
+    const yawMat = mat4.fromValues(
+        right[0],   right[1],   right[2],   0,
+        trueUp[0],  trueUp[1],  trueUp[2],  0,
+        hmdForward[0], hmdForward[1], hmdForward[2], 0,
+        0,          0,          0,          1
+    );
+
+    const targetRot = quat.create();
+    mat4.getRotation(targetRot, yawMat);
+
+    // Local X axis rotation for Tilt (optional)
+    if (SPAWN_PITCH_ANGLE !== 0) {
+        const tilt = quat.create();
+        quat.setAxisAngle(tilt, vec3.fromValues(1, 0, 0), SPAWN_PITCH_ANGLE);
+        quat.multiply(targetRot, targetRot, tilt);
+    }
 
     // 3. Compose Matrix (Column-Major)
     const targetMatCol = mat4.create();
@@ -335,6 +370,18 @@ function getSpawnTransform(hmdPose) {
     return targetMatRow;
 }
 
+function computeBackTransform(frontMatRow) {
+    const frontCol = mat4.create();
+    mat4.transpose(frontCol, frontMatRow);
+
+    const backCol = mat4.create();
+    mat4.rotateY(backCol, frontCol, Math.PI);
+
+    const backRow = mat4.create();
+    mat4.transpose(backRow, backCol);
+    return backRow;
+}
+
 /**
  * Respawn overlay at ideal position relative to HMD
  * HMDに対する理想的な位置にオーバーレイを再スポーン
@@ -342,7 +389,7 @@ function getSpawnTransform(hmdPose) {
 function respawnOverlay(handle, hmdPose) {
     try {
         const targetMat = getSpawnTransform(hmdPose);
-        overlayManager.setOverlayTransformAbsolute(handle, Array.from(targetMat));
+        setOverlayTransformAbsoluteAll(targetMat);
     } catch (e) {
         console.error("Failed to respawn overlay:", e);
     }
@@ -403,9 +450,22 @@ export function initOverlay() {
     const name = 'VRC Keyboard';
     overlayHandle = overlayManager.createOverlay(key, name);
     console.log(`Overlay Created with handle: ${overlayHandle}`);
+
+    // Create backside overlay for double-sided rendering
+    const backKey = 'vrchat-osc-keyboard-overlay-back';
+    const backName = 'VRC Keyboard (Back)';
+    overlayHandleBack = overlayManager.createOverlay(backKey, backName);
+    console.log(`Back Overlay Created with handle: ${overlayHandleBack}`);
+    if (overlayHandleBack !== null && typeof overlayManager.setOverlayTextureBounds === 'function') {
+        // Mirror horizontally so the backside looks reversed
+        overlayManager.setOverlayTextureBounds(overlayHandleBack, 1.0, 0.0, 0.0, 1.0);
+    }
     
     // Set overlay width / オーバーレイの幅を設定
     overlayManager.setOverlayWidth(overlayHandle, 0.5);
+    if (overlayHandleBack !== null) {
+        overlayManager.setOverlayWidth(overlayHandleBack, 0.5);
+    }
     
     // Initial Placement: World Fixed (Absolute) / 初期配置: ワールド固定（絶対）
     if (hmdPose && hmdPose.length > 0) {
@@ -415,17 +475,26 @@ export function initOverlay() {
          // ポーズがない場合のフォールバック: HMD相対
          console.log("HMD Pose missing, falling back to relative attachment");
          overlayManager.setOverlayTransformHmd(overlayHandle, 0.5);
+         if (overlayHandleBack !== null) {
+            overlayManager.hideOverlay(overlayHandleBack);
+         }
     }
     
     // Set initial texture / 初期テクスチャを設定
     const texturePath = getAssetPath(path.join('docs', 'fake_logo_3.png'));
     console.log(`Setting overlay texture from: ${texturePath}`);
     overlayManager.setOverlayFromFile(overlayHandle, texturePath);
+    if (overlayHandleBack !== null) {
+        overlayManager.setOverlayFromFile(overlayHandleBack, texturePath);
+    }
     
     console.log('Overlay Initial Props Set');
     
     // Show overlay / オーバーレイを表示
     overlayManager.showOverlay(overlayHandle);
+    if (overlayHandleBack !== null) {
+        overlayManager.showOverlay(overlayHandleBack);
+    }
     console.log('Overlay Shown');
     
     return overlayHandle;
@@ -618,6 +687,9 @@ export function getOverlayManager() {
 export function setOverlayWidth(width) {
     if(!overlayManager || overlayHandle === null) return;
     overlayManager.setOverlayWidth(overlayHandle, width);
+    if (overlayHandleBack !== null) {
+        overlayManager.setOverlayWidth(overlayHandleBack, width);
+    }
 }
 
 /**
@@ -626,6 +698,19 @@ export function setOverlayWidth(width) {
 export function setOverlayTransformHmd(distance) {
     if(!overlayManager || overlayHandle === null) return;
     overlayManager.setOverlayTransformHmd(overlayHandle, distance);
+    if (overlayHandleBack !== null) {
+        overlayManager.hideOverlay(overlayHandleBack);
+    }
+}
+
+export function setOverlayTransformAbsoluteAll(matrixRow) {
+    if (!overlayManager || overlayHandle === null) return;
+    overlayManager.setOverlayTransformAbsolute(overlayHandle, Array.from(matrixRow));
+    if (overlayHandleBack !== null) {
+        const backMat = computeBackTransform(matrixRow);
+        overlayManager.setOverlayTransformAbsolute(overlayHandleBack, Array.from(backMat));
+        overlayManager.showOverlay(overlayHandleBack);
+    }
 }
 
 /**
@@ -633,6 +718,10 @@ export function setOverlayTransformHmd(distance) {
  */
 export function getOverlayHandle() {
   return overlayHandle;
+}
+
+export function getOverlayBackHandle() {
+  return overlayHandleBack;
 }
 
 /**

@@ -1,4 +1,4 @@
-import { addCaptureFrameListener, getActiveOverlayHandle, getOverlayManager } from './overlay.js';
+import { addCaptureFrameListener, getActiveOverlayHandle, getOverlayManager, setOverlayTransformAbsoluteAll } from './overlay.js';
 
 let inputInterval = null;
 let overlayManager = null;
@@ -270,7 +270,7 @@ function updateInput() {
  * @param {number} overlayHandle - Current overlay handle
  * @param {object} state - Controller state
  */
-import { mat4 } from 'gl-matrix';
+import { mat4, vec3 } from 'gl-matrix';
 
 // State for grip interaction
 let isDragging = false;
@@ -442,9 +442,12 @@ function updateDrag(controllerId, poseMatrix, overlayHandle) {
         
         const newOverlay = mat4.create();
         mat4.multiply(newOverlay, startOverlayTransform, delta);
+
+        // While dragging, face the overlay toward the HMD
+        orientOverlayTowardHmd(newOverlay);
         
         // Apply to Native / ネイティブに適用
-        overlayManager.setOverlayTransformAbsolute(overlayHandle, Array.from(newOverlay));
+        setOverlayTransformAbsoluteAll(newOverlay);
         
     } catch (e) {
         console.error("Error updating drag:", e);
@@ -457,6 +460,54 @@ function endDrag() {
         isDragging = false;
         draggingControllerId = null;
     }
+}
+
+function orientOverlayTowardHmd(overlayMat) {
+    if (!overlayManager) return false;
+    const hmdPose = overlayManager.getControllerPose(0);
+    if (!hmdPose || hmdPose.length === 0) return false;
+
+    // Row-major translation
+    const overlayPos = vec3.fromValues(overlayMat[3], overlayMat[7], overlayMat[11]);
+    const hmdPos = vec3.fromValues(hmdPose[3], hmdPose[7], hmdPose[11]);
+
+    const toHmd = vec3.create();
+    vec3.subtract(toHmd, hmdPos, overlayPos);
+    const distance = vec3.length(toHmd);
+    if (!Number.isFinite(distance) || distance < 1e-5) return false;
+    vec3.scale(toHmd, toHmd, 1 / distance);
+
+    // OpenVR forward uses -Z axis, so set forward column toward HMD direction
+    const forward = vec3.create();
+    vec3.scale(forward, toHmd, 1);
+
+    let up = vec3.fromValues(0, 1, 0);
+    if (Math.abs(vec3.dot(forward, up)) > 0.95) {
+        up = vec3.fromValues(0, 0, 1);
+    }
+
+    const right = vec3.create();
+    vec3.cross(right, up, forward);
+    if (vec3.length(right) < 1e-5) return false;
+    vec3.normalize(right, right);
+
+    const trueUp = vec3.create();
+    vec3.cross(trueUp, forward, right);
+    vec3.normalize(trueUp, trueUp);
+
+    // Set rotation columns (row-major: columns are basis vectors)
+    overlayMat[0] = right[0];
+    overlayMat[4] = right[1];
+    overlayMat[8] = right[2];
+
+    overlayMat[1] = trueUp[0];
+    overlayMat[5] = trueUp[1];
+    overlayMat[9] = trueUp[2];
+
+    overlayMat[2] = forward[0];
+    overlayMat[6] = forward[1];
+    overlayMat[10] = forward[2];
+    return true;
 }
 
 const triggerDragState = {};
