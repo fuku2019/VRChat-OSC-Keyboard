@@ -5,7 +5,7 @@
 
 import { useState, useEffect, useRef, FC } from 'react';
 import { X, CircleHelp } from 'lucide-react';
-import { Language, UpdateCheckInterval } from '../types';
+import { Language, OscConfig, UpdateCheckInterval } from '../types';
 import { TRANSLATIONS, GITHUB } from '../constants';
 import { useModalAnimation } from '../hooks/useModalAnimation';
 import { useConfigStore } from '../stores/configStore';
@@ -92,7 +92,7 @@ const SettingsModal: FC<SettingsModalProps> = ({
   const t = TRANSLATIONS[localConfig.language || 'ja'].settings;
 
   // Save config immediately / 設定を即時保存
-  const saveConfigImmediately = (newConfig: typeof config) => {
+  const saveConfigImmediately = (newConfig: OscConfig) => {
     setLocalConfig(newConfig);
     setConfig(newConfig); // Store handles localStorage and Electron sync / ストアがlocalStorageとElectron同期を処理
   };
@@ -215,7 +215,6 @@ const SettingsModal: FC<SettingsModalProps> = ({
             checkStatus={checkStatus}
             updateUrl={updateUrl}
             onIntervalChange={handleIntervalChange}
-            onCheckNow={() => {}} // Handled inside component / コンポーネント内で処理
             setCheckStatus={setCheckStatus}
             setUpdateUrl={setUpdateUrl}
             onUpdateAvailable={onUpdateAvailable}

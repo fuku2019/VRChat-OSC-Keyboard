@@ -25,7 +25,6 @@ interface UpdateCheckSectionProps {
   checkStatus: string;
   updateUrl: string;
   onIntervalChange: (interval: UpdateCheckInterval) => void;
-  onCheckNow: () => void;
   setCheckStatus: (status: string) => void;
   setUpdateUrl: (url: string) => void;
   onUpdateAvailable?: (version: string | null, url?: string) => void;
@@ -37,7 +36,6 @@ export const UpdateCheckSection: FC<UpdateCheckSectionProps> = ({
   checkStatus,
   updateUrl,
   onIntervalChange,
-  onCheckNow,
   setCheckStatus,
   setUpdateUrl,
   onUpdateAvailable,
@@ -86,7 +84,7 @@ export const UpdateCheckSection: FC<UpdateCheckSectionProps> = ({
       } else {
         setCheckStatus(t.updateError);
       }
-    } catch (e) {
+    } catch {
       setCheckStatus(t.updateError);
     }
   };
