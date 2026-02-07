@@ -25,4 +25,5 @@ export const state = {
     startControllerInverse: mat4.create(),
     startOverlayTransform: mat4.create(),
   },
+  inputSmoothers: {},
 };

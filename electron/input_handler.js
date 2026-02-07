@@ -14,6 +14,7 @@ import {
 } from './input/events.js';
 import { computeHitFromPose, processController } from './input/controllers.js';
 import { state } from './input/state.js';
+import { PointerStabilizer } from './input/smoothing.js';
 
 export { updateWindowSize } from './input/mapping.js';
 
@@ -142,8 +143,20 @@ function updateInput() {
       const hit = computeHitFromPose(poseData, activeHandle);
       processController(id, poseData, activeHandle, controllerState, hit);
       if (hit) {
-        sendCursorEvent(id, hit.u, hit.v);
-        hitCandidates.push({ controllerId: id, u: hit.u, v: hit.v });
+        // --- Smoothing Logic Start ---
+        if (!state.inputSmoothers[id]) {
+          // Initialize smoothing filter for this controller
+          // Parameters (minCutoff, beta, dcutoff) need tuning.
+          // minCutoff=0.1: Very strong smoothing at low speed
+          // beta=5.0: Quick response at high speed
+          state.inputSmoothers[id] = new PointerStabilizer(0.1, 5.0, 1.0);
+        }
+        const smoothed = state.inputSmoothers[id].update(hit.u, hit.v, now);
+        // Use smoothed coordinates for cursor events
+        sendCursorEvent(id, smoothed.x, smoothed.y);
+        hitCandidates.push({ controllerId: id, u: smoothed.x, v: smoothed.y });
+        // --- Smoothing Logic End ---
+
         const previous = state.lastHitByController[id];
         if (
           !previous ||
@@ -159,6 +172,10 @@ function updateInput() {
         state.lastCursorHitState[id] = false;
         delete state.lastHitByController[id];
         delete state.lastMoveAtByController[id];
+        // Reset smoother when invalid
+        if (state.inputSmoothers[id]) {
+          state.inputSmoothers[id].reset();
+        }
       }
     }
 
@@ -183,7 +200,8 @@ function updateInput() {
       let primary = null;
       let latestMoveAt = -1;
       for (const candidate of hitCandidates) {
-        const movedAt = state.lastMoveAtByController[candidate.controllerId] ?? 0;
+        const movedAt =
+          state.lastMoveAtByController[candidate.controllerId] ?? 0;
         if (movedAt > latestMoveAt) {
           latestMoveAt = movedAt;
           primary = candidate;
@@ -192,7 +210,8 @@ function updateInput() {
       if (!primary) {
         primary =
           hitCandidates.find(
-            (candidate) => candidate.controllerId === state.lastMouseControllerId,
+            (candidate) =>
+              candidate.controllerId === state.lastMouseControllerId,
           ) ?? hitCandidates[0];
       }
       const movePosition = sendMouseMoveEvent(primary.u, primary.v);
