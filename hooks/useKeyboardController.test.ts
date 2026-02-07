@@ -23,7 +23,7 @@ describe('useKeyboardController', () => {
     handleClear: vi.fn(),
     handleSpace: vi.fn(),
     commitBuffer: vi.fn(),
-    handleSend: vi.fn(),
+    handlePrimaryAction: vi.fn(),
     handleInputEffect: vi.fn(),
     ...overrides,
   });
@@ -207,6 +207,60 @@ describe('useKeyboardController', () => {
 
       // handleInputEffect should be called / handleInputEffectが呼ばれるべき
       expect(mockHandleInputEffect).toHaveBeenCalledWith('test');
+    });
+  });
+
+  describe('primary action routing / メインアクションの分岐', () => {
+    it('calls handlePrimaryAction on Enter without Shift', () => {
+      const handlePrimaryAction = vi.fn();
+      const props = createMockProps({ handlePrimaryAction });
+      const { result } = renderHook(() => useKeyboardController(props));
+
+      const event = {
+        key: 'Enter',
+        shiftKey: false,
+        preventDefault: vi.fn(),
+        nativeEvent: { isComposing: false },
+      } as unknown as React.KeyboardEvent<HTMLTextAreaElement>;
+
+      act(() => {
+        result.current.handleKeyDown(event);
+      });
+
+      expect(handlePrimaryAction).toHaveBeenCalledTimes(1);
+      expect(event.preventDefault).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not call handlePrimaryAction on Shift+Enter', () => {
+      const handlePrimaryAction = vi.fn();
+      const props = createMockProps({ handlePrimaryAction });
+      const { result } = renderHook(() => useKeyboardController(props));
+
+      const event = {
+        key: 'Enter',
+        shiftKey: true,
+        preventDefault: vi.fn(),
+        nativeEvent: { isComposing: false },
+      } as unknown as React.KeyboardEvent<HTMLTextAreaElement>;
+
+      act(() => {
+        result.current.handleKeyDown(event);
+      });
+
+      expect(handlePrimaryAction).not.toHaveBeenCalled();
+      expect(event.preventDefault).not.toHaveBeenCalled();
+    });
+
+    it('routes virtual keyboard send key to handlePrimaryAction', () => {
+      const handlePrimaryAction = vi.fn();
+      const props = createMockProps({ handlePrimaryAction });
+      const { result } = renderHook(() => useKeyboardController(props));
+
+      act(() => {
+        result.current.createVirtualKeyHandlers().onSend();
+      });
+
+      expect(handlePrimaryAction).toHaveBeenCalledTimes(1);
     });
   });
 });

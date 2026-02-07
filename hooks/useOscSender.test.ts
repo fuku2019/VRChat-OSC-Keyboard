@@ -9,6 +9,8 @@ const { mockSendOscMessage, mockStoreState } = vi.hoisted(() => ({
       bridgeUrl: 'ws://127.0.0.1:8080',
       oscPort: 9000,
       autoSend: false,
+      copyMode: false,
+      autoSendBeforeCopyMode: false,
       language: 'en' as const,
       theme: 'dark' as const,
       accentColor: 'cyan',

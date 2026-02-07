@@ -69,6 +69,15 @@ export interface TranslationStrings {
     HIRAGANA: string;
     KATAKANA: string;
   };
+  controls: {
+    copyModeOn: string;
+    copyModeOff: string;
+    copyOnShort: string;
+    copyOffShort: string;
+    autoSendOn: string;
+    autoSendOff: string;
+    autoSendDisabledByCopyMode: string;
+  };
 }
 
 export type TranslationsMap = Record<Language, TranslationStrings>;
@@ -141,6 +150,15 @@ export const TRANSLATIONS: TranslationsMap = {
       ENGLISH: 'ENGLISH(TABで切り替え)',
       HIRAGANA: 'ひらがな(TABで切り替え)',
       KATAKANA: 'カタカナ(TABで切り替え)'
+    },
+    controls: {
+      copyModeOn: 'コピー機能: ON',
+      copyModeOff: 'コピー機能: OFF',
+      copyOnShort: 'COPY',
+      copyOffShort: 'SEND',
+      autoSendOn: 'チャット自動送信: ON',
+      autoSendOff: 'チャット自動送信: OFF',
+      autoSendDisabledByCopyMode: 'コピー機能ON中はチャット自動送信は無効です'
     }
   },
   en: {
@@ -210,6 +228,15 @@ export const TRANSLATIONS: TranslationsMap = {
       ENGLISH: 'English (Tab to Switch)',
       HIRAGANA: 'Hiragana (Tab to Switch)',
       KATAKANA: 'Katakana (Tab to Switch)'
+    },
+    controls: {
+      copyModeOn: 'Copy Mode: ON',
+      copyModeOff: 'Copy Mode: OFF',
+      copyOnShort: 'COPY',
+      copyOffShort: 'SEND',
+      autoSendOn: 'Auto Send: ON',
+      autoSendOff: 'Auto Send: OFF',
+      autoSendDisabledByCopyMode: 'Auto Send is disabled while Copy Mode is on'
     }
   }
 };
