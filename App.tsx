@@ -53,8 +53,7 @@ const App = () => {
     throttledAutoSend,
     handleSend: triggerSend,
   } = useOscSender(
-    input,
-    buffer,
+    displayText,
     setInput,
     sendTypingStatus,
     cancelTypingTimeout,

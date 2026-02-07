@@ -32,6 +32,7 @@ const SettingsModal: FC<SettingsModalProps> = ({
   const config = useConfigStore((state) => state.config);
   const setConfig = useConfigStore((state) => state.setConfig);
   const [localConfig, setLocalConfig] = useState(config);
+  const [oscPortInput, setOscPortInput] = useState(String(config.oscPort));
   const [checkStatus, setCheckStatus] = useState<string>(''); // For update check status / 更新確認ステータス用
   const [updateUrl, setUpdateUrl] = useState<string>(''); // Store update URL locally / 更新URLをローカルに保存
   const { shouldRender, animationClass, modalAnimationClass } =
@@ -43,6 +44,7 @@ const SettingsModal: FC<SettingsModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       setLocalConfig(config);
+      setOscPortInput(String(config.oscPort));
       // Initialize check status if update is already available from parent
       if (updateAvailableVersion) {
         setCheckStatus(
@@ -87,13 +89,29 @@ const SettingsModal: FC<SettingsModalProps> = ({
     saveConfigImmediately(newConfig);
   };
 
-  const handleOscPortChange = (value: string) => {
-    const portNum = parseInt(value, 10);
+  const handleOscPortCommit = () => {
+    const trimmedValue = oscPortInput.trim();
+    const portNum = parseInt(trimmedValue, 10);
     if (!isNaN(portNum) && portNum >= 1 && portNum <= 65535) {
-      const newConfig = { ...localConfig, oscPort: portNum };
-      saveConfigImmediately(newConfig);
+      if (portNum !== localConfig.oscPort) {
+        const newConfig = { ...localConfig, oscPort: portNum };
+        saveConfigImmediately(newConfig);
+      } else {
+        setOscPortInput(String(localConfig.oscPort));
+      }
+      return;
     }
-    // Allow empty for typing, but don't save / 入力中は空を許可するが保存しない
+
+    // Revert invalid input back to current config value / 無効な入力は現在の設定値に戻す
+    setOscPortInput(String(localConfig.oscPort));
+  };
+
+  const handleOscPortKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleOscPortCommit();
+      e.currentTarget.blur();
+    }
   };
 
   const handleIntervalChange = (interval: UpdateCheckInterval) => {
@@ -318,8 +336,10 @@ const SettingsModal: FC<SettingsModalProps> = ({
                 type='number'
                 min={1}
                 max={65535}
-                value={localConfig.oscPort}
-                onChange={(e) => handleOscPortChange(e.target.value)}
+                value={oscPortInput}
+                onChange={(e) => setOscPortInput(e.target.value)}
+                onBlur={handleOscPortCommit}
+                onKeyDown={handleOscPortKeyDown}
                 className='w-full dark:bg-slate-900 bg-slate-50 border dark:border-slate-700 border-slate-300 rounded-xl p-4 dark:text-white text-slate-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500/30 focus:outline-none font-mono text-sm transition-all'
                 placeholder='9000'
               />

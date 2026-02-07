@@ -16,7 +16,8 @@
     "electron:dev": "concurrently -k \"cross-env IS_ELECTRON=true vite\" \"wait-on tcp:5173 && electron .\"",
     "dist": "vite build && electron-builder && node scripts/rename-build-output.js",
     "test": "vitest",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "electron-store": "^11.0.2",

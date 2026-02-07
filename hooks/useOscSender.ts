@@ -9,8 +9,7 @@ import { TRANSLATIONS, TIMEOUTS, THROTTLE } from '../constants';
  * 手動送信およびスロットル制御された自動送信を含む、OSCメッセージ送信を処理するフック
  */
 export const useOscSender = (
-  input: string,
-  buffer: string,
+  displayText: string,
   setInput: (val: string) => void,
   sendTypingStatus: (isTyping: boolean) => void,
   cancelTypingTimeout: () => void,
@@ -57,13 +56,13 @@ export const useOscSender = (
   const handleSend = async (
     textareaRef: React.RefObject<HTMLTextAreaElement>,
   ) => {
-    let textToSend = input;
-    if (buffer.length > 0) {
-      textToSend += buffer;
-      commitBuffer();
-    }
+    const textToSend = displayText;
 
     if (!textToSend.trim()) return;
+
+    // Keep input state consistent with what is sent (flush pending IME buffer)
+    // 送信テキストと状態を一致させるため、未確定バッファを確定
+    commitBuffer();
 
     setIsSending(true);
     setError(null);
