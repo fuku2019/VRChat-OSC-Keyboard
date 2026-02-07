@@ -19,6 +19,7 @@ import {
   OscPortSection,
   UpdateCheckSection,
 } from './settings';
+import { ConfirmDialog } from './ConfirmDialog';
 
 const APP_VERSION = packageJson.version;
 
@@ -44,6 +45,8 @@ const SettingsModal: FC<SettingsModalProps> = ({
   const [updateUrl, setUpdateUrl] = useState<string>(''); // Store update URL locally / 更新URLをローカルに保存
   const { shouldRender, animationClass, modalAnimationClass } =
     useModalAnimation(isOpen);
+
+  const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
 
   // Sync local state when opening / 開くときにローカル状態を同期する
   useEffect(() => {
@@ -105,6 +108,14 @@ const SettingsModal: FC<SettingsModalProps> = ({
   const handleIntervalChange = (interval: UpdateCheckInterval) => {
     const newConfig = { ...localConfig, updateCheckInterval: interval };
     saveConfigImmediately(newConfig);
+  };
+
+  const handleResetConfig = () => {
+    // Clear localStorage configuration / localStorage設定をクリア
+    localStorage.clear();
+
+    // Reload to reset state / 状態をリセットするためにリロード
+    window.location.reload();
   };
 
   return (
@@ -185,6 +196,24 @@ const SettingsModal: FC<SettingsModalProps> = ({
           <section className='text-center'>
             <p className='text-xs text-slate-500'>Version: v{APP_VERSION}</p>
           </section>
+
+          {/* Reset Settings / 設定リセット */}
+          <section className='pt-6 border-t dark:border-slate-700/50 border-slate-200'>
+            <h3 className='text-sm font-bold text-slate-900 dark:text-slate-100 mb-2'>
+              {t.resetTitle}
+            </h3>
+            <div className='flex items-center justify-between p-4 bg-red-50 dark:bg-red-900/10 rounded-xl border border-red-100 dark:border-red-900/30'>
+              <p className='text-xs sm:text-sm text-red-600 dark:text-red-400 mr-4'>
+                {t.resetDesc}
+              </p>
+              <button
+                onClick={() => setIsResetConfirmOpen(true)}
+                className='whitespace-nowrap px-4 py-2 bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 text-red-700 dark:text-red-300 rounded-lg text-xs sm:text-sm font-bold transition-colors'
+              >
+                {t.resetButton}
+              </button>
+            </div>
+          </section>
         </div>
 
         {/* Footer / フッター */}
@@ -198,6 +227,17 @@ const SettingsModal: FC<SettingsModalProps> = ({
           </button>
         </div>
       </div>
+
+      <ConfirmDialog
+        isOpen={isResetConfirmOpen}
+        onClose={() => setIsResetConfirmOpen(false)}
+        onConfirm={handleResetConfig}
+        title={t.resetConfirmTitle}
+        message={t.resetConfirmMessage}
+        confirmText={t.resetConfirmButton}
+        cancelText={t.cancel}
+        isDanger={true}
+      />
     </div>
   );
 };

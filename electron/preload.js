@@ -6,7 +6,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('electronAPI', {
   // Update OSC port in main process / メインプロセスでOSCポートを更新
   updateOscPort: (port) => ipcRenderer.invoke('update-osc-port', port),
-  
+
   // Get current OSC port / 現在のOSCポートを取得
   getOscPort: () => ipcRenderer.invoke('get-osc-port'),
 
@@ -17,10 +17,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openExternal: (url) => ipcRenderer.invoke('open-external', url),
 
   // Log config change / 設定変更をログ出力
-  logConfigChange: (key, oldValue, newValue) => ipcRenderer.invoke('log-config-change', { key, oldValue, newValue }),
+  logConfigChange: (key, oldValue, newValue) =>
+    ipcRenderer.invoke('log-config-change', { key, oldValue, newValue }),
 
   // Send typing status to VRChat chatbox / VRChatチャットボックスにタイピング状態を送信
-  sendTypingStatus: (isTyping) => ipcRenderer.invoke('send-typing-status', isTyping),
+  sendTypingStatus: (isTyping) =>
+    ipcRenderer.invoke('send-typing-status', isTyping),
 
   // Get current WebSocket bridge port / 現在のWebSocketブリッジポートを取得
   getBridgePort: () => ipcRenderer.invoke('get-bridge-port'),
