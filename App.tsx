@@ -180,8 +180,9 @@ const App = () => {
       );
     }
 
+    let tempTextarea: HTMLTextAreaElement | null = null;
     try {
-      const tempTextarea = document.createElement('textarea');
+      tempTextarea = document.createElement('textarea');
       tempTextarea.value = text;
       tempTextarea.setAttribute('readonly', '');
       tempTextarea.style.position = 'fixed';
@@ -189,12 +190,14 @@ const App = () => {
       document.body.appendChild(tempTextarea);
       tempTextarea.focus();
       tempTextarea.select();
-      const copied = document.execCommand('copy');
-      document.body.removeChild(tempTextarea);
-      return copied;
+      return document.execCommand('copy');
     } catch (error) {
       console.error('[Clipboard] execCommand copy failed:', error);
       return false;
+    } finally {
+      if (tempTextarea?.parentNode) {
+        tempTextarea.parentNode.removeChild(tempTextarea);
+      }
     }
   };
 
