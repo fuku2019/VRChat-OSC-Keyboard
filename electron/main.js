@@ -22,6 +22,7 @@ import {
 import { registerIpcHandlers } from './services/IpcHandlers.js';
 import { initOverlay, setOverlayPreferences, startCapture } from './overlay.js';
 import { startInputLoop } from './input_handler.js';
+import { isSteamVrRunning } from './overlay/native.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -62,9 +63,13 @@ if (!gotTheLock) {
     const settings = getOverlaySettings();
     let overlayHandles = null;
     if (!settings.disableOverlay) {
+      if (!isSteamVrRunning()) {
+        console.log('SteamVR is not running. Skipping VR overlay initialization.');
+      } else {
         overlayHandles = initOverlay();
+      }
     } else {
-        console.log('VR Overlay is disabled by settings.');
+      console.log('VR Overlay is disabled by settings.');
     }
     
     // Start capturing window content to VR overlay / ウィンドウ内容のVRオーバーレイへのキャプチャを開始
