@@ -3,6 +3,8 @@ VRChatでの文字入力を、もっと自由に。<br>
 OSC経由で、物理・仮想キーボードからチャットボックスへメッセージを直接送信できます。
 
 ![logo](/docs/fake_logo_3.png)
+<br>
+↓VOICEVOXずんだもんの声は大きいので注意が必要です。
 
 https://github.com/user-attachments/assets/cd2ba263-f580-4a85-8861-cc934f06c34e
 
@@ -40,7 +42,7 @@ https://github.com/user-attachments/assets/cd2ba263-f580-4a85-8861-cc934f06c34e
 + 専用VRオーバーレイ
 
 ## ⚠️ 注意事項
-一般VRChatterが、AntigravityやCodexを使って適当に作った実験的なツールです。
+一般VRChatterが、AntigravityやCodexを使って**適当に作った実験的**なツールです。
 <br>
 現在、XSOverlayなどでアプリケーションを操作しないとVRから操作はできません。（将来独自オーバーレイを実装予定）
 <br>
