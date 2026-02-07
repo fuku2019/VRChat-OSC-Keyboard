@@ -29,6 +29,13 @@ export interface TranslationStrings {
     latestVersion: string;
     checking: string;
     updateError: string;
+    resetTitle: string;
+    resetDesc: string;
+    resetButton: string;
+    resetConfirmTitle: string;
+    resetConfirmMessage: string;
+    resetConfirmButton: string;
+    cancel: string;
   };
   tutorial: {
     title: string;
@@ -94,7 +101,14 @@ export const TRANSLATIONS: TranslationsMap = {
       openReleasePage: 'リリースページを開く',
       latestVersion: '最新です',
       checking: '確認中...',
-      updateError: '確認エラー'
+      updateError: '確認エラー',
+      resetTitle: '設定の初期化',
+      resetDesc: '全ての設定をデフォルトに戻します',
+      resetButton: '設定を初期化',
+      resetConfirmTitle: '設定の初期化',
+      resetConfirmMessage: 'すべての設定をデフォルトに戻します。アプリが再起動されます。',
+      resetConfirmButton: '初期化',
+      cancel: 'キャンセル',
     },
     tutorial: {
       title: 'VRChat OSC Keyboardへようこそ',
@@ -156,7 +170,14 @@ export const TRANSLATIONS: TranslationsMap = {
       openReleasePage: 'Open Release Page',
       latestVersion: 'Latest',
       checking: 'Checking...',
-      updateError: 'Check Error'
+      updateError: 'Check Error',
+      resetTitle: 'Reset Settings',
+      resetDesc: 'Reset all settings to default',
+      resetButton: 'Reset Settings',
+      resetConfirmTitle: 'Reset Settings',
+      resetConfirmMessage: 'This will reset all application settings to their defaults. The application will restart. Are you sure?',
+      resetConfirmButton: 'Reset',
+      cancel: 'Cancel',
     },
     tutorial: {
       title: 'Welcome to VRC OSC Keyboard',
