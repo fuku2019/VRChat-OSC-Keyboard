@@ -29,13 +29,12 @@ https://github.com/user-attachments/assets/cd2ba263-f580-4a85-8861-cc934f06c34e
 + **洗練されたUI:** 美しいアニメーションとカスタムテーマ機能を搭載。
 
 ## 🚀 クイックスタート
-1. [Readme](README.md)を読んでください。
-1. [Releases](https://github.com/fuku2019/VRC-OSC-Keyboard/releases) から .exe をダウンロードして実行。
-2. ウィザードに従ってインストールが完了したら起動。
-3. VRChatのアクションメニュー→オプション→OSCで **OSCを有効** にする。
-4. ソフトウェア上のテキストボックスに入力して送信！
+1. ダウンロード: [Releases](https://github.com/fuku2019/VRC-OSC-Keyboard/releases/latest) から最新の .exe をダウンロード。
+2. インストール: 実行してウィザードに従いインストールを完了。
+3. VRChatの設定: アクションメニュー ➔ Options ➔ OSC ➔ Enabled を選択。
+4. 準備完了: 本ツールのテキストボックスに入力し、送信ボタンを押してください！
 
-## 🗺️🧭🛤️🛣️🗽🗾🎌 ロードマップ
+## 🗺️ ロードマップ
 + 漢字変換機能
 + カスタムレイアウト
 + 専用VRオーバーレイ
@@ -49,17 +48,17 @@ https://github.com/user-attachments/assets/cd2ba263-f580-4a85-8861-cc934f06c34e
 
 ## 👀 デモ・紹介
 
-❔音声をオンにして視聴すると、動画がより楽しめます。
+[!TIP]音声をオンにして視聴すると、動画がより楽しめます。
 
 <details>
-<summary>UIのカスタマイズ</summary>
+<summary>🎨 UIのカスタマイズ</summary>
 
 https://github.com/user-attachments/assets/6afb4e82-649f-44fb-b359-42fa86495ccb
 
 </details>
 
 <details>
-<summary>基本機能</summary>
+<summary>⌨️ 基本機能</summary>
 
 https://github.com/user-attachments/assets/fc8e216b-8f50-4271-896b-cee8c70a5dd8
 
@@ -67,17 +66,17 @@ https://github.com/user-attachments/assets/988b4c58-d770-46fa-ad06-91ad71321da8
 </details>
 
 <details>
-  <summary>その他</summary>
+  <summary>🎬 その他（VOICEVOXずんだもん解説）</summary>
 
-  ミュートを解除することをオススメします。 VSC X VRC O
-  CV VOICEVOXずんだもん
+  ミュートを解除することをオススメします。<br>
+  🫛🐱〈 VSCはVRCの誤字なのにゃ
 
   https://github.com/user-attachments/assets/8a650dfa-ebf4-455d-91ce-c526d8e19e1a
 
 </details>
 
 <details>
-  <summary> ✨𝓓𝓻𝓮𝓪𝓶✨ </summary>
+  <summary> 🤯 𝓓𝓻𝓮𝓪𝓶 </summary>
 
   このセクションのメディアコンテンツは、実際のツールの操作感、機能、外観とは異なります。本ツールに着想を得た「夢」としてお楽しみください。
   <br>
