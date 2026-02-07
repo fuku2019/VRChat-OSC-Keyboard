@@ -14,6 +14,8 @@ export const DEFAULT_CONFIG = {
   BRIDGE_URL: 'ws://127.0.0.1:8080',
   OSC_PORT: 9000, // VRChat default OSC port / VRChatデフォルトOSCポート
   AUTO_SEND: false,
+  COPY_MODE: false,
+  AUTO_SEND_BEFORE_COPY_MODE: false,
   LANGUAGE: 'ja' as const,
   THEME: 'dark' as const,
   ACCENT_COLOR: 'cyan',

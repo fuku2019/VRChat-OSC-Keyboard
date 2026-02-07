@@ -32,6 +32,10 @@ const loadConfigFromStorage = (): OscConfig => {
         bridgeUrl: parsed.bridgeUrl || DEFAULT_CONFIG.BRIDGE_URL,
         oscPort: parsed.oscPort || DEFAULT_CONFIG.OSC_PORT,
         autoSend: parsed.autoSend ?? DEFAULT_CONFIG.AUTO_SEND,
+        copyMode: parsed.copyMode ?? DEFAULT_CONFIG.COPY_MODE,
+        autoSendBeforeCopyMode:
+          parsed.autoSendBeforeCopyMode ??
+          DEFAULT_CONFIG.AUTO_SEND_BEFORE_COPY_MODE,
         language: parsed.language || DEFAULT_CONFIG.LANGUAGE,
         theme: parsed.theme || DEFAULT_CONFIG.THEME,
         accentColor: parsed.accentColor || DEFAULT_CONFIG.ACCENT_COLOR,
@@ -48,6 +52,8 @@ const loadConfigFromStorage = (): OscConfig => {
     bridgeUrl: DEFAULT_CONFIG.BRIDGE_URL,
     oscPort: DEFAULT_CONFIG.OSC_PORT,
     autoSend: DEFAULT_CONFIG.AUTO_SEND,
+    copyMode: DEFAULT_CONFIG.COPY_MODE,
+    autoSendBeforeCopyMode: DEFAULT_CONFIG.AUTO_SEND_BEFORE_COPY_MODE,
     language: DEFAULT_CONFIG.LANGUAGE,
     theme: DEFAULT_CONFIG.THEME,
     accentColor: DEFAULT_CONFIG.ACCENT_COLOR,

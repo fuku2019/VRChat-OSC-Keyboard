@@ -8,6 +8,8 @@ const { mockSetConfig, mockConfig } = vi.hoisted(() => ({
     bridgeUrl: 'ws://127.0.0.1:8080',
     oscPort: 9000,
     autoSend: false,
+    copyMode: false,
+    autoSendBeforeCopyMode: false,
     language: 'ja' as const,
     theme: 'dark' as const,
     accentColor: 'cyan',
