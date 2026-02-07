@@ -32,7 +32,7 @@ https://github.com/user-attachments/assets/cd2ba263-f580-4a85-8861-cc934f06c34e
 1. [私](README.md)を読んでください。
 1. [Releases](https://github.com/fuku2019/VRC-OSC-Keyboard/releases) から .exe をダウンロードして実行。
 2. ウィザードに従ってインストールが完了したら起動。
-3. VRChatの設定で **OSCを有効** にする。
+3. VRChatのアクションメニュー→オプション→OSCで **OSCを有効** にする。
 4. ソフトウェア上のテキストボックスに入力して送信！
 
 ## 🗺️🧭🛤️🛣️🗽🗾🎌 ロードマップ
