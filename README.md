@@ -40,7 +40,7 @@ https://github.com/user-attachments/assets/cd2ba263-f580-4a85-8861-cc934f06c34e
 + 専用VRオーバーレイ
 
 ## 注意事項
-一般VRChatterがAntigravityを使って適当に作った実験的なツールです。
+一般VRChatterがAntigravityやCodexを仕様して適当に作った実験的なツールです。
 <br>
 現在、XSOverlayなどでアプリケーションを操作しないとVRから操作はできません。
 <br>
