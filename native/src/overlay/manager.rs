@@ -10,8 +10,8 @@ use std::sync::{
 };
 
 use super::constants::{
-    DEFAULT_OVERLAY_INTERFACE, DEFAULT_SYSTEM_INTERFACE, OVERLAY_INTERFACE_ENV,
-    SYSTEM_INTERFACE_ENV,
+    DEFAULT_INPUT_INTERFACE, DEFAULT_OVERLAY_INTERFACE, DEFAULT_SYSTEM_INTERFACE,
+    INPUT_INTERFACE_ENV, OVERLAY_INTERFACE_ENV, SYSTEM_INTERFACE_ENV,
 };
 use super::d3d11;
 use super::d3d11::D3D11Context;
@@ -32,6 +32,33 @@ fn create_poses_cache() -> Vec<vr::TrackedDevicePose_t> {
 struct VrContext {
     overlay: NonNull<vr::VR_IVROverlay_FnTable>,
     system: Option<NonNull<vr::VR_IVRSystem_FnTable>>,
+    input: Option<NonNull<vr::VR_IVRInput_FnTable>>,
+}
+
+pub(super) struct InputActionCache {
+    pub initialized: bool,
+    pub action_set_handle: vr::VRActionSetHandle_t,
+    pub toggle_action_handle: vr::VRActionHandle_t,
+    pub trigger_action_handle: vr::VRActionHandle_t,
+    pub grip_action_handle: vr::VRActionHandle_t,
+    pub left_hand_source: vr::VRInputValueHandle_t,
+    pub right_hand_source: vr::VRInputValueHandle_t,
+    pub last_toggle_state: bool,
+}
+
+impl InputActionCache {
+    fn new() -> Self {
+        Self {
+            initialized: false,
+            action_set_handle: 0,
+            toggle_action_handle: 0,
+            trigger_action_handle: 0,
+            grip_action_handle: 0,
+            left_hand_source: 0,
+            right_hand_source: 0,
+            last_toggle_state: false,
+        }
+    }
 }
 
 /// VRオーバーレイを管理するN-APIラッパー。
@@ -42,6 +69,7 @@ pub struct OverlayManager {
     context: VrContext,
     d3d11: Option<D3D11Context>,
     poses_cache: RefCell<Vec<vr::TrackedDevicePose_t>>,
+    input_cache: RefCell<InputActionCache>,
     _vr_token: Option<isize>,
     // Make the manager !Send/!Sync unless we can prove thread safety.
     _not_send: PhantomData<Rc<()>>,
@@ -71,6 +99,18 @@ impl OverlayManager {
     pub(super) fn poses_cache(&self) -> &RefCell<Vec<vr::TrackedDevicePose_t>> {
         &self.poses_cache
     }
+
+    pub(super) fn input(&self) -> napi::Result<&vr::VR_IVRInput_FnTable> {
+        let ptr = self
+            .context
+            .input
+            .ok_or_else(|| napi::Error::from_reason("Input interface is null"))?;
+        Ok(unsafe { ptr.as_ref() })
+    }
+
+    pub(super) fn input_cache(&self) -> &RefCell<InputActionCache> {
+        &self.input_cache
+    }
 }
 
 #[napi]
@@ -79,6 +119,7 @@ impl OverlayManager {
     pub fn new() -> napi::Result<Self> {
         let overlay_ver = cstring_from_env(OVERLAY_INTERFACE_ENV, DEFAULT_OVERLAY_INTERFACE)?;
         let system_ver = cstring_from_env(SYSTEM_INTERFACE_ENV, DEFAULT_SYSTEM_INTERFACE)?;
+        let input_ver = cstring_from_env(INPUT_INTERFACE_ENV, DEFAULT_INPUT_INTERFACE)?;
 
         let init_lock = VR_INIT_LOCK.get_or_init(|| Mutex::new(()));
         let _guard = init_lock
@@ -147,6 +188,17 @@ impl OverlayManager {
                 NonNull::new(system_raw)
             };
 
+            // Get IVRInput interface // IVRInput interface取得 (SteamVR Input)
+            let mut error = vr::EVRInitError_VRInitError_None;
+            let input_raw = vr::VR_GetGenericInterface(input_ver.as_ptr(), &mut error)
+                as *mut vr::VR_IVRInput_FnTable;
+
+            let input_ptr = if input_raw.is_null() || error != vr::EVRInitError_VRInitError_None {
+                None
+            } else {
+                NonNull::new(input_raw)
+            };
+
             VR_INIT_COUNT.fetch_add(1, Ordering::SeqCst);
 
             // Initialize D3D11 device for texture sharing / テクスチャ共有用のD3D11デバイスを初期化
@@ -156,9 +208,11 @@ impl OverlayManager {
                 context: VrContext {
                     overlay: overlay_ptr,
                     system: system_ptr,
+                    input: input_ptr,
                 },
                 d3d11: d3d11_ctx,
                 poses_cache: RefCell::new(create_poses_cache()),
+                input_cache: RefCell::new(InputActionCache::new()),
                 _vr_token: init_token,
                 _not_send: PhantomData,
             })

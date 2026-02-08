@@ -63,3 +63,10 @@ pub(super) fn overlay_error(
         err
     ))
 }
+
+pub(super) fn input_error(action: &str, err: vr::EVRInputError) -> napi::Error {
+    napi::Error::from_reason(format!(
+        "{action} failed: {:?} (code: {:?})",
+        err, err
+    ))
+}

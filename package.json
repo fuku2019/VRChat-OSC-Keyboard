@@ -66,7 +66,8 @@
     "afterPack": "./scripts/removeLocales.cjs",
     "asarUnpack": [
       "img/**/*",
-      "native/**/*"
+      "native/**/*",
+      "steamvr/**/*"
     ],
     "publish": null,
     "appId": "com.vrchat.osc.keyboard",
@@ -77,7 +78,8 @@
       "package.json",
       "native/index.node",
       "native/openvr_api.dll",
-      "img/**/*"
+      "img/**/*",
+      "steamvr/**/*"
     ],
     "directories": {
       "output": "release"

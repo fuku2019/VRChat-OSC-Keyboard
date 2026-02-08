@@ -13,6 +13,11 @@ import {
 import { resetOverlayPosition, setOverlayPreferences, updateRendererMetrics } from '../overlay.js';
 import { updateWindowSize } from '../input_handler.js';
 import { getOverlaySettings, setOverlaySettings } from './WindowManager.js';
+import {
+  getCurrentBindings,
+  openBindingUI,
+  STEAMVR_APP_KEY,
+} from './vrOverlayService.js';
 
 // GitHub repository info / GitHubリポジトリ情報
 const GITHUB_API_URL =
@@ -184,5 +189,25 @@ export function registerIpcHandlers(APP_VERSION) {
     setOverlaySettings(settings);
     setOverlayPreferences(settings);
     return { success: true, settings: getOverlaySettings() };
+  });
+
+  ipcMain.handle('get-steamvr-bindings', () => {
+    try {
+      const bindings = getCurrentBindings();
+      return { success: true, bindings };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('open-steamvr-binding-ui', () => {
+    try {
+      // Keep app key explicit so SteamVR opens the intended app bindings page.
+      console.log(`[SteamVR Input] opening binding UI for ${STEAMVR_APP_KEY}`);
+      openBindingUI(true);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
   });
 }

@@ -21,6 +21,11 @@ import {
 } from './services/WindowManager.js';
 import { registerIpcHandlers } from './services/IpcHandlers.js';
 import {
+  init as initVrOverlayService,
+  startPolling as startVrOverlayPolling,
+  stop as stopVrOverlayService,
+} from './services/vrOverlayService.js';
+import {
   initOverlay,
   setOverlayPreferences,
   shutdownOverlay,
@@ -72,6 +77,10 @@ if (!gotTheLock) {
         console.log('SteamVR is not running. Skipping VR overlay initialization.');
       } else {
         overlayHandles = initOverlay();
+        if (overlayHandles !== null) {
+          initVrOverlayService();
+          startVrOverlayPolling(60);
+        }
       }
     } else {
       console.log('VR Overlay is disabled by settings.');
@@ -99,6 +108,7 @@ if (!gotTheLock) {
 
   app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') {
+      stopVrOverlayService();
       shutdownOverlay();
       // Close bridge connections / ブリッジ接続を閉じる
       cleanupBridge();

@@ -18,6 +18,7 @@ let savePositionTimer = null;
 
 // Initialize electron-store for window position persistence / ウィンドウ位置の永続化用にelectron-storeを初期化
 const store = new Store({
+  projectName: 'vrchat-osc-keyboard',
   name: 'window-state',
   defaults: {
     windowPosition: null, // { x: number, y: number } or null

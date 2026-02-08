@@ -3,6 +3,7 @@ export const state = {
   overlayManager: null,
   overlayHandle: null,
   overlayHandleBack: null,
+  overlayVisible: false,
   captureTimer: null,
   paintHandler: null,
   captureWebContents: null,

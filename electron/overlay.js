@@ -193,6 +193,7 @@ export function initOverlay() {
     if (state.overlayHandleBack !== null) {
       state.overlayManager.showOverlay(state.overlayHandleBack);
     }
+    state.overlayVisible = true;
     console.log('Overlay Shown');
 
     return state.overlayHandle;
@@ -227,6 +228,7 @@ export function shutdownOverlay() {
   state.overlayHandleBack = null;
   state.overlayHandle = null;
   state.overlayManager = null;
+  state.overlayVisible = false;
 }
 
 /**
@@ -234,6 +236,33 @@ export function shutdownOverlay() {
  */
 export function getOverlayManager() {
   return state.overlayManager;
+}
+
+export function showOverlayAll() {
+  if (!state.overlayManager || state.overlayHandle === null) return;
+  state.overlayManager.showOverlay(state.overlayHandle);
+  if (state.overlayHandleBack !== null) {
+    state.overlayManager.showOverlay(state.overlayHandleBack);
+  }
+  state.overlayVisible = true;
+}
+
+export function hideOverlayAll() {
+  if (!state.overlayManager || state.overlayHandle === null) return;
+  state.overlayManager.hideOverlay(state.overlayHandle);
+  if (state.overlayHandleBack !== null) {
+    state.overlayManager.hideOverlay(state.overlayHandleBack);
+  }
+  state.overlayVisible = false;
+}
+
+export function toggleOverlayAll() {
+  if (!state.overlayManager || state.overlayHandle === null) return;
+  if (state.overlayVisible) {
+    hideOverlayAll();
+  } else {
+    showOverlayAll();
+  }
 }
 
 /**
@@ -270,7 +299,9 @@ export function setOverlayTransformAbsoluteAll(matrixRow) {
       state.overlayHandleBack,
       Array.from(backMat),
     );
-    state.overlayManager.showOverlay(state.overlayHandleBack);
+    if (state.overlayVisible) {
+      state.overlayManager.showOverlay(state.overlayHandleBack);
+    }
   }
 }
 

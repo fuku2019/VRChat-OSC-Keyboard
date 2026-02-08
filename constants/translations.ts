@@ -14,6 +14,12 @@ export interface TranslationStrings {
     forceOpaqueAlphaDesc: string;
     disableOverlay: string;
     disableOverlayDesc: string;
+    steamVrBindingsTitle: string;
+    steamVrBindingsEmpty: string;
+    steamVrBindingsUnavailable: string;
+    steamVrBindingsRefresh: string;
+    openSteamVrBindingUi: string;
+    steamVrBindingsMissingActions: string;
     instructionsTitle: string;
     resetWelcome: string;
     save: string;
@@ -87,6 +93,12 @@ export const TRANSLATIONS: TranslationsMap = {
       forceOpaqueAlphaDesc: '黒縁やちらつきが出る場合の暫定対策。画質に影響する可能性があります。',
       disableOverlay: 'VRオーバーレイを起動しない',
       disableOverlayDesc: 'VR上に画面を表示しません（デスクトップ使用時など）。変更は再起動後に反映されます。',
+      steamVrBindingsTitle: 'SteamVR 割り当て',
+      steamVrBindingsEmpty: '現在の割り当てはありません',
+      steamVrBindingsUnavailable: 'SteamVR Input は利用できません',
+      steamVrBindingsRefresh: '割り当てを更新',
+      openSteamVrBindingUi: 'バインドUIを開く',
+      steamVrBindingsMissingActions: '未割り当て: Trigger/Grip のアクションをBinding UIで設定してください。',
       instructionsTitle: 'ヘルプ',
       resetWelcome: 'チュートリアルを表示する',
       save: '閉じる',
@@ -156,6 +168,12 @@ export const TRANSLATIONS: TranslationsMap = {
       forceOpaqueAlphaDesc: 'Workaround for black fringes or flicker. May affect visual quality.',
       disableOverlay: 'Disable VR Overlay',
       disableOverlayDesc: 'Do not launch VR overlay (for desktop use). Takes effect after restart.',
+      steamVrBindingsTitle: 'SteamVR Bindings',
+      steamVrBindingsEmpty: 'No active binding found',
+      steamVrBindingsUnavailable: 'SteamVR Input is unavailable',
+      steamVrBindingsRefresh: 'Refresh Bindings',
+      openSteamVrBindingUi: 'Open Binding UI',
+      steamVrBindingsMissingActions: 'Missing bindings: assign Trigger/Grip actions in Binding UI.',
       instructionsTitle: 'Help',
       resetWelcome: 'Show Tutorial',
       save: 'Close',

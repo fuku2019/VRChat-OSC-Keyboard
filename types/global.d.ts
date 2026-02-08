@@ -41,6 +41,19 @@ interface ElectronAPI {
   }) => void;
   getOverlaySettings: () => Promise<{ success: boolean; settings: { useOffscreenCapture: boolean; forceOpaqueAlpha: boolean; disableOverlay: boolean } }>;
   setOverlaySettings: (settings: { useOffscreenCapture?: boolean; forceOpaqueAlpha?: boolean; disableOverlay?: boolean }) => Promise<{ success: boolean; settings: { useOffscreenCapture: boolean; forceOpaqueAlpha: boolean; disableOverlay: boolean } }>;
+  getSteamVrBindings: () => Promise<{
+    success: boolean;
+    bindings?: {
+      initialized: boolean;
+      toggleOverlay: string[];
+      triggerBindings: string[];
+      gripBindings: string[];
+      triggerBound: boolean;
+      gripBound: boolean;
+    };
+    error?: string;
+  }>;
+  openSteamVrBindingUi: () => Promise<{ success: boolean; error?: string }>;
   onCursorMove: (callback: (data: { u: number; v: number; controllerId?: number }) => void) => void;
   removeCursorMoveListener: (callback: (data: { u: number; v: number; controllerId?: number }) => void) => void;
   onCursorHide: (callback: (data: { controllerId?: number }) => void) => void;

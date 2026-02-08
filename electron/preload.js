@@ -63,4 +63,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Overlay settings
   getOverlaySettings: () => ipcRenderer.invoke('get-overlay-settings'),
   setOverlaySettings: (settings) => ipcRenderer.invoke('set-overlay-settings', settings),
+  getSteamVrBindings: () => ipcRenderer.invoke('get-steamvr-bindings'),
+  openSteamVrBindingUi: () => ipcRenderer.invoke('open-steamvr-binding-ui'),
 });

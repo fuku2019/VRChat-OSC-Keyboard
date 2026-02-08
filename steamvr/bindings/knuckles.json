@@ -1,0 +1,58 @@
+{
+  "action_manifest_version": 1,
+  "app_key": "com.vrchat.osc.keyboard",
+  "controller_type": "knuckles",
+  "description": "Default binding for Valve Index controllers",
+  "bindings": {
+    "/actions/vrkb2": {
+      "sources": [
+        {
+          "path": "/user/hand/right/input/a/click",
+          "mode": "button",
+          "inputs": {
+            "click": {
+              "output": "/actions/vrkb2/in/toggle_overlay"
+            }
+          }
+        },
+        {
+          "path": "/user/hand/right/input/trigger/click",
+          "mode": "button",
+          "inputs": {
+            "click": {
+              "output": "/actions/vrkb2/in/trigger_click"
+            }
+          }
+        },
+        {
+          "path": "/user/hand/left/input/trigger/click",
+          "mode": "button",
+          "inputs": {
+            "click": {
+              "output": "/actions/vrkb2/in/trigger_click"
+            }
+          }
+        },
+        {
+          "path": "/user/hand/right/input/grip/click",
+          "mode": "button",
+          "inputs": {
+            "click": {
+              "output": "/actions/vrkb2/in/grip_click"
+            }
+          }
+        },
+        {
+          "path": "/user/hand/left/input/grip/click",
+          "mode": "button",
+          "inputs": {
+            "click": {
+              "output": "/actions/vrkb2/in/grip_click"
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+

@@ -30,3 +30,13 @@ pub struct OverlayRelativeTransform {
     pub trackedDeviceIndex: u32,
     pub transform: Vec<f64>, // 4x4 flattened
 }
+
+#[napi(object)]
+pub struct CurrentBindings {
+    pub initialized: bool,
+    pub toggleOverlay: Vec<String>,
+    pub triggerBindings: Vec<String>,
+    pub gripBindings: Vec<String>,
+    pub triggerBound: bool,
+    pub gripBound: bool,
+}

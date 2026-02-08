@@ -79,6 +79,30 @@ impl OverlayManager {
     }
 
     #[napi]
+    pub fn toggle_overlay(&self, handle: i64) -> napi::Result<()> {
+        let overlay = self.overlay();
+        let is_visible_fn = require_fn(overlay.IsOverlayVisible, "IsOverlayVisible")?;
+        let show_overlay_fn = require_fn(overlay.ShowOverlay, "ShowOverlay")?;
+        let hide_overlay_fn = require_fn(overlay.HideOverlay, "HideOverlay")?;
+        let handle = overlay_handle(handle)?;
+
+        unsafe {
+            if is_visible_fn(handle.as_u64()) {
+                let err = hide_overlay_fn(handle.as_u64());
+                if err != vr::EVROverlayError_VROverlayError_None {
+                    return Err(overlay_error("HideOverlay", overlay, err));
+                }
+            } else {
+                let err = show_overlay_fn(handle.as_u64());
+                if err != vr::EVROverlayError_VROverlayError_None {
+                    return Err(overlay_error("ShowOverlay", overlay, err));
+                }
+            }
+        }
+        Ok(())
+    }
+
+    #[napi]
     pub fn set_overlay_width(&self, handle: i64, width_meters: f64) -> napi::Result<()> {
         let overlay = self.overlay();
         let set_width_fn = require_fn(overlay.SetOverlayWidthInMeters, "SetOverlayWidthInMeters")?;
