@@ -27,6 +27,10 @@
   ],
   "default_bindings": [
     {
+      "controller_type": "pico_controller",
+      "binding_url": "bindings/pico_controller.json"
+    },
+    {
       "controller_type": "knuckles",
       "binding_url": "bindings/knuckles.json"
     },
