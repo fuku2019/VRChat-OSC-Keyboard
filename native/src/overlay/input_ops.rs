@@ -13,6 +13,7 @@ const TRIGGER_ACTION_PATH: &str = "/actions/vrkb2/in/trigger_click";
 const GRIP_ACTION_PATH: &str = "/actions/vrkb2/in/grip_click";
 const LEFT_HAND_PATH: &str = "/user/hand/left";
 const RIGHT_HAND_PATH: &str = "/user/hand/right";
+const TOGGLE_RELEASE_STREAK_TO_UNLOCK: u8 = 3;
 
 fn to_cstring(input: &str, label: &str) -> napi::Result<CString> {
     CString::new(input)
@@ -169,6 +170,8 @@ impl OverlayManager {
         cache.left_hand_source = left_hand_source;
         cache.right_hand_source = right_hand_source;
         cache.last_toggle_state = false;
+        cache.toggle_lock = false;
+        cache.toggle_release_streak = 0;
         Ok(())
     }
 
@@ -211,7 +214,23 @@ impl OverlayManager {
         }
 
         let current_state = digital.bActive && digital.bState;
-        let clicked = current_state && (digital.bChanged || !cache.last_toggle_state);
+
+        // Latch toggle while held:
+        // avoid repeated toggles if SteamVR briefly drops action activity/state
+        // during overlay visibility changes.
+        if current_state {
+            cache.toggle_release_streak = 0;
+        } else if cache.toggle_release_streak < u8::MAX {
+            cache.toggle_release_streak = cache.toggle_release_streak.saturating_add(1);
+            if cache.toggle_release_streak >= TOGGLE_RELEASE_STREAK_TO_UNLOCK {
+                cache.toggle_lock = false;
+            }
+        }
+
+        let clicked = current_state && !cache.toggle_lock;
+        if clicked {
+            cache.toggle_lock = true;
+        }
         cache.last_toggle_state = current_state;
         Ok(clicked)
     }

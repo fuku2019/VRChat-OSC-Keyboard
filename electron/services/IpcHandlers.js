@@ -204,7 +204,7 @@ export function registerIpcHandlers(APP_VERSION) {
     try {
       // Keep app key explicit so SteamVR opens the intended app bindings page.
       console.log(`[SteamVR Input] opening binding UI for ${STEAMVR_APP_KEY}`);
-      openBindingUI(true);
+      openBindingUI(false);
       return { success: true };
     } catch (error) {
       return { success: false, error: error.message };

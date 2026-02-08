@@ -5,7 +5,7 @@ import { getOverlayManager, toggleOverlayAll } from '../overlay.js';
 import { getAssetPath } from '../overlay/native.js';
 
 const DEFAULT_POLL_HZ = 60;
-export const STEAMVR_APP_KEY = 'com.vrchat.osc.keyboard';
+export const STEAMVR_APP_KEY = 'system.generated.electron.exe';
 
 const state = {
   initialized: false,
@@ -111,7 +111,7 @@ export function getCurrentBindings() {
   return manager.getCurrentBindings();
 }
 
-export function openBindingUI(showOnDesktop = true) {
+export function openBindingUI(showOnDesktop = false) {
   if (!state.initialized && !init()) {
     throw new Error('SteamVR input is not initialized');
   }

@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "app_key": "com.vrchat.osc.keyboard",
+  "app_key": "system.generated.electron.exe",
   "category": "steamvr_input",
   "actions": [
     {

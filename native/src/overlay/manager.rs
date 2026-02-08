@@ -44,6 +44,8 @@ pub(super) struct InputActionCache {
     pub left_hand_source: vr::VRInputValueHandle_t,
     pub right_hand_source: vr::VRInputValueHandle_t,
     pub last_toggle_state: bool,
+    pub toggle_lock: bool,
+    pub toggle_release_streak: u8,
 }
 
 impl InputActionCache {
@@ -57,6 +59,8 @@ impl InputActionCache {
             left_hand_source: 0,
             right_hand_source: 0,
             last_toggle_state: false,
+            toggle_lock: false,
+            toggle_release_streak: 0,
         }
     }
 }

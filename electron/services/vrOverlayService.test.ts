@@ -75,11 +75,11 @@ describe('vrOverlayService', () => {
     const service = await import('./vrOverlayService.js');
 
     service.init();
-    service.openBindingUI(true);
+    service.openBindingUI();
 
     expect(manager.openBindingUi).toHaveBeenCalledWith(
-      'com.vrchat.osc.keyboard',
-      true,
+      'system.generated.electron.exe',
+      false,
     );
   });
 
