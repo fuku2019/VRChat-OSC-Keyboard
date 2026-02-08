@@ -4,9 +4,6 @@ use openvr_sys as vr;
 use std::ffi::{c_char, CString};
 
 use windows::core::Interface;
-use windows::Win32::Graphics::Direct3D11::{
-    D3D11_MAPPED_SUBRESOURCE, D3D11_MAP_WRITE_DISCARD, ID3D11Resource,
-};
 
 use super::buffers::{expected_rgba_size, row_pitch_bytes};
 use super::constants::BYTES_PER_PIXEL;
@@ -88,9 +85,10 @@ impl OverlayManager {
     }
 
     #[napi]
-    pub fn set_overlay_texture_d3d11(
+    pub fn set_overlay_textures_d3d11(
         &mut self,
-        handle: i64,
+        front_handle: i64,
+        back_handle: i64,
         buffer: Buffer,
         width: u32,
         height: u32,
@@ -105,7 +103,8 @@ impl OverlayManager {
             let overlay = unsafe { overlay_ptr.as_ref() };
             require_fn(overlay.SetOverlayTexture, "SetOverlayTexture")?
         };
-        let handle = overlay_handle(handle)?;
+        let front_handle = overlay_handle(front_handle)?;
+        let back_handle = overlay_handle(back_handle)?;
         let d3d11 = self
             .d3d11_mut()
             .ok_or_else(|| napi::Error::from_reason("D3D11 context not initialized"))?;
@@ -125,90 +124,16 @@ impl OverlayManager {
 
             let row_pitch = row_pitch_bytes(width)?;
 
-            // Recreate texture if size changed / サイズが変わった場合はテクスチャを再作成
-            d3d11.ensure_texture(width, height)?;
+            // Recreate texture/pipeline resources if size changed / サイズが変わった場合はリソースを再作成
+            d3d11.ensure_resources(width, height)?;
             let texture = d3d11
-                .texture
-                .as_ref()
-                .ok_or_else(|| {
-                    napi::Error::from_reason("D3D11 texture not available after creation")
-                })?
+                .output_texture()
+                .ok_or_else(|| napi::Error::from_reason("D3D11 output texture not available"))?
                 .clone();
-            let resource: ID3D11Resource = texture.cast().map_err(|e| {
-                napi::Error::from_reason(format!("Texture cast to ID3D11Resource failed: {:?}", e))
-            })?;
 
-            // Update texture data / テクスチャデータを更新
-            let mut mapped = D3D11_MAPPED_SUBRESOURCE::default();
-            d3d11
-                .context
-                .Map(&resource, 0, D3D11_MAP_WRITE_DISCARD, 0, Some(&mut mapped))
-                .map_err(|e| napi::Error::from_reason(format!("Map failed: {:?}", e)))?;
-
-            // Copy buffer to texture with BGRA -> RGBA swap
-            // バッファをテクスチャにコピー（BGRA -> RGBA の R/B スワップ）
-            let src = buffer.as_ptr();
-            let dst = mapped.pData as *mut u8;
-            let dst_pitch = mapped.RowPitch as usize;
-            if dst.is_null() {
-                d3d11.context.Unmap(&resource, 0);
-                return Err(napi::Error::from_reason("Mapped texture pointer is null"));
-            }
-            if dst_pitch < row_pitch {
-                d3d11.context.Unmap(&resource, 0);
-                return Err(napi::Error::from_reason(
-                    "Mapped row pitch is smaller than source row size",
-                ));
-            }
-            if (height as usize).checked_mul(dst_pitch).is_none() {
-                d3d11.context.Unmap(&resource, 0);
-                return Err(napi::Error::from_reason("Row pitch overflow"));
-            }
-
-            // Fast path when aligned to 4 bytes
-            let aligned = (src as usize & 3) == 0
-                && (dst as usize & 3) == 0
-                && (row_pitch & 3) == 0
-                && (dst_pitch & 3) == 0;
-
-            if aligned {
-                for y in 0..height {
-                    let src_row = src.add((y as usize) * row_pitch) as *const u32;
-                    let dst_row = dst.add((y as usize) * dst_pitch) as *mut u32;
-
-                    let src_slice = std::slice::from_raw_parts(src_row, width as usize);
-                    let dst_slice = std::slice::from_raw_parts_mut(dst_row, width as usize);
-
-                    for (v, d) in src_slice.iter().zip(dst_slice.iter_mut()) {
-                        // v is AARRGGBB (little-endian bytes: B,G,R,A)
-                        // swap R and B => AABBGGRR (bytes: R,G,B,A)
-                        let rb_swapped = (*v & 0xFF00FF00)
-                            | ((*v & 0x00FF0000) >> 16)
-                            | ((*v & 0x000000FF) << 16);
-                        *d = rb_swapped;
-                    }
-                }
-            } else {
-                // Safe fallback for unaligned pointers
-                for y in 0..height {
-                    let src_ptr = src.add((y as usize) * row_pitch);
-                    let dst_ptr = dst.add((y as usize) * dst_pitch);
-
-                    let row_len = (width as usize) * (BYTES_PER_PIXEL as usize);
-                    let src_slice = std::slice::from_raw_parts(src_ptr, row_len);
-                    let dst_slice = std::slice::from_raw_parts_mut(dst_ptr, row_len);
-
-                    for (s, d) in src_slice.chunks_exact(4).zip(dst_slice.chunks_exact_mut(4)) {
-                        // BGRA -> RGBA
-                        d[0] = s[2];
-                        d[1] = s[1];
-                        d[2] = s[0];
-                        d[3] = s[3];
-                    }
-                }
-            }
-
-            d3d11.context.Unmap(&resource, 0);
+            // Upload BGRA bytes and run GPU conversion pass
+            d3d11.upload_bgra_buffer(buffer.as_ptr(), row_pitch, width, height)?;
+            d3d11.convert_bgra_to_rgba(width, height)?;
 
             // Set overlay texture using SetOverlayTexture / SetOverlayTextureを使用してオーバーレイテクスチャを設定
             // Get raw pointer for OpenVR / OpenVR用の生ポインタを取得
@@ -220,7 +145,7 @@ impl OverlayManager {
                 eColorSpace: vr::EColorSpace_ColorSpace_Auto,
             };
 
-            let err = set_texture_fn(handle.as_u64(), &mut vr_texture);
+            let err = set_texture_fn(front_handle.as_u64(), &mut vr_texture);
 
             if err != vr::EVROverlayError_VROverlayError_None {
                 return Err(overlay_error(
@@ -228,6 +153,17 @@ impl OverlayManager {
                     overlay_ptr.as_ref(),
                     err,
                 ));
+            }
+
+            if back_handle.as_u64() != 0 {
+                let err = set_texture_fn(back_handle.as_u64(), &mut vr_texture);
+                if err != vr::EVROverlayError_VROverlayError_None {
+                    return Err(overlay_error(
+                        "SetOverlayTexture(back)",
+                        overlay_ptr.as_ref(),
+                        err,
+                    ));
+                }
             }
         }
         Ok(())

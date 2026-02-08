@@ -138,20 +138,13 @@ function updateOverlayFromImage(image) {
 
   // Update texture directly via D3D11 shared texture / D3D11共有テクスチャ経由で直接テクスチャを更新
   // Uses GPU memory sharing - no file I/O, minimal flickering / GPUメモリ共有を使用 - ファイルI/Oなし、点滅最小化
-  state.overlayManager.setOverlayTextureD3D11(
+  state.overlayManager.setOverlayTexturesD3D11(
     state.overlayHandle,
+    state.overlayHandleBack ?? 0,
     bgraBuffer,
     width,
     height,
   );
-  if (state.overlayHandleBack !== null) {
-    state.overlayManager.setOverlayTextureD3D11(
-      state.overlayHandleBack,
-      bgraBuffer,
-      width,
-      height,
-    );
-  }
   notifyCaptureFrame({ width, height, timestamp: Date.now() });
   return true;
 }
