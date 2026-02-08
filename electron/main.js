@@ -20,7 +20,12 @@ import {
   getOverlaySettings,
 } from './services/WindowManager.js';
 import { registerIpcHandlers } from './services/IpcHandlers.js';
-import { initOverlay, setOverlayPreferences, startCapture } from './overlay.js';
+import {
+  initOverlay,
+  setOverlayPreferences,
+  shutdownOverlay,
+  startCapture,
+} from './overlay.js';
 import { startInputLoop } from './input_handler.js';
 import { isSteamVrRunning } from './overlay/native.js';
 
@@ -94,6 +99,7 @@ if (!gotTheLock) {
 
   app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') {
+      shutdownOverlay();
       // Close bridge connections / ブリッジ接続を閉じる
       cleanupBridge();
       app.quit();

@@ -202,6 +202,33 @@ export function initOverlay() {
   }
 }
 
+export function shutdownOverlay() {
+  const manager = state.overlayManager;
+  if (!manager) {
+    return;
+  }
+
+  if (state.overlayHandleBack !== null) {
+    try {
+      manager.destroyOverlay(state.overlayHandleBack);
+    } catch (e) {
+      console.error('Failed to destroy back overlay:', e);
+    }
+  }
+
+  if (state.overlayHandle !== null) {
+    try {
+      manager.destroyOverlay(state.overlayHandle);
+    } catch (e) {
+      console.error('Failed to destroy overlay:', e);
+    }
+  }
+
+  state.overlayHandleBack = null;
+  state.overlayHandle = null;
+  state.overlayManager = null;
+}
+
 /**
  * Get the overlay manager instance / オーバーレイマネージャーインスタンスを取得
  */

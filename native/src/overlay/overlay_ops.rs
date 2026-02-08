@@ -37,6 +37,20 @@ impl OverlayManager {
     }
 
     #[napi]
+    pub fn destroy_overlay(&self, handle: i64) -> napi::Result<()> {
+        let overlay = self.overlay();
+        let destroy_overlay_fn = require_fn(overlay.DestroyOverlay, "DestroyOverlay")?;
+        let handle = overlay_handle(handle)?;
+        unsafe {
+            let err = destroy_overlay_fn(handle.as_u64());
+            if err != vr::EVROverlayError_VROverlayError_None {
+                return Err(overlay_error("DestroyOverlay", overlay, err));
+            }
+        }
+        Ok(())
+    }
+
+    #[napi]
     pub fn show_overlay(&self, handle: i64) -> napi::Result<()> {
         let overlay = self.overlay();
         let show_overlay_fn = require_fn(overlay.ShowOverlay, "ShowOverlay")?;

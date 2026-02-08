@@ -215,7 +215,7 @@ impl OverlayManager {
             let texture_ptr = texture.as_raw();
 
             let mut vr_texture = vr::Texture_t {
-                handle: texture_ptr as *mut std::ffi::c_void,
+                handle: texture_ptr,
                 eType: vr::ETextureType_TextureType_DirectX,
                 eColorSpace: vr::EColorSpace_ColorSpace_Auto,
             };
