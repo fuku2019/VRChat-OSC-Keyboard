@@ -74,6 +74,9 @@ https://github.com/user-attachments/assets/988b4c58-d770-46fa-ad06-91ad71321da8
 
   https://github.com/user-attachments/assets/8a650dfa-ebf4-455d-91ce-c526d8e19e1a
 
+  ![zm_vok_0](https://github.com/user-attachments/assets/e7d60988-36bf-4302-9654-9d8162f98422)
+
+
 </details>
 
 <details>
