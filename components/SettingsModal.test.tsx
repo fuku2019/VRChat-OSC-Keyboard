@@ -14,6 +14,7 @@ const { mockSetConfig, mockConfig } = vi.hoisted(() => ({
     theme: 'dark' as const,
     accentColor: 'cyan',
     updateCheckInterval: 'weekly' as const,
+    steamVrAutoLaunch: false,
   },
 }));
 

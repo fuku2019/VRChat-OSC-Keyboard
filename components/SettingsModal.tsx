@@ -89,12 +89,14 @@ const SettingsModal: FC<SettingsModalProps> = ({
   const [bindingError, setBindingError] = useState<string>('');
   const [triggerBound, setTriggerBound] = useState<boolean>(false);
   const [gripBound, setGripBound] = useState<boolean>(false);
+  const [steamVrAutoLaunchError, setSteamVrAutoLaunchError] = useState<string>('');
 
   // Sync local state when opening / 開くときにローカル状態を同期する
   useEffect(() => {
     if (isOpen) {
       setLocalConfig(config);
       setOscPortInput(String(config.oscPort));
+      setSteamVrAutoLaunchError('');
       if (updateAvailableVersion) {
         setCheckStatus(
           TRANSLATIONS[
@@ -255,6 +257,47 @@ const SettingsModal: FC<SettingsModalProps> = ({
     const newConfig = { ...localConfig, disableOverlay: value };
     saveConfigImmediately(newConfig);
   };
+
+  const handleToggleSteamVrAutoLaunch = async (value: boolean) => {
+    if (!window.electronAPI?.setSteamVrAutoLaunch) {
+      setSteamVrAutoLaunchError(t.steamVrAutoLaunchError);
+      return;
+    }
+
+    try {
+      const result = await window.electronAPI.setSteamVrAutoLaunch(value);
+      if (!result?.success) {
+        setSteamVrAutoLaunchError(result?.error || t.steamVrAutoLaunchError);
+        return;
+      }
+
+      setSteamVrAutoLaunchError('');
+      const newConfig = { ...localConfig, steamVrAutoLaunch: value };
+      saveConfigImmediately(newConfig);
+    } catch (e) {
+      setSteamVrAutoLaunchError((e as Error)?.message || t.steamVrAutoLaunchError);
+    }
+  };
+
+  useEffect(() => {
+    if (!isOpen || !window.electronAPI?.getSteamVrAutoLaunch) return;
+
+    const syncSteamVrAutoLaunch = async () => {
+      try {
+        const result = await window.electronAPI!.getSteamVrAutoLaunch();
+        if (!result?.success || typeof result.enabled !== 'boolean') return;
+
+        if (result.enabled !== config.steamVrAutoLaunch) {
+          const newConfig = { ...config, steamVrAutoLaunch: result.enabled };
+          saveConfigImmediately(newConfig);
+        }
+      } catch {
+        // no-op: this sync is best-effort only / この同期はベストエフォート
+      }
+    };
+
+    void syncSteamVrAutoLaunch();
+  }, [isOpen, config]);
 
   const loadBindings = useCallback(async () => {
     if (!window.electronAPI?.getSteamVrBindings) {
@@ -544,6 +587,15 @@ const SettingsModal: FC<SettingsModalProps> = ({
               enabled={localConfig.disableOverlay}
               onToggle={handleToggleDisableOverlay}
             />
+            <ToggleRow
+              label={t.steamVrAutoLaunch}
+              description={t.steamVrAutoLaunchDesc}
+              enabled={localConfig.steamVrAutoLaunch}
+              onToggle={(value) => void handleToggleSteamVrAutoLaunch(value)}
+            />
+            {steamVrAutoLaunchError && (
+              <p className='text-xs text-red-400'>{steamVrAutoLaunchError}</p>
+            )}
             <ToggleRow
               label={t.offscreenCapture}
               description={t.offscreenCaptureDesc}

@@ -18,6 +18,10 @@ import {
   openBindingUI,
   STEAMVR_APP_KEY,
 } from './vrOverlayService.js';
+import {
+  getSteamVrAutoLaunch,
+  setSteamVrAutoLaunch,
+} from './SteamVrSettingsService.js';
 
 // GitHub repository info / GitHubリポジトリ情報
 const GITHUB_API_URL =
@@ -189,6 +193,14 @@ export function registerIpcHandlers(APP_VERSION) {
     setOverlaySettings(settings);
     setOverlayPreferences(settings);
     return { success: true, settings: getOverlaySettings() };
+  });
+
+  ipcMain.handle('get-steamvr-auto-launch', () => {
+    return getSteamVrAutoLaunch(STEAMVR_APP_KEY);
+  });
+
+  ipcMain.handle('set-steamvr-auto-launch', (event, enabled) => {
+    return setSteamVrAutoLaunch(STEAMVR_APP_KEY, enabled);
   });
 
   ipcMain.handle('get-steamvr-bindings', () => {

@@ -20,6 +20,13 @@ interface CheckUpdateResult {
   error?: string;
 }
 
+interface SteamVrAutoLaunchResult {
+  success: boolean;
+  enabled?: boolean;
+  path?: string;
+  error?: string;
+}
+
 interface ElectronAPI {
   updateOscPort: (port: number) => Promise<UpdateOscPortResult>;
   getOscPort: () => Promise<GetOscPortResult>;
@@ -39,8 +46,10 @@ interface ElectronAPI {
     height: number;
     devicePixelRatio: number;
   }) => void;
-  getOverlaySettings: () => Promise<{ success: boolean; settings: { useOffscreenCapture: boolean; forceOpaqueAlpha: boolean; disableOverlay: boolean } }>;
-  setOverlaySettings: (settings: { useOffscreenCapture?: boolean; forceOpaqueAlpha?: boolean; disableOverlay?: boolean }) => Promise<{ success: boolean; settings: { useOffscreenCapture: boolean; forceOpaqueAlpha: boolean; disableOverlay: boolean } }>;
+  getOverlaySettings: () => Promise<{ success: boolean; settings: { useOffscreenCapture: boolean; forceOpaqueAlpha: boolean; disableOverlay: boolean; steamVrAutoLaunch: boolean } }>;
+  setOverlaySettings: (settings: { useOffscreenCapture?: boolean; forceOpaqueAlpha?: boolean; disableOverlay?: boolean; steamVrAutoLaunch?: boolean }) => Promise<{ success: boolean; settings: { useOffscreenCapture: boolean; forceOpaqueAlpha: boolean; disableOverlay: boolean; steamVrAutoLaunch: boolean } }>;
+  getSteamVrAutoLaunch: () => Promise<SteamVrAutoLaunchResult>;
+  setSteamVrAutoLaunch: (enabled: boolean) => Promise<SteamVrAutoLaunchResult>;
   getSteamVrBindings: () => Promise<{
     success: boolean;
     bindings?: {

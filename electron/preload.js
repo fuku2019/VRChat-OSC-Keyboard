@@ -109,6 +109,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Overlay settings
   getOverlaySettings: () => ipcRenderer.invoke('get-overlay-settings'),
   setOverlaySettings: (settings) => ipcRenderer.invoke('set-overlay-settings', settings),
+  getSteamVrAutoLaunch: () => ipcRenderer.invoke('get-steamvr-auto-launch'),
+  setSteamVrAutoLaunch: (enabled) =>
+    ipcRenderer.invoke('set-steamvr-auto-launch', enabled),
   getSteamVrBindings: () => ipcRenderer.invoke('get-steamvr-bindings'),
   openSteamVrBindingUi: () => ipcRenderer.invoke('open-steamvr-binding-ui'),
 });

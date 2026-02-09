@@ -23,6 +23,7 @@ export const DEFAULT_CONFIG = {
   USE_OFFSCREEN_CAPTURE: false,
   FORCE_OPAQUE_ALPHA: false,
   DISABLE_OVERLAY: false,
+  STEAMVR_AUTO_LAUNCH: false,
 } as const;
 
 // Timeout values (in milliseconds) / タイムアウト値（ミリ秒）

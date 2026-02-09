@@ -24,7 +24,10 @@ import {
   init as initVrOverlayService,
   startPolling as startVrOverlayPolling,
   stop as stopVrOverlayService,
+  STEAMVR_APP_KEY,
 } from './services/vrOverlayService.js';
+import { setSteamVrAutoLaunch } from './services/SteamVrSettingsService.js';
+import { ensureSteamVrManifestRegistered } from './services/SteamVrManifestService.js';
 import {
   initOverlay,
   setOverlayPreferences,
@@ -67,10 +70,34 @@ if (!gotTheLock) {
   app.whenReady().then(() => {
     startBridge();
     createWindow();
-    setOverlayPreferences(getOverlaySettings());
+    const settings = getOverlaySettings();
+    setOverlayPreferences(settings);
+
+    const manifestRegistration = ensureSteamVrManifestRegistered();
+    if (!manifestRegistration.success) {
+      console.warn(
+        '[SteamVR] Failed to register app manifest:',
+        manifestRegistration.error,
+      );
+    } else {
+      console.log(
+        '[SteamVR] App manifest registered:',
+        manifestRegistration.manifestPath,
+      );
+    }
+
+    const steamVrAutoLaunchSync = setSteamVrAutoLaunch(
+      STEAMVR_APP_KEY,
+      Boolean(settings.steamVrAutoLaunch),
+    );
+    if (!steamVrAutoLaunchSync.success) {
+      console.warn(
+        '[SteamVR] Failed to sync startup app setting on boot:',
+        steamVrAutoLaunchSync.error,
+      );
+    }
 
     // Initialize VR overlay / VRオーバーレイを初期化
-    const settings = getOverlaySettings();
     let overlayHandles = null;
     if (!settings.disableOverlay) {
       if (!isSteamVrRunning()) {

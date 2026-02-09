@@ -47,6 +47,8 @@ const loadConfigFromStorage = (): OscConfig => {
           parsed.forceOpaqueAlpha ?? DEFAULT_CONFIG.FORCE_OPAQUE_ALPHA,
         disableOverlay:
           parsed.disableOverlay ?? DEFAULT_CONFIG.DISABLE_OVERLAY,
+        steamVrAutoLaunch:
+          parsed.steamVrAutoLaunch ?? DEFAULT_CONFIG.STEAMVR_AUTO_LAUNCH,
       };
     }
   } catch (error) {
@@ -67,6 +69,7 @@ const loadConfigFromStorage = (): OscConfig => {
     useOffscreenCapture: DEFAULT_CONFIG.USE_OFFSCREEN_CAPTURE,
     forceOpaqueAlpha: DEFAULT_CONFIG.FORCE_OPAQUE_ALPHA,
     disableOverlay: DEFAULT_CONFIG.DISABLE_OVERLAY,
+    steamVrAutoLaunch: DEFAULT_CONFIG.STEAMVR_AUTO_LAUNCH,
   };
 };
 
@@ -116,7 +119,12 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
         useOffscreenCapture: config.useOffscreenCapture,
         forceOpaqueAlpha: config.forceOpaqueAlpha,
         disableOverlay: config.disableOverlay,
+        steamVrAutoLaunch: config.steamVrAutoLaunch,
       });
+    }
+
+    if (electronAPI?.setSteamVrAutoLaunch) {
+      void electronAPI.setSteamVrAutoLaunch(config.steamVrAutoLaunch);
     }
   },
 
@@ -145,10 +153,15 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
     if (
       (key === 'useOffscreenCapture' ||
         key === 'forceOpaqueAlpha' ||
-        key === 'disableOverlay') &&
+        key === 'disableOverlay' ||
+        key === 'steamVrAutoLaunch') &&
       window.electronAPI?.setOverlaySettings
     ) {
       window.electronAPI.setOverlaySettings({ [key]: value });
+    }
+
+    if (key === 'steamVrAutoLaunch' && window.electronAPI?.setSteamVrAutoLaunch) {
+      void window.electronAPI.setSteamVrAutoLaunch(value as boolean);
     }
   },
 
@@ -175,7 +188,12 @@ if (typeof window !== 'undefined' && window.electronAPI) {
         useOffscreenCapture: currentConfig.useOffscreenCapture,
         forceOpaqueAlpha: currentConfig.forceOpaqueAlpha,
         disableOverlay: currentConfig.disableOverlay,
+        steamVrAutoLaunch: currentConfig.steamVrAutoLaunch,
       });
+    }
+
+    if (window.electronAPI?.setSteamVrAutoLaunch) {
+      void window.electronAPI.setSteamVrAutoLaunch(currentConfig.steamVrAutoLaunch);
     }
 
     // Get bridge port from Electron and update bridgeUrl / Electronからブリッジポートを取得してbridgeUrlを更新

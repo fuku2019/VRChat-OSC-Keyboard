@@ -14,6 +14,9 @@ export interface TranslationStrings {
     forceOpaqueAlphaDesc: string;
     disableOverlay: string;
     disableOverlayDesc: string;
+    steamVrAutoLaunch: string;
+    steamVrAutoLaunchDesc: string;
+    steamVrAutoLaunchError: string;
     steamVrBindingsTitle: string;
     steamVrBindingsEmpty: string;
     steamVrBindingsUnavailable: string;
@@ -109,6 +112,9 @@ export const TRANSLATIONS: TranslationsMap = {
       forceOpaqueAlphaDesc: '黒縁やちらつきが出る場合の暫定対策。画質に影響する可能性があります。',
       disableOverlay: 'VRオーバーレイを起動しない',
       disableOverlayDesc: 'VR上に画面を表示しません（デスクトップ使用時など）。変更は再起動後に反映されます。',
+      steamVrAutoLaunch: 'SteamVRスタートアップに登録',
+      steamVrAutoLaunchDesc: 'SteamVR未起動時でも steamvr.vrsettings を直接更新して反映します。',
+      steamVrAutoLaunchError: 'SteamVRスタートアップ設定の更新に失敗しました。',
       steamVrBindingsTitle: 'SteamVR 割り当て',
       steamVrBindingsEmpty: '現在の割り当てはありません',
       steamVrBindingsUnavailable: 'SteamVR Input は利用できません',
@@ -200,6 +206,9 @@ export const TRANSLATIONS: TranslationsMap = {
       forceOpaqueAlphaDesc: 'Workaround for black fringes or flicker. May affect visual quality.',
       disableOverlay: 'Disable VR Overlay',
       disableOverlayDesc: 'Do not launch VR overlay (for desktop use). Takes effect after restart.',
+      steamVrAutoLaunch: 'Register in SteamVR Startup Apps',
+      steamVrAutoLaunchDesc: 'Directly updates steamvr.vrsettings even when SteamVR is not running.',
+      steamVrAutoLaunchError: 'Failed to update SteamVR startup app setting.',
       steamVrBindingsTitle: 'SteamVR Bindings',
       steamVrBindingsEmpty: 'No active binding found',
       steamVrBindingsUnavailable: 'SteamVR Input is unavailable',

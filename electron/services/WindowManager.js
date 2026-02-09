@@ -26,6 +26,7 @@ const store = new Store({
       useOffscreenCapture: false,
       forceOpaqueAlpha: false,
       disableOverlay: false,
+      steamVrAutoLaunch: false,
     },
   },
 });
@@ -61,7 +62,11 @@ export function getOverlaySettings() {
     settings && typeof settings.disableOverlay === 'boolean'
       ? settings.disableOverlay
       : false;
-  return { useOffscreenCapture, forceOpaqueAlpha, disableOverlay };
+  const steamVrAutoLaunch =
+    settings && typeof settings.steamVrAutoLaunch === 'boolean'
+      ? settings.steamVrAutoLaunch
+      : false;
+  return { useOffscreenCapture, forceOpaqueAlpha, disableOverlay, steamVrAutoLaunch };
 }
 
 /**

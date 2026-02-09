@@ -43,4 +43,5 @@ export interface OscConfig {
   useOffscreenCapture: boolean;
   forceOpaqueAlpha: boolean;
   disableOverlay: boolean;
+  steamVrAutoLaunch: boolean;
 }
