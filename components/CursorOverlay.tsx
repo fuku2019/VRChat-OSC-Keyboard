@@ -222,6 +222,9 @@ const CursorOverlay = () => {
         if (dprQuery) {
             dprQuery.removeEventListener('change', handleDprChange);
         }
+        if (window.electronAPI?.removeCursorMoveListener) {
+          window.electronAPI.removeCursorMoveListener(handleCursorMove);
+        }
         if (window.electronAPI?.removeCursorHideListener) {
           window.electronAPI.removeCursorHideListener(handleCursorHide);
         }

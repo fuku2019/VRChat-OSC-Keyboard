@@ -1,5 +1,8 @@
 // Preload script for Electron IPC communication / Electron IPC通信用のプリロードスクリプト
 const { contextBridge, ipcRenderer } = require('electron');
+const cursorMoveListenerMap = new WeakMap();
+const cursorHideListenerMap = new WeakMap();
+const triggerStateListenerMap = new WeakMap();
 const inputScrollListenerMap = new WeakMap();
 
 // Expose protected methods to renderer process via contextBridge
@@ -35,22 +38,55 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // VR Controller cursor events / VRコントローラーカーソルイベント
   onCursorMove: (callback) => {
-    ipcRenderer.on('input-cursor-move', (event, data) => callback(data));
+    if (typeof callback !== 'function') return;
+    const previous = cursorMoveListenerMap.get(callback);
+    if (previous) {
+      ipcRenderer.removeListener('input-cursor-move', previous);
+    }
+    const wrapped = (_event, data) => callback(data);
+    cursorMoveListenerMap.set(callback, wrapped);
+    ipcRenderer.on('input-cursor-move', wrapped);
   },
   removeCursorMoveListener: (callback) => {
-    ipcRenderer.removeListener('input-cursor-move', callback);
+    if (typeof callback !== 'function') return;
+    const wrapped = cursorMoveListenerMap.get(callback);
+    if (!wrapped) return;
+    ipcRenderer.removeListener('input-cursor-move', wrapped);
+    cursorMoveListenerMap.delete(callback);
   },
   onCursorHide: (callback) => {
-    ipcRenderer.on('input-cursor-hide', (event, data) => callback(data));
+    if (typeof callback !== 'function') return;
+    const previous = cursorHideListenerMap.get(callback);
+    if (previous) {
+      ipcRenderer.removeListener('input-cursor-hide', previous);
+    }
+    const wrapped = (_event, data) => callback(data);
+    cursorHideListenerMap.set(callback, wrapped);
+    ipcRenderer.on('input-cursor-hide', wrapped);
   },
   removeCursorHideListener: (callback) => {
-    ipcRenderer.removeListener('input-cursor-hide', callback);
+    if (typeof callback !== 'function') return;
+    const wrapped = cursorHideListenerMap.get(callback);
+    if (!wrapped) return;
+    ipcRenderer.removeListener('input-cursor-hide', wrapped);
+    cursorHideListenerMap.delete(callback);
   },
   onTriggerState: (callback) => {
-    ipcRenderer.on('input-trigger-state', (event, data) => callback(data));
+    if (typeof callback !== 'function') return;
+    const previous = triggerStateListenerMap.get(callback);
+    if (previous) {
+      ipcRenderer.removeListener('input-trigger-state', previous);
+    }
+    const wrapped = (_event, data) => callback(data);
+    triggerStateListenerMap.set(callback, wrapped);
+    ipcRenderer.on('input-trigger-state', wrapped);
   },
   removeTriggerStateListener: (callback) => {
-    ipcRenderer.removeListener('input-trigger-state', callback);
+    if (typeof callback !== 'function') return;
+    const wrapped = triggerStateListenerMap.get(callback);
+    if (!wrapped) return;
+    ipcRenderer.removeListener('input-trigger-state', wrapped);
+    triggerStateListenerMap.delete(callback);
   },
 
   // VR Controller scroll events / VRコントローラスクロールイベント
