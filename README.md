@@ -96,12 +96,12 @@ https://github.com/user-attachments/assets/988b4c58-d770-46fa-ad06-91ad71321da8
 ### 1. 事前準備
 以下の環境が必要です。
 
-- **Node.js**: LTS バージョン推奨
-- **Rust**: [rustup](https://rustup.rs/) をインストールしてください
+- **Node.js**: [Node.js](https://nodejs.org/ja/download)をインストールしてください。LTS バージョン推奨
+- **Rust**: [rustup]([https://rustup.rs/](https://rust-lang.org/ja/tools/install/)) をインストールしてください
 - **C++ ビルドツール**:
-  - Windows の場合: [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) をインストールし、「C++ によるデスクトップ開発」を選択
+  - Windows の場合: [Visual Studio Build Tools](https://visualstudio.microsoft.com/ja/downloads/) をインストールし、「C++ によるデスクトップ開発」を選択
 - **LLVM**: Rust のバインディング生成に必要です
-  - [LLVM](https://github.com/llvm/llvm-project/releases) Windows x64 (64-bit): installerをダウンロード
+  - Windows の場合: [LLVM](https://github.com/llvm/llvm-project/releases) Windows x64 (64-bit): installerをダウンロード
 
 ### 2. インストールとビルド
 ```bash
