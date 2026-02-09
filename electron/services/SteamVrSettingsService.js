@@ -118,14 +118,25 @@ function readAutoLaunchFromSettings(settings, appKey) {
   const nestedApp = isObject(applications[appKey]) ? applications[appKey] : {};
   const rootApp = isObject(settings[appKey]) ? settings[appKey] : {};
 
-  const candidates = [
-    nestedApp[AUTO_LAUNCH_KEY],
-    nestedApp.autoLaunch,
-    rootApp[AUTO_LAUNCH_KEY],
-    rootApp.autoLaunch,
-  ];
-  const enabled = candidates.find((value) => typeof value === 'boolean');
-  return typeof enabled === 'boolean' ? enabled : false;
+  // Prefer current format under "applications". Only use root-level legacy keys
+  // as a fallback when the app is not represented in applications.
+  if (isObject(applications[appKey])) {
+    const nestedCandidates = [nestedApp[AUTO_LAUNCH_KEY], nestedApp.autoLaunch];
+    const nestedEnabled = nestedCandidates.find(
+      (value) => typeof value === 'boolean',
+    );
+    return typeof nestedEnabled === 'boolean' ? nestedEnabled : false;
+  }
+
+  // If applications section exists but does not have this app, treat as disabled.
+  if (isObject(settings[APPLICATIONS_SECTION])) {
+    return false;
+  }
+
+  // Backward-compatible fallback for old format.
+  const legacyCandidates = [rootApp[AUTO_LAUNCH_KEY], rootApp.autoLaunch];
+  const legacyEnabled = legacyCandidates.find((value) => typeof value === 'boolean');
+  return typeof legacyEnabled === 'boolean' ? legacyEnabled : false;
 }
 
 function applyAutoLaunchToSettings(settings, appKey, enabled) {
@@ -133,11 +144,17 @@ function applyAutoLaunchToSettings(settings, appKey, enabled) {
     ? settings[APPLICATIONS_SECTION]
     : {};
   const nextApplications = { ...applications };
+  const rootApp = isObject(settings[appKey]) ? settings[appKey] : null;
+  const nextSettings = { ...settings };
 
   if (!enabled) {
     delete nextApplications[appKey];
+    // Clean up legacy root-level app section so stale keys do not override status.
+    if (rootApp) {
+      delete nextSettings[appKey];
+    }
     return {
-      ...settings,
+      ...nextSettings,
       [APPLICATIONS_SECTION]: nextApplications,
     };
   }
@@ -147,7 +164,7 @@ function applyAutoLaunchToSettings(settings, appKey, enabled) {
     : {};
 
   return {
-    ...settings,
+    ...nextSettings,
     [APPLICATIONS_SECTION]: {
       ...nextApplications,
       [appKey]: {
@@ -181,16 +198,28 @@ function resolveWritePaths() {
 export function getSteamVrAutoLaunch(appKey) {
   try {
     const readPaths = resolveReadPaths();
+    let fallbackPath = readPaths[0];
+    let foundReadablePath = null;
+
     for (const settingsPath of readPaths) {
       try {
         const settings = loadSettingsFile(settingsPath);
         const enabled = readAutoLaunchFromSettings(settings, appKey);
-        return { success: true, enabled, path: settingsPath };
+        foundReadablePath = settingsPath;
+        // In multi-path environments, prefer enabled=true if found in any path.
+        // This matches observed runtime behavior better than first-path wins.
+        if (enabled) {
+          return { success: true, enabled: true, path: settingsPath };
+        }
       } catch (error) {
         console.warn('[SteamVR] Failed to read settings file:', settingsPath, error);
       }
     }
-    return { success: true, enabled: false, path: readPaths[0] };
+    return {
+      success: true,
+      enabled: false,
+      path: foundReadablePath || fallbackPath,
+    };
   } catch (error) {
     return { success: false, error: error.message };
   }
