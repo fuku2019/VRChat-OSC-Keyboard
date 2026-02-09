@@ -1,8 +1,14 @@
 // Shared overlay state / 共有オーバーレイ状態
 export const state = {
+  // Config
+  backOverlayEnabled: false, // Backside overlay enabled state / 背面オーバーレイの有効状態
+  debug: false, // Debug mode / デバッグモード
+
   overlayManager: null,
   overlayHandle: null,
   overlayHandleBack: null,
+  splashHandle: null,
+  splashTimer: null,
   overlayVisible: false,
   captureTimer: null,
   paintHandler: null,
