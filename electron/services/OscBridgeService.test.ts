@@ -4,6 +4,12 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
+interface OscInputPayload {
+  text: string;
+  direct?: boolean;
+  sound?: boolean;
+}
+
 // Mock WebSocketServer / WebSocketServerをモック
 vi.mock('ws', () => ({
   WebSocketServer: vi.fn().mockImplementation(() => ({
@@ -59,7 +65,7 @@ describe('OscBridgeService payload format / OscBridgeServiceのpayload形式', (
 
     it('should default direct=true, sound=true when not specified', () => {
       // Simulate defaulting logic from OscBridgeService / OscBridgeServiceのデフォルトロジックをシミュレート
-      const data = { text: 'Test message' };
+      const data: OscInputPayload = { text: 'Test message' };
       
       const direct = data.direct !== undefined ? data.direct : true;
       const sound = data.sound !== undefined ? data.sound : true;
@@ -69,7 +75,11 @@ describe('OscBridgeService payload format / OscBridgeServiceのpayload形式', (
     });
 
     it('should respect explicit direct=false, sound=false', () => {
-      const data = { text: 'Silent message', direct: false, sound: false };
+      const data: OscInputPayload = {
+        text: 'Silent message',
+        direct: false,
+        sound: false,
+      };
       
       const direct = data.direct !== undefined ? data.direct : true;
       const sound = data.sound !== undefined ? data.sound : true;

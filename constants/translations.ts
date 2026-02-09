@@ -42,6 +42,13 @@ export interface TranslationStrings {
     latestVersion: string;
     checking: string;
     updateError: string;
+    resetTitle: string;
+    resetDesc: string;
+    resetButton: string;
+    resetConfirmTitle: string;
+    resetConfirmMessage: string;
+    resetConfirmButton: string;
+    cancel: string;
   };
   tutorial: {
     title: string;
@@ -74,6 +81,15 @@ export interface TranslationStrings {
     ENGLISH: string;
     HIRAGANA: string;
     KATAKANA: string;
+  };
+  controls: {
+    copyModeOn: string;
+    copyModeOff: string;
+    copyOnShort: string;
+    copyOffShort: string;
+    autoSendOn: string;
+    autoSendOff: string;
+    autoSendDisabledByCopyMode: string;
   };
 }
 
@@ -120,7 +136,14 @@ export const TRANSLATIONS: TranslationsMap = {
       openReleasePage: 'リリースページを開く',
       latestVersion: '最新です',
       checking: '確認中...',
-      updateError: '確認エラー'
+      updateError: '確認エラー',
+      resetTitle: '設定の初期化',
+      resetDesc: '全ての設定をデフォルトに戻します',
+      resetButton: '設定を初期化',
+      resetConfirmTitle: '設定の初期化',
+      resetConfirmMessage: 'すべての設定をデフォルトに戻します。アプリが再起動されます。',
+      resetConfirmButton: '初期化',
+      cancel: 'キャンセル',
     },
     tutorial: {
       title: 'VRChat OSC Keyboardへようこそ',
@@ -153,6 +176,15 @@ export const TRANSLATIONS: TranslationsMap = {
       ENGLISH: 'ENGLISH(TABで切り替え)',
       HIRAGANA: 'ひらがな(TABで切り替え)',
       KATAKANA: 'カタカナ(TABで切り替え)'
+    },
+    controls: {
+      copyModeOn: 'コピー機能: ON',
+      copyModeOff: 'コピー機能: OFF',
+      copyOnShort: 'COPY',
+      copyOffShort: 'SEND',
+      autoSendOn: 'チャット自動送信: ON',
+      autoSendOff: 'チャット自動送信: OFF',
+      autoSendDisabledByCopyMode: 'コピー機能ON中はチャット自動送信は無効です'
     }
   },
   en: {
@@ -195,7 +227,14 @@ export const TRANSLATIONS: TranslationsMap = {
       openReleasePage: 'Open Release Page',
       latestVersion: 'Latest',
       checking: 'Checking...',
-      updateError: 'Check Error'
+      updateError: 'Check Error',
+      resetTitle: 'Reset Settings',
+      resetDesc: 'Reset all settings to default',
+      resetButton: 'Reset Settings',
+      resetConfirmTitle: 'Reset Settings',
+      resetConfirmMessage: 'This will reset all application settings to their defaults. The application will restart. Are you sure?',
+      resetConfirmButton: 'Reset',
+      cancel: 'Cancel',
     },
     tutorial: {
       title: 'Welcome to VRC OSC Keyboard',
@@ -228,6 +267,15 @@ export const TRANSLATIONS: TranslationsMap = {
       ENGLISH: 'English (Tab to Switch)',
       HIRAGANA: 'Hiragana (Tab to Switch)',
       KATAKANA: 'Katakana (Tab to Switch)'
+    },
+    controls: {
+      copyModeOn: 'Copy Mode: ON',
+      copyModeOff: 'Copy Mode: OFF',
+      copyOnShort: 'COPY',
+      copyOffShort: 'SEND',
+      autoSendOn: 'Auto Send: ON',
+      autoSendOff: 'Auto Send: OFF',
+      autoSendDisabledByCopyMode: 'Auto Send is disabled while Copy Mode is on'
     }
   }
 };

@@ -2,6 +2,14 @@ import { create } from 'zustand';
 import { OscConfig } from '../types';
 import { STORAGE_KEYS, DEFAULT_CONFIG } from '../constants';
 
+const BRIDGE_PORT_SYNC_MAX_RETRIES = 20;
+const BRIDGE_PORT_SYNC_RETRY_INTERVAL_MS = 300;
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const isValidPort = (port: unknown): port is number =>
+  typeof port === 'number' && Number.isInteger(port) && port >= 1 && port <= 65535;
+
 // Store state type / ストアの状態型
 interface ConfigStore {
   config: OscConfig;
@@ -24,6 +32,10 @@ const loadConfigFromStorage = (): OscConfig => {
         bridgeUrl: parsed.bridgeUrl || DEFAULT_CONFIG.BRIDGE_URL,
         oscPort: parsed.oscPort || DEFAULT_CONFIG.OSC_PORT,
         autoSend: parsed.autoSend ?? DEFAULT_CONFIG.AUTO_SEND,
+        copyMode: parsed.copyMode ?? DEFAULT_CONFIG.COPY_MODE,
+        autoSendBeforeCopyMode:
+          parsed.autoSendBeforeCopyMode ??
+          DEFAULT_CONFIG.AUTO_SEND_BEFORE_COPY_MODE,
         language: parsed.language || DEFAULT_CONFIG.LANGUAGE,
         theme: parsed.theme || DEFAULT_CONFIG.THEME,
         accentColor: parsed.accentColor || DEFAULT_CONFIG.ACCENT_COLOR,
@@ -46,6 +58,8 @@ const loadConfigFromStorage = (): OscConfig => {
     bridgeUrl: DEFAULT_CONFIG.BRIDGE_URL,
     oscPort: DEFAULT_CONFIG.OSC_PORT,
     autoSend: DEFAULT_CONFIG.AUTO_SEND,
+    copyMode: DEFAULT_CONFIG.COPY_MODE,
+    autoSendBeforeCopyMode: DEFAULT_CONFIG.AUTO_SEND_BEFORE_COPY_MODE,
     language: DEFAULT_CONFIG.LANGUAGE,
     theme: DEFAULT_CONFIG.THEME,
     accentColor: DEFAULT_CONFIG.ACCENT_COLOR,
@@ -167,14 +181,21 @@ if (typeof window !== 'undefined' && window.electronAPI) {
     // Get bridge port from Electron and update bridgeUrl / Electronからブリッジポートを取得してbridgeUrlを更新
     if (window.electronAPI!.getBridgePort) {
       try {
-        const result = await window.electronAPI!.getBridgePort();
-        if (result.port) {
-          const newBridgeUrl = `ws://127.0.0.1:${result.port}`;
-          const store = useConfigStore.getState();
-          if (store.config.bridgeUrl !== newBridgeUrl) {
-            // Update bridgeUrl without logging to avoid noise / ノイズを避けるためログなしでbridgeUrlを更新
-            store.setConfig({ ...store.config, bridgeUrl: newBridgeUrl });
-            console.log(`✅ Bridge URL synced to: ${newBridgeUrl}`);
+        for (let i = 0; i < BRIDGE_PORT_SYNC_MAX_RETRIES; i++) {
+          const result = await window.electronAPI!.getBridgePort();
+          if (isValidPort(result.port)) {
+            const newBridgeUrl = `ws://127.0.0.1:${result.port}`;
+            const store = useConfigStore.getState();
+            if (store.config.bridgeUrl !== newBridgeUrl) {
+              // Update bridgeUrl without logging to avoid noise / ノイズを避けるためログなしでbridgeUrlを更新
+              store.setConfig({ ...store.config, bridgeUrl: newBridgeUrl });
+              console.log(`✅ Bridge URL synced to: ${newBridgeUrl}`);
+            }
+            break;
+          }
+
+          if (i < BRIDGE_PORT_SYNC_MAX_RETRIES - 1) {
+            await sleep(BRIDGE_PORT_SYNC_RETRY_INTERVAL_MS);
           }
         }
       } catch (e) {

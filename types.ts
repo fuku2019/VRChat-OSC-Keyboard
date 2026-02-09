@@ -34,6 +34,8 @@ export interface OscConfig {
   bridgeUrl: string;
   oscPort: number; // VRChat OSC port (default: 9000) / VRChat OSCポート（デフォルト: 9000）
   autoSend: boolean;
+  copyMode: boolean;
+  autoSendBeforeCopyMode: boolean;
   language: Language;
   theme: 'light' | 'dark' | 'pure-black';
   accentColor: string;

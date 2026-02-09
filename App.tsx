@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Settings, Zap, ZapOff, RefreshCw } from 'lucide-react';
+import { Settings, Zap, ZapOff, Copy, RefreshCw } from 'lucide-react';
 import VirtualKeyboard from './components/VirtualKeyboard';
 import SettingsModal from './components/SettingsModal';
 import TutorialOverlay from './components/TutorialOverlay';
@@ -54,8 +54,7 @@ const App = () => {
     throttledAutoSend,
     handleSend: triggerSend,
   } = useOscSender(
-    input,
-    buffer,
+    displayText,
     setInput,
     sendTypingStatus,
     cancelTypingTimeout,
@@ -68,6 +67,12 @@ const App = () => {
   // Common handler for input side effects (Typing indicator, Auto-send)
   // 入力副作用の共通ハンドラ（タイピングインジケーター、自動送信）
   const handleInputEffect = (text: string) => {
+    if (config.copyMode) {
+      cancelTypingTimeout();
+      sendTypingStatus(false);
+      return;
+    }
+
     // Typing Indicator Logic
     if (text.length > 0) {
       sendTypingStatus(true);
@@ -107,7 +112,7 @@ const App = () => {
     handleClear,
     handleSpace,
     commitBuffer,
-    handleSend: () => triggerSend(textareaRef),
+    handlePrimaryAction,
     handleInputEffect,
   });
 
@@ -145,8 +150,77 @@ const App = () => {
   };
 
   const handleAutoSendToggle = () => {
+    if (config.copyMode) return;
     updateConfig('autoSend', !config.autoSend);
   };
+
+  const handleCopyModeToggle = () => {
+    if (!config.copyMode) {
+      updateConfig('autoSendBeforeCopyMode', config.autoSend);
+      updateConfig('copyMode', true);
+      updateConfig('autoSend', false);
+      cancelTypingTimeout();
+      sendTypingStatus(false);
+      return;
+    }
+
+    updateConfig('copyMode', false);
+    updateConfig('autoSend', config.autoSendBeforeCopyMode);
+  };
+
+  const copyTextToClipboard = async (text: string): Promise<boolean> => {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+    } catch (error) {
+      console.warn(
+        '[Clipboard] navigator.clipboard failed, fallback to execCommand:',
+        error,
+      );
+    }
+
+    let tempTextarea: HTMLTextAreaElement | null = null;
+    try {
+      tempTextarea = document.createElement('textarea');
+      tempTextarea.value = text;
+      tempTextarea.setAttribute('readonly', '');
+      tempTextarea.style.position = 'fixed';
+      tempTextarea.style.top = '-9999px';
+      document.body.appendChild(tempTextarea);
+      tempTextarea.focus();
+      tempTextarea.select();
+      return document.execCommand('copy');
+    } catch (error) {
+      console.error('[Clipboard] execCommand copy failed:', error);
+      return false;
+    } finally {
+      if (tempTextarea?.parentNode) {
+        tempTextarea.parentNode.removeChild(tempTextarea);
+      }
+    }
+  };
+
+  async function handlePrimaryAction() {
+    if (!config.copyMode) {
+      await triggerSend(textareaRef);
+      return;
+    }
+
+    if (!displayText.trim()) return;
+
+    const copied = await copyTextToClipboard(displayText);
+    if (!copied) {
+      console.error('[Clipboard] Copy failed');
+      return;
+    }
+
+    overwriteInput('');
+    cancelTypingTimeout();
+    sendTypingStatus(false);
+    textareaRef.current?.focus();
+  }
 
   return (
     <div className='h-full min-h-screen w-full dark:bg-slate-950/90 pure-black:bg-black bg-slate-50 flex flex-col items-center justify-center p-4 overflow-y-auto overflow-x-hidden transition-colors duration-300'>
@@ -170,16 +244,43 @@ const App = () => {
 
         <div className='flex items-center gap-3'>
           <button
-            onClick={handleAutoSendToggle}
+            onClick={handleCopyModeToggle}
             className={`
               relative p-2 rounded-full transition-all border shadow-sm flex items-center gap-2 px-3
               ${
-                config.autoSend
-                  ? 'bg-green-500/10 border-green-500/50 text-green-600 dark:text-green-400'
+                config.copyMode
+                  ? 'bg-blue-500/10 border-blue-500/50 text-blue-600 dark:text-blue-400'
                   : 'dark:bg-slate-800/80 bg-white/80 dark:hover:bg-slate-700 hover:bg-slate-100 dark:text-slate-500 text-slate-400 border-slate-200 dark:border-slate-700'
               }
             `}
-            title={config.autoSend ? 'Auto Send: ON' : 'Auto Send: OFF'}
+            title={config.copyMode ? t.controls.copyModeOn : t.controls.copyModeOff}
+          >
+            <Copy size={20} />
+            <span className='text-xs font-bold hidden md:inline'>
+              {config.copyMode ? t.controls.copyOnShort : t.controls.copyOffShort}
+            </span>
+          </button>
+
+          <button
+            onClick={handleAutoSendToggle}
+            disabled={config.copyMode}
+            className={`
+              relative p-2 rounded-full transition-all border shadow-sm flex items-center gap-2 px-3
+              ${
+                config.copyMode
+                  ? 'dark:bg-slate-800/60 bg-slate-100/70 dark:text-slate-600 text-slate-400 border-slate-300 dark:border-slate-700 cursor-not-allowed opacity-70'
+                  : config.autoSend
+                    ? 'bg-green-500/10 border-green-500/50 text-green-600 dark:text-green-400'
+                    : 'dark:bg-slate-800/80 bg-white/80 dark:hover:bg-slate-700 hover:bg-slate-100 dark:text-slate-500 text-slate-400 border-slate-200 dark:border-slate-700'
+              }
+            `}
+            title={
+              config.copyMode
+                ? t.controls.autoSendDisabledByCopyMode
+                : config.autoSend
+                  ? t.controls.autoSendOn
+                  : t.controls.autoSendOff
+            }
           >
             {config.autoSend ? <Zap size={20} /> : <ZapOff size={20} />}
             <span className='text-xs font-bold hidden md:inline'>
@@ -188,11 +289,11 @@ const App = () => {
           </button>
 
           <button
-            onClick={() => window.electronAPI.resetOverlayPosition()}
+            onClick={() => window.electronAPI?.resetOverlayPosition?.()}
             className='relative p-2 dark:bg-slate-800/80 bg-white/80 rounded-full dark:hover:bg-slate-700 hover:bg-slate-100 dark:text-slate-300 text-slate-500 transition-colors border dark:border-slate-700 border-slate-200 shadow-sm'
-            title="Reset Overlay to Front"
+            title='Reset Overlay to Front'
           >
-             <RefreshCw size={20} />
+            <RefreshCw size={20} />
           </button>
 
           <button
@@ -284,7 +385,7 @@ const App = () => {
           onClose={() => setIsToastDismissed(true)}
         />
       )}
-      
+
       {/* VR Controller Cursor / VRコントローラーカーソル */}
       <CursorOverlay />
     </div>

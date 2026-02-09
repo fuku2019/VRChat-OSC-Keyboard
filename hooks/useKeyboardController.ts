@@ -20,7 +20,7 @@ interface UseKeyboardControllerProps {
   handleClear: () => void;
   handleSpace: (cursorPos?: number) => void;
   commitBuffer: () => void;
-  handleSend: () => void;
+  handlePrimaryAction: () => void;
   handleInputEffect: (text: string) => void;
 }
 
@@ -37,7 +37,7 @@ export const useKeyboardController = ({
   handleClear,
   handleSpace,
   commitBuffer,
-  handleSend,
+  handlePrimaryAction,
   handleInputEffect,
 }: UseKeyboardControllerProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -93,7 +93,7 @@ export const useKeyboardController = ({
     if (e.key === 'Enter') {
       if (!e.shiftKey) {
         e.preventDefault();
-        handleSend();
+        handlePrimaryAction();
       }
     } else if (e.key === 'Tab') {
       e.preventDefault();
@@ -162,7 +162,7 @@ export const useKeyboardController = ({
         handleBackspace(lastCursorPosition.current ?? undefined),
       ),
     onClear: () => handleVirtualKey(handleClear),
-    onSend: () => handleVirtualKey(handleSend),
+    onSend: () => handleVirtualKey(handlePrimaryAction),
     onSpace: () =>
       handleVirtualKey(() =>
         handleSpace(lastCursorPosition.current ?? undefined),

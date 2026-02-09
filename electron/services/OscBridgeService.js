@@ -36,6 +36,10 @@ export function getActiveWsPort() {
  * Recreate OSC client with new port / 新しいポートでOSCクライアントを再作成
  */
 export function updateOscClient(newPort) {
+  if (OSC_PORT === newPort) {
+    return;
+  }
+
   console.log(`⚡ Updating OSC port from ${OSC_PORT} to ${newPort}`);
   OSC_PORT = newPort;
 
