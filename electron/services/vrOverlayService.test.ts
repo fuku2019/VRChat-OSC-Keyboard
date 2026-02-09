@@ -10,6 +10,7 @@ const manager = {
 vi.mock('../overlay.js', () => ({
   getOverlayManager: vi.fn(() => manager),
   toggleOverlayAll: vi.fn(),
+  resetOverlayPosition: vi.fn(),
 }));
 
 vi.mock('../overlay/native.js', () => ({

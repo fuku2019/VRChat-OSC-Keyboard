@@ -464,6 +464,7 @@ export function toggleOverlayAll() {
   if (state.overlayVisible) {
     hideOverlayAll();
   } else {
+    resetOverlayPosition();
     showOverlayAll();
   }
 }
