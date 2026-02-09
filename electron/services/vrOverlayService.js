@@ -5,7 +5,7 @@ import { getOverlayManager, toggleOverlayAll } from '../overlay.js';
 import { getAssetPath } from '../overlay/native.js';
 
 const DEFAULT_POLL_HZ = 60;
-export const STEAMVR_APP_KEY = 'system.generated.electron.exe';
+export const STEAMVR_APP_KEY = 'VRChat-OSC-Keyboard';
 
 const state = {
   initialized: false,

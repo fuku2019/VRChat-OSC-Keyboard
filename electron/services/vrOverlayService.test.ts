@@ -78,7 +78,7 @@ describe('vrOverlayService', () => {
     service.openBindingUI();
 
     expect(manager.openBindingUi).toHaveBeenCalledWith(
-      'system.generated.electron.exe',
+      'VRChat-OSC-Keyboard',
       false,
     );
   });
