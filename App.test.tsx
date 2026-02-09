@@ -137,6 +137,10 @@ vi.mock('./components/StatusDisplay', () => ({
   default: () => null,
 }));
 
+vi.mock('./components/CursorOverlay', () => ({
+  default: () => null,
+}));
+
 describe('App copy mode behavior', () => {
   beforeEach(() => {
     vi.clearAllMocks();

@@ -4,12 +4,13 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Settings, Zap, ZapOff, Copy } from 'lucide-react';
+import { Settings, Zap, ZapOff, Copy, RefreshCw } from 'lucide-react';
 import VirtualKeyboard from './components/VirtualKeyboard';
 import SettingsModal from './components/SettingsModal';
 import TutorialOverlay from './components/TutorialOverlay';
 import NotificationToast from './components/NotificationToast';
 import StatusDisplay from './components/StatusDisplay';
+import CursorOverlay from './components/CursorOverlay';
 import { InputMode } from './types';
 import { useIME } from './hooks/useIME';
 import { useUpdateChecker } from './hooks/useUpdateChecker';
@@ -288,6 +289,14 @@ const App = () => {
           </button>
 
           <button
+            onClick={() => window.electronAPI?.resetOverlayPosition?.()}
+            className='relative p-2 dark:bg-slate-800/80 bg-white/80 rounded-full dark:hover:bg-slate-700 hover:bg-slate-100 dark:text-slate-300 text-slate-500 transition-colors border dark:border-slate-700 border-slate-200 shadow-sm'
+            title='Reset Overlay to Front'
+          >
+            <RefreshCw size={20} />
+          </button>
+
+          <button
             onClick={() => setIsSettingsOpen(true)}
             className='relative p-2 dark:bg-slate-800/80 bg-white/80 rounded-full dark:hover:bg-slate-700 hover:bg-slate-100 dark:text-slate-300 text-slate-500 transition-colors border dark:border-slate-700 border-slate-200 shadow-sm'
           >
@@ -376,6 +385,9 @@ const App = () => {
           onClose={() => setIsToastDismissed(true)}
         />
       )}
+
+      {/* VR Controller Cursor / VRコントローラーカーソル */}
+      <CursorOverlay />
     </div>
   );
 };

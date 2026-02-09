@@ -9,6 +9,7 @@ lerna-debug.log*
 
 # Dependencies
 node_modules
+target
 .pnpm-store
 
 # Build Output
@@ -17,6 +18,8 @@ dist-ssr/
 release/
 build/
 out/
+native/index.node
+native/vr-overlay-native.win32-x64-msvc.node
 
 # Local Environment
 .env

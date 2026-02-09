@@ -1,0 +1,27 @@
+// Shared overlay state / 共有オーバーレイ状態
+export const state = {
+  overlayManager: null,
+  overlayHandle: null,
+  overlayHandleBack: null,
+  overlayVisible: false,
+  captureTimer: null,
+  paintHandler: null,
+  captureWebContents: null,
+  captureInProgress: false,
+  destroyedHandler: null,
+  renderGoneHandler: null,
+  lastSizeMismatchTime: 0,
+  lastFrameBuffer: null,
+  lastFrameImage: null,
+  frameRetention: [],
+  forceOpaqueAlpha: false,
+  rendererMetrics: {
+    cssWidth: 0,
+    cssHeight: 0,
+    devicePixelRatio: 1,
+    zoomFactor: 1,
+    pixelWidth: 0,
+    pixelHeight: 0,
+    updatedAt: 0,
+  },
+};

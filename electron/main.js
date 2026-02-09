@@ -17,8 +17,22 @@ import {
   createWindow,
   getMainWindow,
   setAppTitle,
+  getOverlaySettings,
 } from './services/WindowManager.js';
 import { registerIpcHandlers } from './services/IpcHandlers.js';
+import {
+  init as initVrOverlayService,
+  startPolling as startVrOverlayPolling,
+  stop as stopVrOverlayService,
+} from './services/vrOverlayService.js';
+import {
+  initOverlay,
+  setOverlayPreferences,
+  shutdownOverlay,
+  startCapture,
+} from './overlay.js';
+import { startInputLoop } from './input_handler.js';
+import { isSteamVrRunning } from './overlay/native.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -53,6 +67,37 @@ if (!gotTheLock) {
   app.whenReady().then(() => {
     startBridge();
     createWindow();
+    setOverlayPreferences(getOverlaySettings());
+
+    // Initialize VR overlay / VRオーバーレイを初期化
+    const settings = getOverlaySettings();
+    let overlayHandles = null;
+    if (!settings.disableOverlay) {
+      if (!isSteamVrRunning()) {
+        console.log('SteamVR is not running. Skipping VR overlay initialization.');
+      } else {
+        overlayHandles = initOverlay();
+        if (overlayHandles !== null) {
+          initVrOverlayService();
+          startVrOverlayPolling(60);
+        }
+      }
+    } else {
+      console.log('VR Overlay is disabled by settings.');
+    }
+    
+    // Start capturing window content to VR overlay / ウィンドウ内容のVRオーバーレイへのキャプチャを開始
+    if (overlayHandles !== null) {
+      const mainWindow = getMainWindow();
+      if (mainWindow) {
+        // Wait for window to be ready, then start capture / ウィンドウ準備完了を待ってからキャプチャ開始
+        mainWindow.webContents.once('did-finish-load', () => {
+          startCapture(mainWindow.webContents, 60); // 60 FPS target
+          startInputLoop(60, mainWindow.webContents, { syncWithCapture: true }); // Sync input with capture
+          console.log('VR overlay capture started');
+        });
+      }
+    }
 
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) {
@@ -63,6 +108,8 @@ if (!gotTheLock) {
 
   app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') {
+      stopVrOverlayService();
+      shutdownOverlay();
       // Close bridge connections / ブリッジ接続を閉じる
       cleanupBridge();
       app.quit();

@@ -40,4 +40,7 @@ export interface OscConfig {
   theme: 'light' | 'dark' | 'pure-black';
   accentColor: string;
   updateCheckInterval: UpdateCheckInterval;
+  useOffscreenCapture: boolean;
+  forceOpaqueAlpha: boolean;
+  disableOverlay: boolean;
 }

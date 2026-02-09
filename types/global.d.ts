@@ -32,6 +32,36 @@ interface ElectronAPI {
     newValue: any,
   ) => Promise<{ success: boolean; error?: string }>;
   sendTypingStatus: (isTyping: boolean) => Promise<{ success: boolean; error?: string }>;
+  resetOverlayPosition: () => Promise<{ success: boolean }>;
+  sendWindowSize: (width: number, height: number) => void;
+  sendRendererMetrics: (metrics: {
+    width: number;
+    height: number;
+    devicePixelRatio: number;
+  }) => void;
+  getOverlaySettings: () => Promise<{ success: boolean; settings: { useOffscreenCapture: boolean; forceOpaqueAlpha: boolean; disableOverlay: boolean } }>;
+  setOverlaySettings: (settings: { useOffscreenCapture?: boolean; forceOpaqueAlpha?: boolean; disableOverlay?: boolean }) => Promise<{ success: boolean; settings: { useOffscreenCapture: boolean; forceOpaqueAlpha: boolean; disableOverlay: boolean } }>;
+  getSteamVrBindings: () => Promise<{
+    success: boolean;
+    bindings?: {
+      initialized: boolean;
+      toggleOverlay: string[];
+      triggerBindings: string[];
+      gripBindings: string[];
+      triggerBound: boolean;
+      gripBound: boolean;
+    };
+    error?: string;
+  }>;
+  openSteamVrBindingUi: () => Promise<{ success: boolean; error?: string }>;
+  onCursorMove: (callback: (data: { u: number; v: number; controllerId?: number }) => void) => void;
+  removeCursorMoveListener: (callback: (data: { u: number; v: number; controllerId?: number }) => void) => void;
+  onCursorHide: (callback: (data: { controllerId?: number }) => void) => void;
+  removeCursorHideListener: (callback: (data: { controllerId?: number }) => void) => void;
+  onTriggerState: (callback: (data: { controllerId?: number; pressed?: boolean; value?: number }) => void) => void;
+  removeTriggerStateListener: (callback: (data: { controllerId?: number; pressed?: boolean; value?: number }) => void) => void;
+  onInputScroll: (callback: (data: { deltaY: number }) => void) => void;
+  removeInputScrollListener: (callback: (data: { deltaY: number }) => void) => void;
 }
 
 declare global {

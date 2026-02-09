@@ -18,9 +18,15 @@ let savePositionTimer = null;
 
 // Initialize electron-store for window position persistence / ウィンドウ位置の永続化用にelectron-storeを初期化
 const store = new Store({
+  projectName: 'vrchat-osc-keyboard',
   name: 'window-state',
   defaults: {
     windowPosition: null, // { x: number, y: number } or null
+    overlaySettings: {
+      useOffscreenCapture: false,
+      forceOpaqueAlpha: false,
+      disableOverlay: false,
+    },
   },
 });
 
@@ -36,6 +42,35 @@ export function setAppTitle(title) {
  */
 export function getMainWindow() {
   return mainWindow;
+}
+
+/**
+ * Get overlay settings / オーバーレイ設定を取得
+ */
+export function getOverlaySettings() {
+  const settings = store.get('overlaySettings');
+  const useOffscreenCapture =
+    settings && typeof settings.useOffscreenCapture === 'boolean'
+      ? settings.useOffscreenCapture
+      : false;
+  const forceOpaqueAlpha =
+    settings && typeof settings.forceOpaqueAlpha === 'boolean'
+      ? settings.forceOpaqueAlpha
+      : false;
+  const disableOverlay =
+    settings && typeof settings.disableOverlay === 'boolean'
+      ? settings.disableOverlay
+      : false;
+  return { useOffscreenCapture, forceOpaqueAlpha, disableOverlay };
+}
+
+/**
+ * Update overlay settings / オーバーレイ設定を更新
+ */
+export function setOverlaySettings(partial) {
+  const current = getOverlaySettings();
+  const next = { ...current, ...partial };
+  store.set('overlaySettings', next);
 }
 
 /**
@@ -94,6 +129,7 @@ function getSavedWindowPosition() {
 export function createWindow() {
   // Get saved window position / 保存されたウィンドウ位置を取得
   const savedPosition = getSavedWindowPosition();
+  const overlaySettings = getOverlaySettings();
 
   const windowOptions = {
     title: APP_TITLE,
@@ -110,6 +146,8 @@ export function createWindow() {
       contextIsolation: true,
       preload: path.join(__dirname, '../preload.js'), // Add preload script / プリロードスクリプトを追加
       devTools: !app.isPackaged,
+      backgroundThrottling: false, // Keep rendering stable for VR capture / VRキャプチャのため描画スロットリングを無効化
+      offscreen: overlaySettings.useOffscreenCapture, // Optional offscreen rendering / オフスクリーンレンダリング
     },
   };
 

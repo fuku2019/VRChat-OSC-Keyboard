@@ -82,4 +82,30 @@
   #root { 
     height: 100%; 
   }
+
+  button.vr-hover,
+  [role="button"].vr-hover {
+    outline: 2px solid rgba(var(--rgb-primary-500), 0.5);
+    outline-offset: -2px;
+    filter: brightness(1.08);
+  }
+
+  :root.dark button.vr-hover,
+  :root.dark [role="button"].vr-hover {
+    filter: brightness(1.15);
+  }
+
+  button.vr-pressed,
+  [role="button"].vr-pressed {
+    transform: translateY(1px) scale(0.95);
+    filter: brightness(0.94);
+    border-bottom-width: 0;
+    box-shadow: inset 0 2px 4px rgb(0 0 0 / 0.2);
+  }
+
+  :root.dark button.vr-pressed,
+  :root.dark [role="button"].vr-pressed {
+    filter: brightness(0.9);
+    box-shadow: inset 0 2px 4px rgb(0 0 0 / 0.35);
+  }
 }

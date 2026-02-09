@@ -1,0 +1,60 @@
+{
+  "action_manifest_version": 2,
+  "app_key": "system.generated.electron.exe",
+  "controller_type": "oculus_touch",
+  "description": "Default binding for Oculus Touch controllers",
+  "bindings": {
+    "/actions/vrkb2": {
+      "sources": [
+        {
+          "path": "/user/hand/right/input/trigger",
+          "mode": "button",
+          "inputs": {
+            "click": {
+              "output": "/actions/vrkb2/in/trigger_click"
+            }
+          }
+        },
+        {
+          "path": "/user/hand/left/input/trigger",
+          "mode": "button",
+          "inputs": {
+            "click": {
+              "output": "/actions/vrkb2/in/trigger_click"
+            }
+          }
+        },
+        {
+          "path": "/user/hand/right/input/grip",
+          "mode": "button",
+          "inputs": {
+            "click": {
+              "output": "/actions/vrkb2/in/grip_click"
+            }
+          }
+        },
+        {
+          "path": "/user/hand/right/input/joystick",
+          "mode": "button",
+          "inputs": {
+            "click": {
+              "output": "/actions/vrkb2/in/toggle_overlay"
+            }
+          }
+        },
+        {
+          "path": "/user/hand/left/input/grip",
+          "mode": "button",
+          "inputs": {
+            "click": {
+              "output": "/actions/vrkb2/in/grip_click"
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+
+
+

@@ -1,0 +1,66 @@
+{
+  "version": 2,
+  "app_key": "system.generated.electron.exe",
+  "category": "steamvr_input",
+  "actions": [
+    {
+      "name": "/actions/vrkb2/in/toggle_overlay",
+      "type": "boolean",
+      "requirement": "optional"
+    },
+    {
+      "name": "/actions/vrkb2/in/trigger_click",
+      "type": "boolean",
+      "requirement": "optional"
+    },
+    {
+      "name": "/actions/vrkb2/in/grip_click",
+      "type": "boolean",
+      "requirement": "optional"
+    }
+  ],
+  "action_sets": [
+    {
+      "name": "/actions/vrkb2",
+      "usage": "single"
+    }
+  ],
+  "default_bindings": [
+    {
+      "controller_type": "pico_controller",
+      "binding_url": "bindings/pico_controller.json"
+    },
+    {
+      "controller_type": "knuckles",
+      "binding_url": "bindings/knuckles.json"
+    },
+    {
+      "controller_type": "vive_controller",
+      "binding_url": "bindings/vive_controller.json"
+    },
+    {
+      "controller_type": "oculus_touch",
+      "binding_url": "bindings/oculus_touch.json"
+    },
+    {
+      "controller_type": "holographic_controller",
+      "binding_url": "bindings/holographic_controller.json"
+    }
+  ],
+  "localization": [
+    {
+      "language_tag": "en_US",
+      "/actions/vrkb2": "VRKB",
+      "/actions/vrkb2/in/toggle_overlay": "Toggle Overlay",
+      "/actions/vrkb2/in/trigger_click": "Trigger Click",
+      "/actions/vrkb2/in/grip_click": "Grip Click"
+    },
+    {
+      "language_tag": "ja_JP",
+      "/actions/vrkb2": "VRKB",
+      "/actions/vrkb2/in/toggle_overlay": "オーバーレイ表示切替",
+      "/actions/vrkb2/in/trigger_click": "トリガークリック",
+      "/actions/vrkb2/in/grip_click": "グリップクリック"
+    }
+  ]
+}

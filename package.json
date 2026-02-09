@@ -1,8 +1,14 @@
 {
   "name": "vrchat-osc-keyboard",
   "productName": "VRChat OSC Keyboard",
-  "version": "1.4.0",
+  "version": "2.0.0-dev",
   "description": "A Japanese/English virtual keyboard and chatbox interface designed for SteamVR overlays to send text to VRChat via OSC.",
+  "napi": {
+    "binaryName": "vr-overlay-native",
+    "triples": {
+      "defaults": true
+    }
+  },
   "author": {
     "name": "fuku_2019"
   },
@@ -17,15 +23,19 @@
     "dist": "vite build && electron-builder && node scripts/rename-build-output.js",
     "test": "vitest",
     "test:run": "vitest run",
+    "build:native": "napi build --platform --release --manifest-path ./native/Cargo.toml && node scripts/sync-native.cjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "electron-store": "^11.0.2",
+    "gl-matrix": "^3.4.4",
     "node-osc": "^11.0.0",
+    "react-colorful": "^5.6.1",
     "ws": "^8.19.0",
     "zustand": "^5.0.10"
   },
   "devDependencies": {
+    "@napi-rs/cli": "^3.5.1",
     "@tailwindcss/vite": "^4.0.0",
     "@testing-library/react": "^16.3.2",
     "@types/node": "^25.0.10",
@@ -55,13 +65,22 @@
   "build": {
     "npmRebuild": false,
     "afterPack": "./scripts/removeLocales.cjs",
+    "asarUnpack": [
+      "img/**/*",
+      "native/**/*",
+      "steamvr/**/*"
+    ],
     "publish": null,
     "appId": "com.vrchat.osc.keyboard",
     "productName": "VRChat OSC Keyboard",
     "files": [
       "dist/**/*",
       "electron/**/*",
-      "package.json"
+      "package.json",
+      "native/index.node",
+      "native/openvr_api.dll",
+      "img/**/*",
+      "steamvr/**/*"
     ],
     "directories": {
       "output": "release"
