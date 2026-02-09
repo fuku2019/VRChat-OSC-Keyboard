@@ -29,7 +29,7 @@ https://github.com/user-attachments/assets/cd2ba263-f580-4a85-8861-cc934f06c34e
 + **マルチ入力対応:** 内蔵キーボード（かな・カナ・英）＆物理キーボードの両方に対応。
 + **日本語入力に強い:** 物理キーボード入力時は、使い慣れたIMEで漢字変換が可能。(もちろん漢字以外でも！)
 + **洗練されたUI:** 美しいアニメーションとカスタムテーマ機能を搭載。
-+ **専用のVRオーバーレイ** SteamVR上から直接キーボードを操作可能
++ **専用のVRオーバーレイ** SteamVR上から直接キーボードを操作可能。
 
 ## 🚀 クイックスタート
 1. ダウンロード: [Releases](https://github.com/fuku2019/VRC-OSC-Keyboard/releases/latest) から最新の .exe をダウンロード。
@@ -94,14 +94,14 @@ https://github.com/user-attachments/assets/988b4c58-d770-46fa-ad06-91ad71321da8
 ## 🛠️ 手動ビルド
 
 ### 1. 事前準備
-Rust を含むネイティブモジュールのビルドには、以下の環境が必要です。
+以下の環境が必要です。
 
 - **Node.js**: LTS バージョン推奨
 - **Rust**: [rustup](https://rustup.rs/) をインストールしてください
 - **C++ ビルドツール**:
   - Windows の場合: [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) をインストールし、「C++ によるデスクトップ開発」を選択
 - **LLVM**: Rust のバインディング生成に必要です
-  - Windows (PowerShell) の場合: `winget install -e --id LLVM.LLVM`
+  - [LLVM](https://github.com/llvm/llvm-project/releases) Windows x64 (64-bit): installerをダウンロード
 
 ### 2. インストールとビルド
 ```bash
