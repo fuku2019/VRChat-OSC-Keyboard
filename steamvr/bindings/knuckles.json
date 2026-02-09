@@ -1,6 +1,6 @@
 {
   "action_manifest_version": 2,
-  "app_key": "system.generated.electron.exe",
+  "app_key": "VRChat-OSC-Keyboard",
   "controller_type": "knuckles",
   "description": "Default binding for Valve Index controllers",
   "bindings": {
