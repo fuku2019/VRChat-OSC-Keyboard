@@ -107,6 +107,16 @@ function respawnOverlay(handle, hmdPose) {
       handle,
       Array.from(targetMat),
     );
+
+    // Also move back overlay
+    // 背面ハンドルも移動
+    if (state.overlayHandleBack !== null) {
+      const backMat = computeBackTransform(targetMat);
+      state.overlayManager.setOverlayTransformAbsolute(
+        state.overlayHandleBack,
+        Array.from(backMat),
+      );
+    }
   } catch (e) {
     console.error('Failed to respawn overlay:', e);
   }

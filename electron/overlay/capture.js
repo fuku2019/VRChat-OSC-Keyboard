@@ -5,6 +5,7 @@ const MIN_CAPTURE_FPS = 1;
 const MAX_CAPTURE_FPS = 120;
 const SIZE_MISMATCH_LOG_INTERVAL_MS = 5000;
 const MAX_FRAME_RETENTION = 3;
+const INVALID_OVERLAY_HANDLE = 0;
 const captureFrameListeners = new Set();
 
 function normalizeFps(fps) {
@@ -25,7 +26,10 @@ function deriveSizeFromBuffer(size, bufferLength) {
   const aspectRatio = size.width / size.height;
   if (!Number.isFinite(aspectRatio) || aspectRatio <= 0) return null;
 
-  const approxWidth = Math.max(1, Math.round(Math.sqrt(actualPixels * aspectRatio)));
+  const approxWidth = Math.max(
+    1,
+    Math.round(Math.sqrt(actualPixels * aspectRatio)),
+  );
   let width = approxWidth;
   let height = Math.max(1, Math.round(actualPixels / width));
 
@@ -34,7 +38,10 @@ function deriveSizeFromBuffer(size, bufferLength) {
     if (width * heightFloor * 4 === bufferLength) {
       height = heightFloor;
     } else {
-      const widthFloor = Math.max(1, Math.floor(Math.sqrt(actualPixels * aspectRatio)));
+      const widthFloor = Math.max(
+        1,
+        Math.floor(Math.sqrt(actualPixels * aspectRatio)),
+      );
       const heightAlt = Math.max(1, Math.floor(actualPixels / widthFloor));
       if (widthFloor * heightAlt * 4 === bufferLength) {
         width = widthFloor;
@@ -50,7 +57,11 @@ function deriveSizeFromBuffer(size, bufferLength) {
 
 function applyOpaqueAlpha(buffer) {
   if (!buffer || buffer.length < 4 || buffer.length % 4 !== 0) return;
-  const view = new Uint32Array(buffer.buffer, buffer.byteOffset, buffer.byteLength / 4);
+  const view = new Uint32Array(
+    buffer.buffer,
+    buffer.byteOffset,
+    buffer.byteLength / 4,
+  );
   for (let i = 0; i < view.length; i++) {
     view[i] |= 0xff000000;
   }
@@ -92,7 +103,10 @@ function updateOverlayFromImage(image) {
   let width = size.width;
   let height = size.height;
 
-  if (state.rendererMetrics.pixelWidth > 0 && state.rendererMetrics.pixelHeight > 0) {
+  if (
+    state.rendererMetrics.pixelWidth > 0 &&
+    state.rendererMetrics.pixelHeight > 0
+  ) {
     const metricsExpected =
       state.rendererMetrics.pixelWidth * state.rendererMetrics.pixelHeight * 4;
     if (bgraBuffer.length === metricsExpected) {
@@ -140,7 +154,7 @@ function updateOverlayFromImage(image) {
   // Uses GPU memory sharing - no file I/O, minimal flickering / GPUメモリ共有を使用 - ファイルI/Oなし、点滅最小化
   state.overlayManager.setOverlayTexturesD3D11(
     state.overlayHandle,
-    state.overlayHandleBack ?? 0,
+    state.overlayHandleBack ?? INVALID_OVERLAY_HANDLE,
     bgraBuffer,
     width,
     height,
@@ -288,7 +302,10 @@ export function stopCapture() {
       state.captureWebContents.isDestroyed();
     try {
       if (state.destroyedHandler) {
-        state.captureWebContents.removeListener('destroyed', state.destroyedHandler);
+        state.captureWebContents.removeListener(
+          'destroyed',
+          state.destroyedHandler,
+        );
       }
     } catch (e) {
       // Ignore if destroyed
