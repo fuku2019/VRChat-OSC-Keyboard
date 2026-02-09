@@ -27,7 +27,16 @@ const ToggleRow: FC<{
   description: string;
   enabled: boolean;
   onToggle: (value: boolean) => void;
-}> = ({ label, description, enabled, onToggle }) => {
+  enabledText?: string;
+  disabledText?: string;
+}> = ({
+  label,
+  description,
+  enabled,
+  onToggle,
+  enabledText,
+  disabledText,
+}) => {
   return (
     <div className='flex items-center justify-between gap-4'>
       <div className='flex-1'>
@@ -43,12 +52,18 @@ const ToggleRow: FC<{
         type='button'
         onClick={() => onToggle(!enabled)}
         aria-pressed={enabled}
+        aria-label={enabled ? enabledText || label : disabledText || label}
         className={`relative inline-flex h-8 w-14 items-center rounded-full border transition-colors ${
           enabled
             ? 'bg-primary-500/80 border-primary-500'
             : 'bg-slate-200 dark:bg-slate-700 border-slate-300 dark:border-slate-600'
         }`}
       >
+        {(enabledText || disabledText) && (
+          <span className='absolute inset-0 flex items-center justify-center text-[10px] font-semibold text-white pointer-events-none'>
+            {enabled ? enabledText : disabledText}
+          </span>
+        )}
         <span
           className={`inline-block h-6 w-6 transform rounded-full bg-white shadow transition-transform ${
             enabled ? 'translate-x-7' : 'translate-x-1'
@@ -287,8 +302,9 @@ const SettingsModal: FC<SettingsModalProps> = ({
         const result = await window.electronAPI!.getSteamVrAutoLaunch();
         if (!result?.success || typeof result.enabled !== 'boolean') return;
 
-        if (result.enabled !== config.steamVrAutoLaunch) {
-          const newConfig = { ...config, steamVrAutoLaunch: result.enabled };
+        const currentConfig = useConfigStore.getState().config;
+        if (result.enabled !== currentConfig.steamVrAutoLaunch) {
+          const newConfig = { ...currentConfig, steamVrAutoLaunch: result.enabled };
           saveConfigImmediately(newConfig);
         }
       } catch {
@@ -297,7 +313,7 @@ const SettingsModal: FC<SettingsModalProps> = ({
     };
 
     void syncSteamVrAutoLaunch();
-  }, [isOpen, config]);
+  }, [isOpen]);
 
   const loadBindings = useCallback(async () => {
     if (!window.electronAPI?.getSteamVrBindings) {
@@ -592,6 +608,8 @@ const SettingsModal: FC<SettingsModalProps> = ({
               description={t.steamVrAutoLaunchDesc}
               enabled={localConfig.steamVrAutoLaunch}
               onToggle={(value) => void handleToggleSteamVrAutoLaunch(value)}
+              enabledText={t.steamVrUnregisterLabel}
+              disabledText={t.steamVrRegisterLabel}
             />
             {steamVrAutoLaunchError && (
               <p className='text-xs text-red-400'>{steamVrAutoLaunchError}</p>

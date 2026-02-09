@@ -26,7 +26,9 @@ const store = new Store({
       useOffscreenCapture: false,
       forceOpaqueAlpha: false,
       disableOverlay: false,
-      steamVrAutoLaunch: false,
+    },
+    steamVrSettings: {
+      autoLaunch: false,
     },
   },
 });
@@ -62,11 +64,7 @@ export function getOverlaySettings() {
     settings && typeof settings.disableOverlay === 'boolean'
       ? settings.disableOverlay
       : false;
-  const steamVrAutoLaunch =
-    settings && typeof settings.steamVrAutoLaunch === 'boolean'
-      ? settings.steamVrAutoLaunch
-      : false;
-  return { useOffscreenCapture, forceOpaqueAlpha, disableOverlay, steamVrAutoLaunch };
+  return { useOffscreenCapture, forceOpaqueAlpha, disableOverlay };
 }
 
 /**
@@ -76,6 +74,27 @@ export function setOverlaySettings(partial) {
   const current = getOverlaySettings();
   const next = { ...current, ...partial };
   store.set('overlaySettings', next);
+}
+
+/**
+ * Get SteamVR settings / SteamVR設定を取得
+ */
+export function getSteamVrSettings() {
+  const settings = store.get('steamVrSettings');
+  const autoLaunch =
+    settings && typeof settings.autoLaunch === 'boolean'
+      ? settings.autoLaunch
+      : false;
+  return { autoLaunch };
+}
+
+/**
+ * Update SteamVR settings / SteamVR設定を更新
+ */
+export function setSteamVrSettings(partial) {
+  const current = getSteamVrSettings();
+  const next = { ...current, ...partial };
+  store.set('steamVrSettings', next);
 }
 
 /**

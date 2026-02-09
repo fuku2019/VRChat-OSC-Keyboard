@@ -12,7 +12,11 @@ import {
 } from './OscBridgeService.js';
 import { resetOverlayPosition, setOverlayPreferences, updateRendererMetrics } from '../overlay.js';
 import { updateWindowSize } from '../input_handler.js';
-import { getOverlaySettings, setOverlaySettings } from './WindowManager.js';
+import {
+  getOverlaySettings,
+  setOverlaySettings,
+  setSteamVrSettings,
+} from './WindowManager.js';
 import {
   getCurrentBindings,
   openBindingUI,
@@ -22,6 +26,10 @@ import {
   getSteamVrAutoLaunch,
   setSteamVrAutoLaunch,
 } from './SteamVrSettingsService.js';
+import {
+  ensureSteamVrManifestRegistered,
+  ensureSteamVrManifestUnregistered,
+} from './SteamVrManifestService.js';
 
 // GitHub repository info / GitHubリポジトリ情報
 const GITHUB_API_URL =
@@ -200,7 +208,33 @@ export function registerIpcHandlers(APP_VERSION) {
   });
 
   ipcMain.handle('set-steamvr-auto-launch', (event, enabled) => {
-    return setSteamVrAutoLaunch(STEAMVR_APP_KEY, enabled);
+    if (typeof enabled !== 'boolean') {
+      return { success: false, error: 'enabled must be a boolean' };
+    }
+
+    if (enabled) {
+      const registerResult = ensureSteamVrManifestRegistered();
+      if (!registerResult.success) {
+        return registerResult;
+      }
+      const result = setSteamVrAutoLaunch(STEAMVR_APP_KEY, true);
+      if (result?.success) {
+        setSteamVrSettings({ autoLaunch: true });
+      }
+      return result;
+    }
+
+    // OFF: remove autolaunch flag and unregister from SteamVR app list.
+    const launchResult = setSteamVrAutoLaunch(STEAMVR_APP_KEY, false);
+    if (!launchResult.success) {
+      return launchResult;
+    }
+    const unregisterResult = ensureSteamVrManifestUnregistered();
+    if (!unregisterResult.success) {
+      return unregisterResult;
+    }
+    setSteamVrSettings({ autoLaunch: false });
+    return { success: true, enabled: false };
   });
 
   ipcMain.handle('get-steamvr-bindings', () => {

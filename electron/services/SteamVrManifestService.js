@@ -64,13 +64,6 @@ function getSteamConfigPath() {
   return candidates.find((candidate) => fs.existsSync(candidate)) || candidates[0] || null;
 }
 
-function getAppBinaryPath() {
-  if (process.platform === 'win32') {
-    return process.execPath;
-  }
-  return process.execPath;
-}
-
 function buildManifestContent() {
   const appKey = 'VRChat-OSC-Keyboard';
   const actionsPath = getAssetPath(path.join('steamvr', 'actions.json'));
@@ -92,7 +85,7 @@ function buildManifestContent() {
       {
         app_key: appKey,
         launch_type: 'binary',
-        binary_path_windows: getAppBinaryPath(),
+        binary_path_windows: process.execPath,
         is_dashboard_overlay: true,
         strings: {
           en_us: { name: 'VRChat OSC Keyboard' },
@@ -112,6 +105,10 @@ function ensureManifestFile() {
   const content = buildManifestContent();
   fs.writeFileSync(manifestPath, `${JSON.stringify(content, null, 2)}\n`, 'utf-8');
   return manifestPath;
+}
+
+function getManifestPath() {
+  return path.join(app.getPath('userData'), 'steamvr', MANIFEST_FILE_NAME);
 }
 
 function ensureManifestPathInAppConfig(manifestPath) {
@@ -141,6 +138,38 @@ function ensureManifestPathInAppConfig(manifestPath) {
   const next = {
     ...appConfig,
     manifest_paths: [...currentPaths, manifestPath],
+  };
+  fs.writeFileSync(appConfigPath, `${JSON.stringify(next, null, 3)}\n`, 'utf-8');
+  return { success: true, appConfigPath, updated: true };
+}
+
+function removeManifestPathFromAppConfig(manifestPath) {
+  const configPath = getSteamConfigPath();
+  if (!configPath) {
+    return { success: false, error: 'Steam config path not found' };
+  }
+
+  const appConfigPath = path.join(configPath, 'appconfig.json');
+  if (!fs.existsSync(appConfigPath)) {
+    return { success: true, appConfigPath, updated: false };
+  }
+
+  const raw = fs.readFileSync(appConfigPath, 'utf-8');
+  const appConfig = raw.trim() ? JSON.parse(raw) : {};
+  const currentPaths = Array.isArray(appConfig.manifest_paths)
+    ? appConfig.manifest_paths.filter((entry) => typeof entry === 'string')
+    : [];
+
+  const nextPaths = currentPaths.filter(
+    (entry) => path.normalize(entry) !== path.normalize(manifestPath),
+  );
+  if (nextPaths.length === currentPaths.length) {
+    return { success: true, appConfigPath, updated: false };
+  }
+
+  const next = {
+    ...appConfig,
+    manifest_paths: nextPaths,
   };
   fs.writeFileSync(appConfigPath, `${JSON.stringify(next, null, 3)}\n`, 'utf-8');
   return { success: true, appConfigPath, updated: true };
@@ -184,6 +213,45 @@ export function ensureSteamVrManifestRegistered() {
       success: true,
       manifestPath,
       vrpathreg,
+      appConfigPath: appConfigSync.appConfigPath,
+      appConfigUpdated: appConfigSync.updated,
+    };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
+export function ensureSteamVrManifestUnregistered() {
+  try {
+    if (process.platform !== 'win32') {
+      return { success: false, error: 'SteamVR manifest unregistration is currently implemented for Windows only' };
+    }
+
+    const manifestPath = getManifestPath();
+    const vrpathreg = findVrPathReg();
+    if (vrpathreg) {
+      try {
+        execFileSync(vrpathreg, ['removemanifest', manifestPath], {
+          encoding: 'utf-8',
+          windowsHide: true,
+        });
+      } catch {
+        // Ignore errors when entry does not exist.
+      }
+    }
+
+    const appConfigSync = removeManifestPathFromAppConfig(manifestPath);
+    if (!appConfigSync.success) {
+      return {
+        success: false,
+        error: `Manifest remove completed, but appconfig sync failed: ${appConfigSync.error}`,
+      };
+    }
+
+    return {
+      success: true,
+      manifestPath,
+      vrpathreg: vrpathreg || undefined,
       appConfigPath: appConfigSync.appConfigPath,
       appConfigUpdated: appConfigSync.updated,
     };

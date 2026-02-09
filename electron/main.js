@@ -18,6 +18,7 @@ import {
   getMainWindow,
   setAppTitle,
   getOverlaySettings,
+  getSteamVrSettings,
 } from './services/WindowManager.js';
 import { registerIpcHandlers } from './services/IpcHandlers.js';
 import {
@@ -27,7 +28,10 @@ import {
   STEAMVR_APP_KEY,
 } from './services/vrOverlayService.js';
 import { setSteamVrAutoLaunch } from './services/SteamVrSettingsService.js';
-import { ensureSteamVrManifestRegistered } from './services/SteamVrManifestService.js';
+import {
+  ensureSteamVrManifestRegistered,
+  ensureSteamVrManifestUnregistered,
+} from './services/SteamVrManifestService.js';
 import {
   initOverlay,
   setOverlayPreferences,
@@ -71,30 +75,52 @@ if (!gotTheLock) {
     startBridge();
     createWindow();
     const settings = getOverlaySettings();
+    const steamVrSettings = getSteamVrSettings();
     setOverlayPreferences(settings);
 
-    const manifestRegistration = ensureSteamVrManifestRegistered();
-    if (!manifestRegistration.success) {
-      console.warn(
-        '[SteamVR] Failed to register app manifest:',
-        manifestRegistration.error,
-      );
-    } else {
-      console.log(
-        '[SteamVR] App manifest registered:',
-        manifestRegistration.manifestPath,
-      );
-    }
+    if (steamVrSettings.autoLaunch) {
+      const manifestRegistration = ensureSteamVrManifestRegistered();
+      if (!manifestRegistration.success) {
+        console.warn(
+          '[SteamVR] Failed to register app manifest:',
+          manifestRegistration.error,
+        );
+      } else {
+        console.log(
+          '[SteamVR] App manifest registered:',
+          manifestRegistration.manifestPath,
+        );
+      }
 
-    const steamVrAutoLaunchSync = setSteamVrAutoLaunch(
-      STEAMVR_APP_KEY,
-      Boolean(settings.steamVrAutoLaunch),
-    );
-    if (!steamVrAutoLaunchSync.success) {
-      console.warn(
-        '[SteamVR] Failed to sync startup app setting on boot:',
-        steamVrAutoLaunchSync.error,
+      const steamVrAutoLaunchSync = setSteamVrAutoLaunch(
+        STEAMVR_APP_KEY,
+        true,
       );
+      if (!steamVrAutoLaunchSync.success) {
+        console.warn(
+          '[SteamVR] Failed to sync startup app setting on boot:',
+          steamVrAutoLaunchSync.error,
+        );
+      }
+    } else {
+      // Keep OFF state strict by unregistering app and removing autolaunch entry.
+      const steamVrAutoLaunchSync = setSteamVrAutoLaunch(
+        STEAMVR_APP_KEY,
+        false,
+      );
+      if (!steamVrAutoLaunchSync.success) {
+        console.warn(
+          '[SteamVR] Failed to clear startup app setting on boot:',
+          steamVrAutoLaunchSync.error,
+        );
+      }
+      const manifestUnregister = ensureSteamVrManifestUnregistered();
+      if (!manifestUnregister.success) {
+        console.warn(
+          '[SteamVR] Failed to unregister app manifest:',
+          manifestUnregister.error,
+        );
+      }
     }
 
     // Initialize VR overlay / VRオーバーレイを初期化

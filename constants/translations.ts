@@ -17,6 +17,8 @@ export interface TranslationStrings {
     steamVrAutoLaunch: string;
     steamVrAutoLaunchDesc: string;
     steamVrAutoLaunchError: string;
+    steamVrRegisterLabel: string;
+    steamVrUnregisterLabel: string;
     steamVrBindingsTitle: string;
     steamVrBindingsEmpty: string;
     steamVrBindingsUnavailable: string;
@@ -115,6 +117,8 @@ export const TRANSLATIONS: TranslationsMap = {
       steamVrAutoLaunch: 'SteamVRスタートアップに登録',
       steamVrAutoLaunchDesc: 'SteamVR未起動時でも steamvr.vrsettings を直接更新して反映します。',
       steamVrAutoLaunchError: 'SteamVRスタートアップ設定の更新に失敗しました。',
+      steamVrRegisterLabel: '登録',
+      steamVrUnregisterLabel: '登録解除',
       steamVrBindingsTitle: 'SteamVR 割り当て',
       steamVrBindingsEmpty: '現在の割り当てはありません',
       steamVrBindingsUnavailable: 'SteamVR Input は利用できません',
@@ -209,6 +213,8 @@ export const TRANSLATIONS: TranslationsMap = {
       steamVrAutoLaunch: 'Register in SteamVR Startup Apps',
       steamVrAutoLaunchDesc: 'Directly updates steamvr.vrsettings even when SteamVR is not running.',
       steamVrAutoLaunchError: 'Failed to update SteamVR startup app setting.',
+      steamVrRegisterLabel: 'Register',
+      steamVrUnregisterLabel: 'Unregister',
       steamVrBindingsTitle: 'SteamVR Bindings',
       steamVrBindingsEmpty: 'No active binding found',
       steamVrBindingsUnavailable: 'SteamVR Input is unavailable',

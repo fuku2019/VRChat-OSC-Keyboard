@@ -132,23 +132,28 @@ function applyAutoLaunchToSettings(settings, appKey, enabled) {
   const applications = isObject(settings[APPLICATIONS_SECTION])
     ? settings[APPLICATIONS_SECTION]
     : {};
-  const existingNestedApp = isObject(applications[appKey]) ? applications[appKey] : {};
-  const existingRootApp = isObject(settings[appKey]) ? settings[appKey] : {};
+  const nextApplications = { ...applications };
+
+  if (!enabled) {
+    delete nextApplications[appKey];
+    return {
+      ...settings,
+      [APPLICATIONS_SECTION]: nextApplications,
+    };
+  }
+
+  const existingNestedApp = isObject(applications[appKey])
+    ? applications[appKey]
+    : {};
 
   return {
     ...settings,
     [APPLICATIONS_SECTION]: {
-      ...applications,
+      ...nextApplications,
       [appKey]: {
         ...existingNestedApp,
         [AUTO_LAUNCH_KEY]: enabled,
-        autoLaunch: enabled,
       },
-    },
-    [appKey]: {
-      ...existingRootApp,
-      [AUTO_LAUNCH_KEY]: enabled,
-      autoLaunch: enabled,
     },
   };
 }
