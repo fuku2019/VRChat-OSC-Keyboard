@@ -34,6 +34,7 @@ import {
 } from './services/SteamVrManifestService.js';
 import {
   initOverlay,
+  initSplash,
   setOverlayPreferences,
   shutdownOverlay,
   startCapture,
@@ -92,10 +93,7 @@ if (!gotTheLock) {
         );
       }
 
-      const steamVrAutoLaunchSync = setSteamVrAutoLaunch(
-        STEAMVR_APP_KEY,
-        true,
-      );
+      const steamVrAutoLaunchSync = setSteamVrAutoLaunch(STEAMVR_APP_KEY, true);
       if (!steamVrAutoLaunchSync.success) {
         console.warn(
           '[SteamVR] Failed to sync startup app setting on boot:',
@@ -127,8 +125,14 @@ if (!gotTheLock) {
     let overlayHandles = null;
     if (!settings.disableOverlay) {
       if (!isSteamVrRunning()) {
-        console.log('SteamVR is not running. Skipping VR overlay initialization.');
+        console.log(
+          'SteamVR is not running. Skipping VR overlay initialization.',
+        );
       } else {
+        // Init Splash Overlay (Head-locked) first
+        initSplash();
+
+        // Init Main Overlay (Hidden by default)
         overlayHandles = initOverlay();
         if (overlayHandles !== null) {
           initVrOverlayService();
@@ -138,7 +142,7 @@ if (!gotTheLock) {
     } else {
       console.log('VR Overlay is disabled by settings.');
     }
-    
+
     // Start capturing window content to VR overlay / ウィンドウ内容のVRオーバーレイへのキャプチャを開始
     if (overlayHandles !== null) {
       const mainWindow = getMainWindow();
