@@ -40,6 +40,7 @@ interface ElectronAPI {
   ) => Promise<{ success: boolean; error?: string }>;
   sendTypingStatus: (isTyping: boolean) => Promise<{ success: boolean; error?: string }>;
   resetOverlayPosition: () => Promise<{ success: boolean }>;
+  restartApp: () => Promise<{ success: boolean; error?: string }>;
   sendWindowSize: (width: number, height: number) => void;
   sendRendererMetrics: (metrics: {
     width: number;

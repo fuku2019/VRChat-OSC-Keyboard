@@ -181,6 +181,30 @@ if (typeof window !== 'undefined' && window.electronAPI) {
       });
     }
 
+    // Sync SteamVR startup registration from actual SteamVR settings on every app launch.
+    if (window.electronAPI?.getSteamVrAutoLaunch) {
+      try {
+        const result = await window.electronAPI.getSteamVrAutoLaunch();
+        if (result?.success && typeof result.enabled === 'boolean') {
+          const store = useConfigStore.getState();
+          if (store.config.steamVrAutoLaunch !== result.enabled) {
+            const syncedConfig = {
+              ...store.config,
+              steamVrAutoLaunch: result.enabled,
+            };
+            // Persist without using setConfig to avoid extra side effects during boot.
+            saveConfigToStorage(syncedConfig);
+            useConfigStore.setState({ config: syncedConfig });
+            console.log(
+              `[Config] SteamVR startup registration synced: ${result.enabled}`,
+            );
+          }
+        }
+      } catch (e) {
+        console.warn('[Config] Failed to sync SteamVR startup registration:', e);
+      }
+    }
+
     // Get bridge port from Electron and update bridgeUrl / Electronからブリッジポートを取得してbridgeUrlを更新
     if (window.electronAPI!.getBridgePort) {
       try {

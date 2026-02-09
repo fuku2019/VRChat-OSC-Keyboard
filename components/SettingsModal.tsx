@@ -74,6 +74,49 @@ const ToggleRow: FC<{
   );
 };
 
+const TextSwitchRow: FC<{
+  label: string;
+  description: string;
+  enabled: boolean;
+  onToggle: (value: boolean) => void;
+  enabledText: string;
+  disabledText: string;
+}> = ({
+  label,
+  description,
+  enabled,
+  onToggle,
+  enabledText,
+  disabledText,
+}) => {
+  return (
+    <div className='flex items-center justify-between gap-4'>
+      <div className='flex-1'>
+        <p className='text-sm font-semibold dark:text-slate-200 text-slate-700'>
+          {label}
+        </p>
+        <p className='text-xs text-slate-500 mt-1 flex items-start gap-2'>
+          <Info size={14} className='text-slate-400 mt-0.5 flex-shrink-0' />
+          <span>{description}</span>
+        </p>
+      </div>
+      <button
+        type='button'
+        onClick={() => onToggle(!enabled)}
+        aria-pressed={enabled}
+        aria-label={enabled ? enabledText : disabledText}
+        className={`px-3 py-2 rounded-lg text-xs font-semibold border min-w-[92px] transition-colors ${
+          enabled
+            ? 'bg-primary-600 hover:bg-primary-500 border-primary-600 text-[rgb(var(--rgb-on-primary))]'
+            : 'dark:bg-slate-700/40 bg-slate-100 hover:bg-slate-200 dark:hover:bg-slate-600/60 dark:border-slate-500 border-slate-300 dark:text-slate-200 text-slate-700'
+        }`}
+      >
+        {enabled ? enabledText : disabledText}
+      </button>
+    </div>
+  );
+};
+
 const SettingsModal: FC<SettingsModalProps> = ({
   isOpen,
   onClose,
@@ -409,7 +452,23 @@ const SettingsModal: FC<SettingsModalProps> = ({
 
   const handleResetConfig = () => {
     localStorage.clear();
-    window.location.reload();
+
+    const restart = async () => {
+      try {
+        if (window.electronAPI?.restartApp) {
+          const result = await window.electronAPI.restartApp();
+          if (result?.success) {
+            return;
+          }
+        }
+      } catch {
+        // fallback below
+      }
+
+      window.location.reload();
+    };
+
+    void restart();
   };
 
   if (!shouldRender) return null;
@@ -603,7 +662,7 @@ const SettingsModal: FC<SettingsModalProps> = ({
               enabled={localConfig.disableOverlay}
               onToggle={handleToggleDisableOverlay}
             />
-            <ToggleRow
+            <TextSwitchRow
               label={t.steamVrAutoLaunch}
               description={t.steamVrAutoLaunchDesc}
               enabled={localConfig.steamVrAutoLaunch}

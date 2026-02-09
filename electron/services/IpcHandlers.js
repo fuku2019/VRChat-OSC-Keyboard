@@ -3,7 +3,7 @@
  * IPCハンドラサービス - レンダラー通信用のすべてのIPCハンドラを登録
  */
 
-import { ipcMain, shell } from 'electron';
+import { app, ipcMain, shell } from 'electron';
 import {
   updateOscClient,
   getOscPort,
@@ -167,6 +167,16 @@ export function registerIpcHandlers(APP_VERSION) {
   ipcMain.handle('reset-overlay-position', () => {
     resetOverlayPosition();
     return { success: true };
+  });
+
+  ipcMain.handle('restart-app', () => {
+    try {
+      app.relaunch();
+      app.exit(0);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
   });
 
   // Receive renderer metrics (size + DPR) / レンダラーメトリクスを受信

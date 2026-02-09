@@ -106,6 +106,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   
   // Reset overlay position
   resetOverlayPosition: () => ipcRenderer.invoke('reset-overlay-position'),
+  restartApp: () => ipcRenderer.invoke('restart-app'),
   // Overlay settings
   getOverlaySettings: () => ipcRenderer.invoke('get-overlay-settings'),
   setOverlaySettings: (settings) => ipcRenderer.invoke('set-overlay-settings', settings),

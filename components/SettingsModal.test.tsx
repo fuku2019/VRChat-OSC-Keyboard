@@ -35,12 +35,24 @@ vi.mock('../hooks/useModalAnimation', () => ({
 }));
 
 vi.mock('./ConfirmDialog', () => ({
-  ConfirmDialog: () => null,
+  ConfirmDialog: ({
+    isOpen,
+    onConfirm,
+  }: {
+    isOpen: boolean;
+    onConfirm: () => void;
+  }) =>
+    isOpen ? (
+      <button type='button' data-testid='confirm-reset' onClick={onConfirm}>
+        confirm-reset
+      </button>
+    ) : null,
 }));
 
 describe('SettingsModal oscPort input behavior', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    delete (window as any).electronAPI;
   });
 
   const renderModal = () =>
@@ -97,6 +109,72 @@ describe('SettingsModal oscPort input behavior', () => {
       expect(mockSetConfig).toHaveBeenCalledWith(
         expect.objectContaining({ oscPort: 9001 }),
       );
+    });
+  });
+});
+
+describe('SettingsModal reset behavior', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    delete (window as any).electronAPI;
+  });
+
+  const renderModal = () =>
+    render(
+      <SettingsModal
+        isOpen={true}
+        onClose={vi.fn()}
+        onShowTutorial={vi.fn()}
+      />,
+    );
+
+  const triggerReset = () => {
+    fireEvent.click(screen.getByRole('button', { name: '設定を初期化' }));
+    fireEvent.click(screen.getByTestId('confirm-reset'));
+  };
+
+  it('clears localStorage and restarts app when restart API exists', async () => {
+    const clearSpy = vi.spyOn(Storage.prototype, 'clear');
+    const restartApp = vi.fn().mockResolvedValue({ success: true });
+    (window as any).electronAPI = { restartApp };
+
+    renderModal();
+    localStorage.setItem('test-key', 'test-value');
+    triggerReset();
+
+    await waitFor(() => {
+      expect(clearSpy).toHaveBeenCalled();
+      expect(restartApp).toHaveBeenCalled();
+      expect(localStorage.getItem('test-key')).toBeNull();
+    });
+  });
+
+  it('falls back to reload when restart API does not exist', async () => {
+    const clearSpy = vi.spyOn(Storage.prototype, 'clear');
+
+    renderModal();
+    localStorage.setItem('test-key', 'test-value');
+    triggerReset();
+
+    await waitFor(() => {
+      expect(clearSpy).toHaveBeenCalled();
+      expect(localStorage.getItem('test-key')).toBeNull();
+    });
+  });
+
+  it('falls back to reload when restart API fails', async () => {
+    const clearSpy = vi.spyOn(Storage.prototype, 'clear');
+    const restartApp = vi.fn().mockResolvedValue({ success: false });
+    (window as any).electronAPI = { restartApp };
+
+    renderModal();
+    localStorage.setItem('test-key', 'test-value');
+    triggerReset();
+
+    await waitFor(() => {
+      expect(clearSpy).toHaveBeenCalled();
+      expect(restartApp).toHaveBeenCalled();
+      expect(localStorage.getItem('test-key')).toBeNull();
     });
   });
 });
