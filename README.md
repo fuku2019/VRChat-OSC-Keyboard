@@ -6,7 +6,7 @@ OSC経由で、物理・仮想キーボードからチャットボックスへ�
 <br>
 ↓VOICEVOXずんだもんの声は大きいので注意が必要です。
 
-https://github.com/user-attachments/assets/cd2ba263-f580-4a85-8861-cc934f06c34e
+<video src="https://github.com/user-attachments/assets/cd2ba263-f580-4a85-8861-cc934f06c34e"></video>
 
 <div align="center">
 
@@ -54,16 +54,16 @@ https://github.com/user-attachments/assets/cd2ba263-f580-4a85-8861-cc934f06c34e
 <details>
 <summary>🎨 UIのカスタマイズ</summary>
 
-https://github.com/user-attachments/assets/6afb4e82-649f-44fb-b359-42fa86495ccb
+<video src="https://github.com/user-attachments/assets/6afb4e82-649f-44fb-b359-42fa86495ccb"></video>
 
 </details>
 
 <details>
 <summary>⌨️ 基本機能</summary>
 
-https://github.com/user-attachments/assets/fc8e216b-8f50-4271-896b-cee8c70a5dd8
+<video src="https://github.com/user-attachments/assets/fc8e216b-8f50-4271-896b-cee8c70a5dd8"></video>
 
-https://github.com/user-attachments/assets/988b4c58-d770-46fa-ad06-91ad71321da8
+<video src="https://github.com/user-attachments/assets/988b4c58-d770-46fa-ad06-91ad71321da8"></video>
 </details>
 
 <details>
@@ -72,7 +72,7 @@ https://github.com/user-attachments/assets/988b4c58-d770-46fa-ad06-91ad71321da8
   ミュートを解除することをオススメします。<br>
   🫛🐱〈 VSCはVRCの誤字なのにゃ
 
-  https://github.com/user-attachments/assets/8a650dfa-ebf4-455d-91ce-c526d8e19e1a
+  <video src="https://github.com/user-attachments/assets/8a650dfa-ebf4-455d-91ce-c526d8e19e1a"></video>
 
   ![zm_vok_0](https://github.com/user-attachments/assets/e7d60988-36bf-4302-9654-9d8162f98422)
 
@@ -89,9 +89,9 @@ https://github.com/user-attachments/assets/988b4c58-d770-46fa-ad06-91ad71321da8
 
   ![udream_0](/docs/udream_0.png)
 
-  https://github.com/user-attachments/assets/aab2cf37-fc52-4324-a83e-8559a9d85e81
+  <video src="https://github.com/user-attachments/assets/aab2cf37-fc52-4324-a83e-8559a9d85e81"></video>
 
-  https://github.com/user-attachments/assets/119ae1cf-6a14-4134-a036-752c6de342ef
+  <video src="https://github.com/user-attachments/assets/119ae1cf-6a14-4134-a036-752c6de342ef"></video>
 
 </details>
 
