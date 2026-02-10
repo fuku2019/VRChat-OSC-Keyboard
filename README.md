@@ -2,7 +2,7 @@
 VRChatでの文字入力を、もっと自由に。<br>
 OSC経由で、物理・仮想キーボードからチャットボックスへメッセージを直接送信できます。
 
-![logo](/docs/fake_logo_3.png)
+![logo](https://raw.githubusercontent.com/fuku2019/VRChat-OSC-Keyboard/refs/heads/main/docs/fake_logo_3.png)
 <br>
 ↓VOICEVOXずんだもんの声は大きいので注意が必要です。
 
@@ -21,7 +21,7 @@ OSC経由で、物理・仮想キーボードからチャットボックスへ�
   ![cmoe_counter](https://counter.seku.su/cmoe?name=notAfuku2019&theme=mb)
 -->
 
-[**日本語**](/README.md) | [English](/docs/en/README.en.md)
+[**日本語**](/README.md) | [English](https://github.com/fuku2019/VRChat-OSC-Keyboard/blob/main/docs/en/README.en.md)
 
 </div>
 
@@ -85,9 +85,9 @@ OSC経由で、物理・仮想キーボードからチャットボックスへ�
   このセクションのメディアコンテンツは、実際のツールの操作感、機能、外観とは異なります。本ツールに着想を得た「夢」としてお楽しみください。
   <br>
 
-  ![waao](/docs/waao.jpg)
+  ![waao](https://raw.githubusercontent.com/fuku2019/VRChat-OSC-Keyboard/refs/heads/main/docs/waao.jpg)
 
-  ![udream_0](/docs/udream_0.png)
+  ![udream_0](https://raw.githubusercontent.com/fuku2019/VRChat-OSC-Keyboard/refs/heads/main/docs/udream_0.png)
 
   <video src="https://github.com/user-attachments/assets/aab2cf37-fc52-4324-a83e-8559a9d85e81"></video>
 
