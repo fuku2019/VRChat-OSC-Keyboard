@@ -1,4 +1,4 @@
-# VRC-OSC-Keyboard
+# VRChat-OSC-Keyboard
 VRChatでの文字入力を、もっと自由に。<br>
 OSC経由で、物理・仮想キーボードからチャットボックスへメッセージを直接送信できます。
 
@@ -15,7 +15,9 @@ OSC経由で、物理・仮想キーボードからチャットボックスへ�
 
 
   [![platform-windows](https://img.shields.io/badge/windows-platform?label=platform&labelColor=333333&color=357EC7)](https://windows.com)
-  ![view_count](https://gitviews.com/repo/fuku2019/VRC-OSC-Keyboard.svg?label-color=333333&style=flat)
+  ![new_view_count](https://gitviews.com/repo/fuku2019/VRChat-OSC-Keyboard.svg?label-color=333333&style=flat)
+
+  <!-- ![view_count](https://gitviews.com/repo/fuku2019/VRC-OSC-Keyboard.svg?label-color=333333&style=flat) -->
 
 <!--
   ![cmoe_counter](https://counter.seku.su/cmoe?name=notAfuku2019&theme=mb)
@@ -33,7 +35,7 @@ OSC経由で、物理・仮想キーボードからチャットボックスへ�
 + **専用のVRオーバーレイ:** SteamVR上から直接キーボードを操作可能。
 
 ## 🚀 クイックスタート
-1. ダウンロード: [Releases](https://github.com/fuku2019/VRC-OSC-Keyboard/releases/latest) から最新の .exe をダウンロード。
+1. ダウンロード: [Releases](https://github.com/fuku2019/VRChat-OSC-Keyboard/releases/latest) から最新の .exe をダウンロード。
 2. インストール: 実行してウィザードに従いインストールを完了。
 3. VRChatの設定: アクションメニュー ➔ Options ➔ OSC ➔ Enabled を選択。
 4. 準備完了: 本ツールのテキストボックスに入力し、送信ボタンを押してください！
