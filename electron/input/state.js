@@ -16,6 +16,8 @@ export const state = {
   lastHitByController: {},
   lastMoveAtByController: {},
   lastTriggerPressedState: {},
+  // Per-controller trigger press state:
+  // { startU, startV, lastU, lastV, dragging, moved, downSent }
   triggerDragState: {},
   windowSize: { width: 0, height: 0 },
   windowScale: { devicePixelRatio: 1, zoomFactor: 1 },
