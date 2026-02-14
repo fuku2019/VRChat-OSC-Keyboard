@@ -7,6 +7,17 @@ import {
 import { sendClickEvent, sendScrollEvent } from './events.js';
 import { state } from './state.js';
 
+function releaseTriggerState(existing, clickCountOverride = null) {
+  if (!existing || !existing.downSent) return;
+  if (!Number.isFinite(existing.lastU) || !Number.isFinite(existing.lastV)) {
+    return;
+  }
+  const clickCount =
+    clickCountOverride ??
+    (existing.dragging || existing.moved ? 0 : 1);
+  sendClickEvent(existing.lastU, existing.lastV, 'mouseUp', clickCount);
+}
+
 export function handleTriggerInput(controllerId, controllerState, hit) {
   if (!controllerState) return;
   const pressed = !!controllerState.triggerPressed;
@@ -61,10 +72,16 @@ export function handleTriggerInput(controllerId, controllerState, hit) {
   }
 
   if (existing) {
-    if (existing.downSent) {
-      const clickCount = existing.dragging || existing.moved ? 0 : 1;
-      sendClickEvent(existing.lastU, existing.lastV, 'mouseUp', clickCount);
-    }
+    releaseTriggerState(existing);
     delete state.triggerDragState[controllerId];
   }
+}
+
+export function releaseTriggerForController(
+  controllerId,
+  clickCountOverride = null,
+) {
+  const existing = state.triggerDragState[controllerId];
+  releaseTriggerState(existing, clickCountOverride);
+  delete state.triggerDragState[controllerId];
 }
