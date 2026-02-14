@@ -99,4 +99,17 @@ describe('handleTriggerInput', () => {
     expect(sendClickEvent).not.toHaveBeenCalled();
     expect(state.triggerDragState[5]).toBeUndefined();
   });
+
+  it('sends mouseUp(clickCount=0) when hit is lost while pressed', async () => {
+    const { handleTriggerInput } = await import('./trigger.js');
+    const { sendClickEvent } = await import('./events.js');
+
+    handleTriggerInput(6, { triggerPressed: true }, { u: 0.4, v: 0.4 });
+    handleTriggerInput(6, { triggerPressed: true }, null);
+    handleTriggerInput(6, { triggerPressed: false }, null);
+
+    expect(sendClickEvent).toHaveBeenCalledTimes(2);
+    expect(sendClickEvent).toHaveBeenNthCalledWith(1, 0.4, 0.4, 'mouseDown');
+    expect(sendClickEvent).toHaveBeenNthCalledWith(2, 0.4, 0.4, 'mouseUp', 0);
+  });
 });

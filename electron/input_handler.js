@@ -15,6 +15,7 @@ import {
 import { computeHitFromPose, processController } from './input/controllers.js';
 import { state } from './input/state.js';
 import { PointerStabilizer } from './input/smoothing.js';
+import { releaseTriggerForController } from './input/trigger.js';
 
 export { updateWindowSize } from './input/mapping.js';
 
@@ -100,8 +101,27 @@ export function stopInputLoop() {
     state.captureSyncUnsubscribe();
     state.captureSyncUnsubscribe = null;
   }
+  if (state.lastMouseHit) {
+    sendMouseLeaveEvent(state.lastMousePosition);
+  }
+  for (const key of Object.keys(state.triggerDragState)) {
+    const controllerId = Number(key);
+    if (Number.isFinite(controllerId)) {
+      releaseTriggerForController(controllerId, 0);
+    }
+  }
   state.inputInProgress = false;
   state.lastCaptureFrameAt = 0;
+  state.lastCursorHitState = {};
+  state.lastHitByController = {};
+  state.lastMoveAtByController = {};
+  state.lastTriggerPressedState = {};
+  state.triggerDragState = {};
+  state.inputSmoothers = {};
+  state.lastMouseHit = false;
+  state.lastMouseControllerId = null;
+  state.lastMousePosition = { x: 0, y: 0 };
+  state.suppressMouseHover = false;
   console.log('Input loop stopped');
 }
 
@@ -118,10 +138,12 @@ function updateInput() {
     // 1. Get active controllers
     const controllerIds = state.overlayManager.getControllerIds();
     const hitCandidates = [];
+    const observedControllerIds = new Set();
     const now = Date.now();
     // 2. Process each controller
     for (const id of controllerIds) {
       if (id === 0) continue; // Skip HMD
+      observedControllerIds.add(id);
 
       const poseData = state.overlayManager.getControllerPose(id);
 
@@ -178,6 +200,7 @@ function updateInput() {
         }
       }
     }
+    cleanupStaleControllers(observedControllerIds);
 
     const multiCursor = hitCandidates.length > 1;
     if (multiCursor) {
@@ -233,5 +256,40 @@ function updateInput() {
     if (!error.message?.includes('destroyed')) {
       console.error('Input update error:', error);
     }
+  }
+}
+
+function cleanupStaleControllers(observedControllerIds) {
+  const knownIds = new Set([
+    ...Object.keys(state.lastCursorHitState),
+    ...Object.keys(state.lastHitByController),
+    ...Object.keys(state.lastMoveAtByController),
+    ...Object.keys(state.lastTriggerPressedState),
+    ...Object.keys(state.triggerDragState),
+    ...Object.keys(state.inputSmoothers),
+  ]);
+
+  for (const key of knownIds) {
+    const controllerId = Number(key);
+    if (!Number.isFinite(controllerId)) continue;
+    if (observedControllerIds.has(controllerId)) continue;
+
+    if (state.lastCursorHitState[controllerId]) {
+      sendCursorHideEvent(controllerId);
+    }
+    if (state.inputSmoothers[controllerId]) {
+      state.inputSmoothers[controllerId].reset();
+      delete state.inputSmoothers[controllerId];
+    }
+    if (state.triggerDragState[controllerId]?.downSent) {
+      releaseTriggerForController(controllerId, 0);
+    } else {
+      delete state.triggerDragState[controllerId];
+    }
+
+    delete state.lastCursorHitState[controllerId];
+    delete state.lastHitByController[controllerId];
+    delete state.lastMoveAtByController[controllerId];
+    delete state.lastTriggerPressedState[controllerId];
   }
 }

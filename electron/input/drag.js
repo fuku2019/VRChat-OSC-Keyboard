@@ -27,24 +27,8 @@ function getOverlayWorldTransform(handle) {
     const matDevice = mat4.clone(devicePose);
     const matWorld = mat4.create();
 
-    mat4.multiply(matWorld, matRelative, matDevice); // Original: Relative * Device (Wait, order?)
-    // Order matter:
-    // If Child = Parent * Local
-    // World = Device * Relative
-    // GL (Column Major): World = Relative * Device?
-    // Let's re-verify GL Matrix multiplication order.
-    // mat4.multiply(out, a, b) -> out = a * b
-    // If we want World = Device * Relative (Standard math)
-    // In Column Major: World_T = (Device * Relative)^T = Relative^T * Device^T.
-    // So we pass (Relative_Transposed, Device_Transposed)
-    // And we want World_Transposed.
-    // out = a * b.
-    // We want out = Relative_Transposed * Device_Transposed.
-    // So a = Relative_Transposed, b = Device_Transposed.
-    // matRelative is Relative_Transposed.
-    // matDevice is Device_Transposed.
-    // So multiply(out, rel, dev) is correct.
-
+    // In this codebase matrices are treated in transposed form, so this order
+    // corresponds to world = device * relative in native convention.
     mat4.multiply(matWorld, matRelative, matDevice);
 
     return Array.from(matWorld);
@@ -72,16 +56,20 @@ function getOverlayWorldTransform(handle) {
 export function startDrag(controllerId, poseMatrix, overlayHandle) {
   try {
     console.log(`Starting drag with controller ${controllerId}`);
-    state.drag.isDragging = true;
-    state.drag.draggingControllerId = controllerId;
 
-    // Calculate Inverse of Start Controller Matrix (Transposed/Column-Major interpretation)
+    // Calculate inverse start controller matrix.
     const startMat = mat4.clone(poseMatrix);
-    mat4.invert(state.drag.startControllerInverse, startMat);
+    const inverted = mat4.invert(state.drag.startControllerInverse, startMat);
+    if (!inverted) {
+      throw new Error('Controller pose matrix is not invertible');
+    }
 
-    // Get current Overlay Transform (Handling Relative case)
+    // Get current overlay transform (handling relative case).
     const overlayTransform = getOverlayWorldTransform(overlayHandle);
     mat4.copy(state.drag.startOverlayTransform, overlayTransform);
+
+    state.drag.isDragging = true;
+    state.drag.draggingControllerId = controllerId;
   } catch (e) {
     console.error('Failed to start drag:', e);
     endDrag();
