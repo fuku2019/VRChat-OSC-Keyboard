@@ -108,4 +108,19 @@
     filter: brightness(0.9);
     box-shadow: inset 0 2px 4px rgb(0 0 0 / 0.35);
   }
+
+  /* Larger handles for VR pointer interactions in Settings custom accent picker */
+  .settings-accent-picker.react-colorful {
+    width: 100%;
+    height: 12rem;
+  }
+
+  .settings-accent-picker .react-colorful__hue {
+    height: 2rem;
+  }
+
+  .settings-accent-picker .react-colorful__pointer {
+    width: 2rem;
+    height: 2rem;
+  }
 }

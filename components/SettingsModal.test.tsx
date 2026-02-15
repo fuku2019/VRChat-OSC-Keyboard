@@ -178,3 +178,41 @@ describe('SettingsModal reset behavior', () => {
     });
   });
 });
+
+describe('SettingsModal accent color behavior', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    delete (window as any).electronAPI;
+    mockConfig.accentColor = 'cyan';
+  });
+
+  const renderModal = () =>
+    render(
+      <SettingsModal
+        isOpen={true}
+        onClose={vi.fn()}
+        onShowTutorial={vi.fn()}
+      />,
+    );
+
+  it('switches to custom accent and allows hex input changes', async () => {
+    renderModal();
+
+    fireEvent.click(screen.getByRole('button', { name: 'カスタム' }));
+    await waitFor(() => {
+      expect(mockSetConfig).toHaveBeenCalledWith(
+        expect.objectContaining({ accentColor: '#06b6d4' }),
+      );
+    });
+
+    fireEvent.change(screen.getByLabelText('custom-accent-color-input'), {
+      target: { value: '#123abc' },
+    });
+
+    await waitFor(() => {
+      expect(mockSetConfig).toHaveBeenCalledWith(
+        expect.objectContaining({ accentColor: '#123abc' }),
+      );
+    });
+  });
+});

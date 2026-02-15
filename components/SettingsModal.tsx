@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useRef, useCallback, FC } from 'react';
 import { X, CircleHelp, Info } from 'lucide-react';
+import { HexColorInput, HexColorPicker } from 'react-colorful';
 import { Language, UpdateCheckInterval } from '../types';
 import { TRANSLATIONS, GITHUB, STORAGE_KEYS } from '../constants';
 import { useModalAnimation } from '../hooks/useModalAnimation';
@@ -13,6 +14,12 @@ import packageJson from '../package.json';
 import { ConfirmDialog } from './ConfirmDialog';
 
 const APP_VERSION = packageJson.version;
+const DEFAULT_CUSTOM_ACCENT_COLOR = '#06b6d4';
+
+const isPresetAccentColor = (color?: string) =>
+  !color || color === 'cyan' || color === 'purple';
+
+const normalizeHexColor = (color: string) => color.toLowerCase();
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -148,6 +155,9 @@ const SettingsModal: FC<SettingsModalProps> = ({
   const [triggerBound, setTriggerBound] = useState<boolean>(false);
   const [gripBound, setGripBound] = useState<boolean>(false);
   const [steamVrAutoLaunchError, setSteamVrAutoLaunchError] = useState<string>('');
+  const [lastCustomAccentColor, setLastCustomAccentColor] = useState<string>(
+    DEFAULT_CUSTOM_ACCENT_COLOR,
+  );
 
   // Sync local state when opening / 開くときにローカル状態を同期する
   useEffect(() => {
@@ -155,6 +165,9 @@ const SettingsModal: FC<SettingsModalProps> = ({
       setLocalConfig(config);
       setOscPortInput(String(config.oscPort));
       setSteamVrAutoLaunchError('');
+      if (!isPresetAccentColor(config.accentColor)) {
+        setLastCustomAccentColor(normalizeHexColor(config.accentColor));
+      }
       if (updateAvailableVersion) {
         setCheckStatus(
           TRANSLATIONS[
@@ -223,8 +236,19 @@ const SettingsModal: FC<SettingsModalProps> = ({
   };
 
   const handleAccentColorChange = (color: string) => {
-    const newConfig = { ...localConfig, accentColor: color };
+    const normalizedColor = normalizeHexColor(color);
+    if (!isPresetAccentColor(normalizedColor)) {
+      setLastCustomAccentColor(normalizedColor);
+    }
+    const newConfig = { ...localConfig, accentColor: normalizedColor };
     saveConfigImmediately(newConfig);
+  };
+
+  const handleCustomAccentSelect = () => {
+    if (!isPresetAccentColor(localConfig.accentColor)) {
+      return;
+    }
+    handleAccentColorChange(lastCustomAccentColor);
   };
 
   const handleOscPortCommit = () => {
@@ -473,6 +497,11 @@ const SettingsModal: FC<SettingsModalProps> = ({
 
   if (!shouldRender) return null;
 
+  const isCustomAccentSelected = !isPresetAccentColor(localConfig.accentColor);
+  const customAccentColor = isCustomAccentSelected
+    ? normalizeHexColor(localConfig.accentColor)
+    : lastCustomAccentColor;
+
   return (
     <div
       className={`fixed inset-0 z-[110] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 ${animationClass}`}
@@ -572,45 +601,48 @@ const SettingsModal: FC<SettingsModalProps> = ({
                   {t.accentColorPurple}
                 </span>
               </button>
-
-              <div className='flex-1 relative'>
-                <input
-                  id='custom-color-picker'
-                  type='color'
-                  className='absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10'
-                  onChange={(e) => handleAccentColorChange(e.target.value)}
-                  value={
-                    localConfig.accentColor !== 'cyan' &&
-                    localConfig.accentColor !== 'purple'
-                      ? localConfig.accentColor
-                      : '#ff0000'
-                  }
-                />
+              <button
+                type='button'
+                onClick={handleCustomAccentSelect}
+                className={`flex-1 py-3 px-4 rounded-xl border transition-all flex items-center justify-center gap-2 ${
+                  isCustomAccentSelected
+                    ? 'dark:bg-primary-900/40 bg-primary-50 border-primary-500 dark:text-primary-300 text-primary-700 shadow-[0_0_15px_rgb(var(--color-primary-500)_/_0.15)]'
+                    : 'dark:bg-slate-900 bg-slate-50 dark:border-slate-700 border-slate-300 dark:text-slate-400 text-slate-500 hover:border-slate-400 dark:hover:border-slate-500'
+                }`}
+              >
                 <div
-                  className={`w-full h-full py-3 px-4 rounded-xl border transition-all flex items-center justify-center gap-2 ${
-                    localConfig.accentColor &&
-                    localConfig.accentColor !== 'cyan' &&
-                    localConfig.accentColor !== 'purple'
-                      ? 'dark:bg-primary-900/40 bg-primary-50 border-primary-500 dark:text-primary-300 text-primary-700 shadow-[0_0_15px_rgb(var(--color-primary-500)_/_0.15)]'
-                      : 'dark:bg-slate-900 bg-slate-50 dark:border-slate-700 border-slate-300 dark:text-slate-400 text-slate-500 hover:border-slate-400 dark:hover:border-slate-500'
-                  }`}
-                >
-                  <div
-                    className='w-3 h-3 rounded-full border border-slate-300 dark:border-slate-600'
-                    style={{
-                      background:
-                        localConfig.accentColor !== 'cyan' &&
-                        localConfig.accentColor !== 'purple'
-                          ? localConfig.accentColor
-                          : 'linear-gradient(135deg, #f00, #0f0, #00f)',
-                    }}
-                  />
-                  <span className='text-xs md:text-sm whitespace-nowrap'>
-                    {t.accentColorCustom}
+                  className='w-3 h-3 rounded-full border border-slate-300 dark:border-slate-600'
+                  style={{
+                    background: customAccentColor,
+                  }}
+                />
+                <span className='text-xs md:text-sm whitespace-nowrap'>
+                  {t.accentColorCustom}
+                </span>
+              </button>
+            </div>
+
+            {isCustomAccentSelected && (
+              <div className='mt-3 p-3 rounded-xl border dark:border-slate-700 border-slate-300 dark:bg-slate-900/70 bg-slate-50 space-y-3'>
+                <HexColorPicker
+                  color={customAccentColor}
+                  onChange={handleAccentColorChange}
+                  className='settings-accent-picker !w-full !h-48'
+                />
+                <div className='flex items-center gap-2'>
+                  <span className='text-xs font-semibold dark:text-slate-400 text-slate-500'>
+                    HEX
                   </span>
+                  <HexColorInput
+                    color={customAccentColor}
+                    prefixed
+                    onChange={handleAccentColorChange}
+                    className='w-full dark:bg-slate-950 bg-white border dark:border-slate-600 border-slate-300 rounded-lg px-3 py-2 text-sm font-mono dark:text-slate-100 text-slate-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500/30 focus:outline-none'
+                    aria-label='custom-accent-color-input'
+                  />
                 </div>
               </div>
-            </div>
+            )}
           </section>
 
           {/* Tutorial Trigger / チュートリアル表示 */}
