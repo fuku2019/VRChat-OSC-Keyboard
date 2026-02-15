@@ -6,7 +6,7 @@ OSC経由で、物理・仮想キーボードからチャットボックスへ�
 <br>
 ↓VOICEVOXずんだもんの声は大きいので注意が必要です。
 
-<video src="https://github.com/user-attachments/assets/cd2ba263-f580-4a85-8861-cc934f06c34e"></video>
+<video style="width: 100%; height: auto;" controls src="https://github.com/user-attachments/assets/cd2ba263-f580-4a85-8861-cc934f06c34e"></video>
 
 <div align="center">
 
@@ -56,16 +56,16 @@ OSC経由で、物理・仮想キーボードからチャットボックスへ�
 <details>
 <summary>🎨 UIのカスタマイズ</summary>
 
-<video src="https://github.com/user-attachments/assets/6afb4e82-649f-44fb-b359-42fa86495ccb"></video>
+<video style="width: 100%; height: auto;" controls src="https://github.com/user-attachments/assets/6afb4e82-649f-44fb-b359-42fa86495ccb"></video>
 
 </details>
 
 <details>
 <summary>⌨️ 基本機能</summary>
 
-<video src="https://github.com/user-attachments/assets/fc8e216b-8f50-4271-896b-cee8c70a5dd8"></video>
+<video style="width: 100%; height: auto;" controls src="https://github.com/user-attachments/assets/fc8e216b-8f50-4271-896b-cee8c70a5dd8"></video>
 
-<video src="https://github.com/user-attachments/assets/988b4c58-d770-46fa-ad06-91ad71321da8"></video>
+<video style="width: 100%; height: auto;" controls src="https://github.com/user-attachments/assets/988b4c58-d770-46fa-ad06-91ad71321da8"></video>
 </details>
 
 <details>
@@ -74,7 +74,7 @@ OSC経由で、物理・仮想キーボードからチャットボックスへ�
   ミュートを解除することをオススメします。<br>
   🫛🐱〈 VSCはVRCの誤字なのにゃ
 
-  <video src="https://github.com/user-attachments/assets/8a650dfa-ebf4-455d-91ce-c526d8e19e1a"></video>
+  <video style="width: 100%; height: auto;" controls src="https://github.com/user-attachments/assets/8a650dfa-ebf4-455d-91ce-c526d8e19e1a"></video>
 
   ![zm_vok_0](https://github.com/user-attachments/assets/e7d60988-36bf-4302-9654-9d8162f98422)
 
@@ -91,9 +91,9 @@ OSC経由で、物理・仮想キーボードからチャットボックスへ�
 
   ![udream_0](https://raw.githubusercontent.com/fuku2019/VRChat-OSC-Keyboard/refs/heads/main/docs/udream_0.png)
 
-  <video src="https://github.com/user-attachments/assets/aab2cf37-fc52-4324-a83e-8559a9d85e81"></video>
+  <video style="width: 100%; height: auto;" controls src="https://github.com/user-attachments/assets/aab2cf37-fc52-4324-a83e-8559a9d85e81"></video>
 
-  <video src="https://github.com/user-attachments/assets/119ae1cf-6a14-4134-a036-752c6de342ef"></video>
+  <video style="width: 100%; height: auto;" controls src="https://github.com/user-attachments/assets/119ae1cf-6a14-4134-a036-752c6de342ef"></video>
 
 </details>
 
