@@ -8,6 +8,8 @@ on:
 jobs:
   update-json:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # 書き込み権限
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
