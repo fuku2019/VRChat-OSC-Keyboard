@@ -1,0 +1,27 @@
+name: Update Release JSON
+
+on:
+  release:
+    types: [published] # 新しいリリースが公開されたら実行
+  workflow_dispatch:      # 手動でも実行可能にする
+
+jobs:
+  update-json:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get Latest Release Info
+        id: get_release
+        run: |
+          # GitHub APIから最新のリリース情報を取得
+          curl -s https://api.github.com/repos/${{ github.repository }}/releases/latest > release.json
+
+      - name: Commit and Push
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add release.json
+          git commit -m "Update release.json with latest release info" || exit 0
+          git push
