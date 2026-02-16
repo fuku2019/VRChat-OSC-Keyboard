@@ -304,6 +304,7 @@ const SettingsModal: FC<SettingsModalProps> = ({
   }, [isOpen, shouldRender]);
 
   const t = TRANSLATIONS[localConfig.language || 'ja'].settings;
+  const getLocalizedSteamVrBindingsError = () => t.steamVrBindingsUnavailable;
 
   const saveConfigImmediately = (
     update: (currentConfig: typeof localConfig) => typeof localConfig,
@@ -518,7 +519,7 @@ const SettingsModal: FC<SettingsModalProps> = ({
         setGripBindings([]);
         setTriggerBound(false);
         setGripBound(false);
-        setBindingError(result?.error || t.steamVrBindingsUnavailable);
+        setBindingError(getLocalizedSteamVrBindingsError());
         return;
       }
 
@@ -538,14 +539,14 @@ const SettingsModal: FC<SettingsModalProps> = ({
       setGripBindings(toStringArray(result.bindings.gripBindings));
       setTriggerBound(Boolean(result.bindings.triggerBound));
       setGripBound(Boolean(result.bindings.gripBound));
-    } catch (e) {
+    } catch {
       setInitialized(false);
       setToggleBindings([]);
       setTriggerBindings([]);
       setGripBindings([]);
       setTriggerBound(false);
       setGripBound(false);
-      setBindingError((e as Error)?.message || t.steamVrBindingsUnavailable);
+      setBindingError(getLocalizedSteamVrBindingsError());
     } finally {
       setLoadingBindings(false);
     }
@@ -563,7 +564,7 @@ const SettingsModal: FC<SettingsModalProps> = ({
     try {
       const result = await window.electronAPI.openSteamVrBindingUi();
       if (!result?.success) {
-        setBindingError(result?.error || t.steamVrBindingsUnavailable);
+        setBindingError(getLocalizedSteamVrBindingsError());
         return;
       }
 
@@ -575,8 +576,8 @@ const SettingsModal: FC<SettingsModalProps> = ({
         delayedRefreshTimerRef.current = null;
         void loadBindings();
       }, 1500);
-    } catch (e) {
-      setBindingError((e as Error)?.message || t.steamVrBindingsUnavailable);
+    } catch {
+      setBindingError(getLocalizedSteamVrBindingsError());
     }
   };
 
