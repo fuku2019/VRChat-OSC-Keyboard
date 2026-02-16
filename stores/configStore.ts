@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { OscConfig } from '../types';
 import { STORAGE_KEYS, DEFAULT_CONFIG } from '../constants';
+import { sanitizeAccentColor } from '../utils/colorUtils';
 
 const BRIDGE_PORT_SYNC_MAX_RETRIES = 20;
 const BRIDGE_PORT_SYNC_RETRY_INTERVAL_MS = 300;
@@ -38,7 +39,10 @@ const loadConfigFromStorage = (): OscConfig => {
           DEFAULT_CONFIG.AUTO_SEND_BEFORE_COPY_MODE,
         language: parsed.language || DEFAULT_CONFIG.LANGUAGE,
         theme: parsed.theme || DEFAULT_CONFIG.THEME,
-        accentColor: parsed.accentColor || DEFAULT_CONFIG.ACCENT_COLOR,
+        accentColor: sanitizeAccentColor(
+          parsed.accentColor,
+          DEFAULT_CONFIG.ACCENT_COLOR,
+        ),
         updateCheckInterval:
           parsed.updateCheckInterval || DEFAULT_CONFIG.UPDATE_CHECK_INTERVAL,
         disableOverlay:
@@ -82,35 +86,42 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
 
   // Set entire config / 設定全体を設定
   setConfig: (config) => {
+    const normalizedConfig: OscConfig = {
+      ...config,
+      accentColor: sanitizeAccentColor(
+        config.accentColor,
+        DEFAULT_CONFIG.ACCENT_COLOR,
+      ),
+    };
     const currentConfig = get().config;
     const electronAPI = window.electronAPI;
 
     // Check for changes and log them / 変更を確認してログ出力
     if (electronAPI?.logConfigChange) {
-      Object.keys(config).forEach((key) => {
+      Object.keys(normalizedConfig).forEach((key) => {
         const k = key as keyof OscConfig;
-        if (config[k] !== currentConfig[k]) {
-          electronAPI.logConfigChange(k, currentConfig[k], config[k]);
+        if (normalizedConfig[k] !== currentConfig[k]) {
+          electronAPI.logConfigChange(k, currentConfig[k], normalizedConfig[k]);
         }
       });
     }
 
-    saveConfigToStorage(config);
-    set({ config });
+    saveConfigToStorage(normalizedConfig);
+    set({ config: normalizedConfig });
 
     // Sync OSC port with Electron only if changed / OSCポートが変更された場合のみElectronと同期
     if (
       electronAPI &&
-      config.oscPort &&
-      currentConfig.oscPort !== config.oscPort
+      normalizedConfig.oscPort &&
+      currentConfig.oscPort !== normalizedConfig.oscPort
     ) {
-      electronAPI.updateOscPort(config.oscPort);
+      electronAPI.updateOscPort(normalizedConfig.oscPort);
     }
 
     // Sync overlay settings with Electron / オーバーレイ設定をElectronに同期
     if (electronAPI?.setOverlaySettings) {
       electronAPI.setOverlaySettings({
-        disableOverlay: config.disableOverlay,
+        disableOverlay: normalizedConfig.disableOverlay,
       });
     }
   },
@@ -118,22 +129,29 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
   // Update specific config field / 特定の設定フィールドを更新
   updateConfig: (key, value) => {
     const currentConfig = get().config;
+    const normalizedValue =
+      key === 'accentColor'
+        ? (sanitizeAccentColor(
+            value as string,
+            DEFAULT_CONFIG.ACCENT_COLOR,
+          ) as OscConfig[K])
+        : value;
 
     // Check if value actually changed / 値が実際に変更されたか確認
-    if (currentConfig[key] === value) return;
+    if (currentConfig[key] === normalizedValue) return;
 
     // Log change / 変更をログ出力
     if (window.electronAPI?.logConfigChange) {
-      window.electronAPI.logConfigChange(key, currentConfig[key], value);
+      window.electronAPI.logConfigChange(key, currentConfig[key], normalizedValue);
     }
 
-    const newConfig = { ...currentConfig, [key]: value };
+    const newConfig = { ...currentConfig, [key]: normalizedValue };
     saveConfigToStorage(newConfig);
     set({ config: newConfig });
 
     // Sync OSC port if changed / OSCポートが変更された場合のみ同期
     if (key === 'oscPort' && window.electronAPI) {
-      window.electronAPI.updateOscPort(value as number);
+      window.electronAPI.updateOscPort(normalizedValue as number);
     }
 
     // Sync overlay settings if changed / オーバーレイ設定を同期
@@ -141,7 +159,7 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
       key === 'disableOverlay' &&
       window.electronAPI?.setOverlaySettings
     ) {
-      window.electronAPI.setOverlaySettings({ [key]: value });
+      window.electronAPI.setOverlaySettings({ [key]: normalizedValue });
     }
   },
 

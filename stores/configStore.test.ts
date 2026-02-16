@@ -104,4 +104,34 @@ describe('configStore bridge port sync', () => {
     expect(useConfigStore.getState().config.copyMode).toBe(false);
     expect(useConfigStore.getState().config.autoSendBeforeCopyMode).toBe(false);
   });
+
+  it('falls back accent color when stored custom value is invalid', async () => {
+    localStorage.setItem(
+      'vrc_osc_config',
+      JSON.stringify({
+        bridgeUrl: 'ws://127.0.0.1:8088',
+        oscPort: 9000,
+        autoSend: true,
+        language: 'ja',
+        theme: 'dark',
+        accentColor: '#12',
+        updateCheckInterval: 'weekly',
+      }),
+    );
+
+    (window as any).electronAPI = {
+      updateOscPort: vi.fn().mockResolvedValue({ success: true }),
+      getBridgePort: vi.fn().mockResolvedValue({ port: null }),
+      checkForUpdate: vi.fn(),
+      openExternal: vi.fn(),
+      logConfigChange: vi.fn().mockResolvedValue({ success: true }),
+      sendTypingStatus: vi.fn(),
+    };
+
+    const { useConfigStore } = await import('./configStore');
+
+    await vi.runAllTimersAsync();
+
+    expect(useConfigStore.getState().config.accentColor).toBe('cyan');
+  });
 });

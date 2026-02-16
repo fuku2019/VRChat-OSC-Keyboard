@@ -10,16 +10,16 @@ import { Language, UpdateCheckInterval } from '../types';
 import { TRANSLATIONS, GITHUB, STORAGE_KEYS } from '../constants';
 import { useModalAnimation } from '../hooks/useModalAnimation';
 import { useConfigStore } from '../stores/configStore';
+import {
+  isPresetAccentColor,
+  isValidCustomAccentColor,
+  normalizeCustomAccentColor,
+} from '../utils/colorUtils';
 import packageJson from '../package.json';
 import { ConfirmDialog } from './ConfirmDialog';
 
 const APP_VERSION = packageJson.version;
 const DEFAULT_CUSTOM_ACCENT_COLOR = '#ff0000';
-
-const isPresetAccentColor = (color?: string) =>
-  !color || color === 'cyan' || color === 'purple';
-
-const normalizeHexColor = (color: string) => color.toLowerCase();
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -165,8 +165,11 @@ const SettingsModal: FC<SettingsModalProps> = ({
       setLocalConfig(config);
       setOscPortInput(String(config.oscPort));
       setSteamVrAutoLaunchError('');
-      if (!isPresetAccentColor(config.accentColor)) {
-        setLastCustomAccentColor(normalizeHexColor(config.accentColor));
+      if (
+        !isPresetAccentColor(config.accentColor) &&
+        isValidCustomAccentColor(config.accentColor)
+      ) {
+        setLastCustomAccentColor(normalizeCustomAccentColor(config.accentColor));
       }
       if (updateAvailableVersion) {
         setCheckStatus(
@@ -236,10 +239,16 @@ const SettingsModal: FC<SettingsModalProps> = ({
   };
 
   const handleAccentColorChange = (color: string) => {
-    const normalizedColor = normalizeHexColor(color);
-    if (!isPresetAccentColor(normalizedColor)) {
-      setLastCustomAccentColor(normalizedColor);
+    if (color === 'cyan' || color === 'purple') {
+      const newConfig = { ...localConfig, accentColor: color };
+      saveConfigImmediately(newConfig);
+      return;
     }
+    if (!isValidCustomAccentColor(color)) {
+      return;
+    }
+    const normalizedColor = normalizeCustomAccentColor(color);
+    setLastCustomAccentColor(normalizedColor);
     const newConfig = { ...localConfig, accentColor: normalizedColor };
     saveConfigImmediately(newConfig);
   };
@@ -489,7 +498,9 @@ const SettingsModal: FC<SettingsModalProps> = ({
 
   const isCustomAccentSelected = !isPresetAccentColor(localConfig.accentColor);
   const customAccentColor = isCustomAccentSelected
-    ? normalizeHexColor(localConfig.accentColor)
+    ? isValidCustomAccentColor(localConfig.accentColor)
+      ? normalizeCustomAccentColor(localConfig.accentColor)
+      : lastCustomAccentColor
     : lastCustomAccentColor;
 
   return (

@@ -215,4 +215,22 @@ describe('SettingsModal accent color behavior', () => {
       );
     });
   });
+
+  it('does not save invalid custom accent values', async () => {
+    renderModal();
+
+    fireEvent.click(screen.getByRole('button', { name: 'カスタム' }));
+    await waitFor(() => {
+      expect(mockSetConfig).toHaveBeenCalledWith(
+        expect.objectContaining({ accentColor: '#ff0000' }),
+      );
+    });
+
+    mockSetConfig.mockClear();
+    fireEvent.change(screen.getByLabelText('custom-accent-color-input'), {
+      target: { value: '#12' },
+    });
+
+    expect(mockSetConfig).not.toHaveBeenCalled();
+  });
 });

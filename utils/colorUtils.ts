@@ -3,6 +3,29 @@
 type RGB = { r: number; g: number; b: number };
 type HSL = { h: number; s: number; l: number };
 
+const HEX6_COLOR_REGEX = /^#?[0-9a-f]{6}$/i;
+
+export const isPresetAccentColor = (color?: string): boolean =>
+  !color || color === 'cyan' || color === 'purple';
+
+export const normalizeCustomAccentColor = (color: string): string =>
+  color.startsWith('#') ? color.toLowerCase() : `#${color.toLowerCase()}`;
+
+export const isValidCustomAccentColor = (color: string): boolean =>
+  HEX6_COLOR_REGEX.test(color);
+
+export const sanitizeAccentColor = (
+  color: unknown,
+  fallback: string = 'cyan',
+): string => {
+  if (typeof color !== 'string') return fallback;
+  if (isPresetAccentColor(color)) return color || fallback;
+  if (isValidCustomAccentColor(color)) {
+    return normalizeCustomAccentColor(color);
+  }
+  return fallback;
+};
+
 export function hexToRgb(hex: string): RGB | null {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   return result

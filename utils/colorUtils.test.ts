@@ -7,6 +7,7 @@ import {
   getLuminance,
   generatePalette,
   PRESET_PALETTES,
+  sanitizeAccentColor,
 } from './colorUtils';
 
 describe('hexToRgb / HEXからRGBへの変換', () => {
@@ -126,5 +127,23 @@ describe('PRESET_PALETTES / プリセットパレット', () => {
     Object.values(PRESET_PALETTES.purple).forEach((hex) => {
       expect(hex).toMatch(/^#[0-9A-Fa-f]{6}$/);
     });
+  });
+});
+
+describe('sanitizeAccentColor / アクセントカラー正規化', () => {
+  it('keeps preset colors as-is', () => {
+    expect(sanitizeAccentColor('cyan')).toBe('cyan');
+    expect(sanitizeAccentColor('purple')).toBe('purple');
+  });
+
+  it('normalizes valid custom hex', () => {
+    expect(sanitizeAccentColor('FF0000')).toBe('#ff0000');
+    expect(sanitizeAccentColor('#ABCDEF')).toBe('#abcdef');
+  });
+
+  it('falls back for invalid values', () => {
+    expect(sanitizeAccentColor('#12')).toBe('cyan');
+    expect(sanitizeAccentColor('not-a-color')).toBe('cyan');
+    expect(sanitizeAccentColor('', '#ff0000')).toBe('#ff0000');
   });
 });

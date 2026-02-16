@@ -1,6 +1,12 @@
 import { useEffect } from 'react';
 import { useConfigStore } from '../stores/configStore';
-import { generatePalette, PRESET_PALETTES, hexToRgb, getLuminance } from '../utils/colorUtils';
+import {
+  generatePalette,
+  PRESET_PALETTES,
+  hexToRgb,
+  getLuminance,
+  sanitizeAccentColor,
+} from '../utils/colorUtils';
 import { DEFAULT_CONFIG } from '../constants/appConfig';
 
 /**
@@ -13,7 +19,10 @@ export const useTheme = () => {
   // Accent Color Effect / アクセントカラー反映
   useEffect(() => {
     const root = window.document.documentElement;
-    const accentColor = config.accentColor || DEFAULT_CONFIG.ACCENT_COLOR;
+    const accentColor = sanitizeAccentColor(
+      config.accentColor,
+      DEFAULT_CONFIG.ACCENT_COLOR,
+    );
 
     let palette;
     if (accentColor === 'cyan') {
