@@ -2,7 +2,7 @@ name: Update Release JSON
 
 on:
   release:
-    types: [published] # 新しいリリースが公開されたら実行
+    types: [published, created] # 新しいリリースが公開されたら実行
   workflow_dispatch:      # 手動でも実行可能にする
 
 jobs:
