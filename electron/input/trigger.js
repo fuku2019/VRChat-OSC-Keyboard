@@ -53,7 +53,13 @@ export function handleTriggerInput(controllerId, controllerState, hit) {
     }
     const deltaV = hit.v - existing.lastV;
     if (!existing.dragging && Math.abs(totalV) > TRIGGER_DRAG_THRESHOLD) {
+      // End pressed state as soon as scroll-drag starts to avoid selection conflicts.
+      if (existing.downSent) {
+        sendClickEvent(hit.u, hit.v, 'mouseUp', 0);
+        existing.downSent = false;
+      }
       existing.dragging = true;
+      existing.moved = true;
     }
     if (existing.dragging) {
       const height = state.windowSize.height > 0 ? state.windowSize.height : 700;

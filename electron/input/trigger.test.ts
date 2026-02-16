@@ -67,7 +67,7 @@ describe('handleTriggerInput', () => {
     );
   });
 
-  it('sends mouseUp(clickCount=0) after drag/scroll interaction', async () => {
+  it('sends mouseUp(clickCount=0) immediately when drag/scroll starts', async () => {
     const { handleTriggerInput } = await import('./trigger.js');
     const { state } = await import('./state.js');
     const { sendClickEvent, sendScrollEvent } = await import('./events.js');
@@ -75,7 +75,6 @@ describe('handleTriggerInput', () => {
 
     handleTriggerInput(4, { triggerPressed: true }, { u: 0.3, v: 0.3 });
     handleTriggerInput(4, { triggerPressed: true }, { u: 0.3, v: 0.35 });
-    handleTriggerInput(4, { triggerPressed: false }, null);
 
     expect(sendScrollEvent).toHaveBeenCalled();
     expect(sendClickEvent).toHaveBeenCalledTimes(2);
@@ -86,6 +85,14 @@ describe('handleTriggerInput', () => {
       'mouseUp',
       0,
     );
+    expect(state.triggerDragState[4]).toMatchObject({
+      dragging: true,
+      moved: true,
+      downSent: false,
+    });
+
+    handleTriggerInput(4, { triggerPressed: false }, null);
+    expect(sendClickEvent).toHaveBeenCalledTimes(2);
   });
 
   it('does not send mouseDown when initial press has no hit', async () => {
@@ -111,5 +118,22 @@ describe('handleTriggerInput', () => {
     expect(sendClickEvent).toHaveBeenCalledTimes(2);
     expect(sendClickEvent).toHaveBeenNthCalledWith(1, 0.4, 0.4, 'mouseDown');
     expect(sendClickEvent).toHaveBeenNthCalledWith(2, 0.4, 0.4, 'mouseUp', 0);
+  });
+
+  it('does not send duplicate mouseUp when releasing controller with downSent=false', async () => {
+    const { handleTriggerInput, releaseTriggerForController } = await import('./trigger.js');
+    const { state } = await import('./state.js');
+    const { sendClickEvent } = await import('./events.js');
+    state.windowSize.height = 1000;
+
+    handleTriggerInput(7, { triggerPressed: true }, { u: 0.45, v: 0.45 });
+    handleTriggerInput(7, { triggerPressed: true }, { u: 0.45, v: 0.5 });
+    expect(state.triggerDragState[7]?.downSent).toBe(false);
+    expect(sendClickEvent).toHaveBeenCalledTimes(2);
+
+    releaseTriggerForController(7, 0);
+
+    expect(sendClickEvent).toHaveBeenCalledTimes(2);
+    expect(state.triggerDragState[7]).toBeUndefined();
   });
 });
