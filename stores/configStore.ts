@@ -129,12 +129,12 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
   // Update specific config field / 特定の設定フィールドを更新
   updateConfig: (key, value) => {
     const currentConfig = get().config;
-    const normalizedValue =
+    const normalizedValue: OscConfig[typeof key] =
       key === 'accentColor'
         ? (sanitizeAccentColor(
             value as string,
             DEFAULT_CONFIG.ACCENT_COLOR,
-          ) as OscConfig[K])
+          ) as OscConfig[typeof key])
         : value;
 
     // Check if value actually changed / 値が実際に変更されたか確認

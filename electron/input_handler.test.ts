@@ -62,7 +62,7 @@ describe('input_handler cleanup behavior', () => {
     }));
     vi.mocked(computeHitFromPose).mockReturnValue({ u: 0.2, v: 0.3 });
 
-    startInputLoop(120, {});
+    startInputLoop(120, {} as Electron.WebContents);
     expect(captureFrameListener).toBeTypeOf('function');
     captureFrameListener?.();
 
