@@ -15,11 +15,13 @@ import {
   isValidCustomAccentColor,
   normalizeCustomAccentColor,
 } from '../utils/colorUtils';
+import { reloadWindow } from '../utils/windowUtils';
 import packageJson from '../package.json';
 import { ConfirmDialog } from './ConfirmDialog';
 
 const APP_VERSION = packageJson.version;
 const DEFAULT_CUSTOM_ACCENT_COLOR = '#ff0000';
+const SETTINGS_MODAL_TITLE_ID = 'settings-modal-title';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -141,10 +143,14 @@ const SettingsModal: FC<SettingsModalProps> = ({
     useModalAnimation(isOpen);
 
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
+  const modalRef = useRef<HTMLDivElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
   const delayedRefreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
+  const previousFocusedElementRef = useRef<HTMLElement | null>(null);
+  const onCloseRef = useRef(onClose);
+  const wasOpenRef = useRef(false);
 
   const [toggleBindings, setToggleBindings] = useState<string[]>([]);
   const [triggerBindings, setTriggerBindings] = useState<string[]>([]);
@@ -159,9 +165,13 @@ const SettingsModal: FC<SettingsModalProps> = ({
     DEFAULT_CUSTOM_ACCENT_COLOR,
   );
 
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
   // Sync local state when opening / 開くときにローカル状態を同期する
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !wasOpenRef.current) {
       setLocalConfig(config);
       setOscPortInput(String(config.oscPort));
       setSteamVrAutoLaunchError('');
@@ -171,22 +181,26 @@ const SettingsModal: FC<SettingsModalProps> = ({
       ) {
         setLastCustomAccentColor(normalizeCustomAccentColor(config.accentColor));
       }
-      if (updateAvailableVersion) {
-        setCheckStatus(
-          TRANSLATIONS[
-            config.language || 'ja'
-          ].settings.updateAvailable.replace(
-            '{version}',
-            updateAvailableVersion,
-          ),
-        );
-        setUpdateUrl(GITHUB.RELEASES_URL);
-      } else {
-        setCheckStatus('');
-        setUpdateUrl('');
-      }
     }
-  }, [isOpen, config, updateAvailableVersion]);
+    wasOpenRef.current = isOpen;
+  }, [isOpen, config]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    if (updateAvailableVersion) {
+      const language = localConfig.language || 'ja';
+      setCheckStatus(
+        TRANSLATIONS[language].settings.updateAvailable.replace(
+          '{version}',
+          updateAvailableVersion,
+        ),
+      );
+      setUpdateUrl(GITHUB.RELEASES_URL);
+      return;
+    }
+    setCheckStatus('');
+    setUpdateUrl('');
+  }, [isOpen, localConfig.language, updateAvailableVersion]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -221,27 +235,112 @@ const SettingsModal: FC<SettingsModalProps> = ({
     };
   }, []);
 
+  useEffect(() => {
+    if (isOpen) return;
+    if (delayedRefreshTimerRef.current) {
+      clearTimeout(delayedRefreshTimerRef.current);
+      delayedRefreshTimerRef.current = null;
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || !shouldRender) return;
+    const modalElement = modalRef.current;
+    if (!modalElement) return;
+
+    previousFocusedElementRef.current = document.activeElement as HTMLElement | null;
+    const focusableSelector =
+      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    const getFocusableElements = () =>
+      Array.from(modalElement.querySelectorAll<HTMLElement>(focusableSelector)).filter(
+        (element) => !element.hasAttribute('aria-hidden'),
+      );
+
+    const focusableElements = getFocusableElements();
+    (focusableElements[0] || modalElement).focus();
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onCloseRef.current();
+        return;
+      }
+
+      if (event.key !== 'Tab') return;
+
+      const currentFocusableElements = getFocusableElements();
+      if (currentFocusableElements.length === 0) {
+        event.preventDefault();
+        modalElement.focus();
+        return;
+      }
+
+      const firstElement = currentFocusableElements[0];
+      const lastElement = currentFocusableElements[currentFocusableElements.length - 1];
+      const activeElement = document.activeElement;
+
+      if (event.shiftKey) {
+        if (activeElement === firstElement || !modalElement.contains(activeElement)) {
+          event.preventDefault();
+          lastElement.focus();
+        }
+        return;
+      }
+
+      if (activeElement === lastElement) {
+        event.preventDefault();
+        firstElement.focus();
+      }
+    };
+
+    modalElement.addEventListener('keydown', handleKeyDown);
+    return () => {
+      modalElement.removeEventListener('keydown', handleKeyDown);
+      if (previousFocusedElementRef.current) {
+        previousFocusedElementRef.current.focus();
+        previousFocusedElementRef.current = null;
+      }
+    };
+  }, [isOpen, shouldRender]);
+
   const t = TRANSLATIONS[localConfig.language || 'ja'].settings;
 
-  const saveConfigImmediately = (newConfig: typeof config) => {
-    setLocalConfig(newConfig);
-    setConfig(newConfig);
+  const saveConfigImmediately = (
+    update: (currentConfig: typeof localConfig) => typeof localConfig,
+  ) => {
+    setLocalConfig((currentConfig) => {
+      const nextConfig = update(currentConfig);
+      if (nextConfig === currentConfig) {
+        return currentConfig;
+      }
+      setConfig(nextConfig);
+      return nextConfig;
+    });
   };
 
   const handleLanguageChange = (lang: Language) => {
-    const newConfig = { ...localConfig, language: lang };
-    saveConfigImmediately(newConfig);
+    saveConfigImmediately((currentConfig) =>
+      currentConfig.language === lang
+        ? currentConfig
+        : { ...currentConfig, language: lang },
+    );
   };
 
   const handleThemeChange = (theme: 'light' | 'dark' | 'pure-black') => {
-    const newConfig = { ...localConfig, theme };
-    saveConfigImmediately(newConfig);
+    saveConfigImmediately((currentConfig) =>
+      currentConfig.theme === theme
+        ? currentConfig
+        : { ...currentConfig, theme },
+    );
   };
 
   const handleAccentColorChange = (color: string) => {
     if (color === 'cyan' || color === 'purple') {
-      const newConfig = { ...localConfig, accentColor: color };
-      saveConfigImmediately(newConfig);
+      saveConfigImmediately((currentConfig) =>
+        currentConfig.accentColor === color
+          ? currentConfig
+          : { ...currentConfig, accentColor: color },
+      );
       return;
     }
     if (!isValidCustomAccentColor(color)) {
@@ -249,8 +348,11 @@ const SettingsModal: FC<SettingsModalProps> = ({
     }
     const normalizedColor = normalizeCustomAccentColor(color);
     setLastCustomAccentColor(normalizedColor);
-    const newConfig = { ...localConfig, accentColor: normalizedColor };
-    saveConfigImmediately(newConfig);
+    saveConfigImmediately((currentConfig) =>
+      currentConfig.accentColor === normalizedColor
+        ? currentConfig
+        : { ...currentConfig, accentColor: normalizedColor },
+    );
   };
 
   const handleCustomAccentSelect = () => {
@@ -265,8 +367,11 @@ const SettingsModal: FC<SettingsModalProps> = ({
     const portNum = parseInt(trimmedValue, 10);
     if (!isNaN(portNum) && portNum >= 1 && portNum <= 65535) {
       if (portNum !== localConfig.oscPort) {
-        const newConfig = { ...localConfig, oscPort: portNum };
-        saveConfigImmediately(newConfig);
+        saveConfigImmediately((currentConfig) =>
+          currentConfig.oscPort === portNum
+            ? currentConfig
+            : { ...currentConfig, oscPort: portNum },
+        );
       } else {
         setOscPortInput(String(localConfig.oscPort));
       }
@@ -286,8 +391,11 @@ const SettingsModal: FC<SettingsModalProps> = ({
   };
 
   const handleIntervalChange = (interval: UpdateCheckInterval) => {
-    const newConfig = { ...localConfig, updateCheckInterval: interval };
-    saveConfigImmediately(newConfig);
+    saveConfigImmediately((currentConfig) =>
+      currentConfig.updateCheckInterval === interval
+        ? currentConfig
+        : { ...currentConfig, updateCheckInterval: interval },
+    );
   };
 
   const handleCheckNow = async () => {
@@ -335,8 +443,11 @@ const SettingsModal: FC<SettingsModalProps> = ({
   };
 
   const handleToggleDisableOverlay = (value: boolean) => {
-    const newConfig = { ...localConfig, disableOverlay: value };
-    saveConfigImmediately(newConfig);
+    saveConfigImmediately((currentConfig) =>
+      currentConfig.disableOverlay === value
+        ? currentConfig
+        : { ...currentConfig, disableOverlay: value },
+    );
   };
 
   const handleToggleSteamVrAutoLaunch = async (value: boolean) => {
@@ -353,8 +464,11 @@ const SettingsModal: FC<SettingsModalProps> = ({
       }
 
       setSteamVrAutoLaunchError('');
-      const newConfig = { ...localConfig, steamVrAutoLaunch: value };
-      saveConfigImmediately(newConfig);
+      saveConfigImmediately((currentConfig) =>
+        currentConfig.steamVrAutoLaunch === value
+          ? currentConfig
+          : { ...currentConfig, steamVrAutoLaunch: value },
+      );
     } catch (e) {
       setSteamVrAutoLaunchError((e as Error)?.message || t.steamVrAutoLaunchError);
     }
@@ -368,11 +482,11 @@ const SettingsModal: FC<SettingsModalProps> = ({
         const result = await window.electronAPI!.getSteamVrAutoLaunch();
         if (!result?.success || typeof result.enabled !== 'boolean') return;
 
-        const currentConfig = useConfigStore.getState().config;
-        if (result.enabled !== currentConfig.steamVrAutoLaunch) {
-          const newConfig = { ...currentConfig, steamVrAutoLaunch: result.enabled };
-          saveConfigImmediately(newConfig);
-        }
+        saveConfigImmediately((currentConfig) =>
+          currentConfig.steamVrAutoLaunch === result.enabled
+            ? currentConfig
+            : { ...currentConfig, steamVrAutoLaunch: result.enabled },
+        );
       } catch {
         // no-op: this sync is best-effort only / この同期はベストエフォート
       }
@@ -488,7 +602,7 @@ const SettingsModal: FC<SettingsModalProps> = ({
         // fallback below
       }
 
-      window.location.reload();
+      reloadWindow();
     };
 
     void restart();
@@ -508,15 +622,25 @@ const SettingsModal: FC<SettingsModalProps> = ({
       className={`fixed inset-0 z-[110] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 ${animationClass}`}
     >
       <div
+        ref={modalRef}
+        role='dialog'
+        aria-modal='true'
+        aria-labelledby={SETTINGS_MODAL_TITLE_ID}
+        tabIndex={-1}
         className={`dark:bg-slate-800 pure-black:bg-black bg-white w-full max-w-lg max-h-[90vh] flex flex-col rounded-2xl border dark:border-slate-600 pure-black:border-slate-800 border-slate-200 shadow-2xl overflow-hidden transition-colors duration-300 ${modalAnimationClass}`}
       >
         {/* Header / ヘッダー */}
         <div className='flex justify-between items-center p-6 border-b dark:border-slate-700 pure-black:border-slate-800 border-slate-200 dark:bg-slate-800 pure-black:bg-black bg-white transition-colors duration-300'>
-          <h2 className='text-2xl font-bold dark:text-primary-400 text-primary-600'>
+          <h2
+            id={SETTINGS_MODAL_TITLE_ID}
+            className='text-2xl font-bold dark:text-primary-400 text-primary-600'
+          >
             {t.title}
           </h2>
           <button
+            type='button'
             onClick={onClose}
+            aria-label={t.save}
             className='p-2 dark:hover:bg-slate-700 hover:bg-slate-100 rounded-full dark:text-slate-400 text-slate-500 dark:hover:text-[rgb(var(--rgb-on-primary))] hover:text-slate-900 transition-colors'
           >
             <X size={24} />
@@ -712,21 +836,21 @@ const SettingsModal: FC<SettingsModalProps> = ({
               </p>
               <div className='text-xs text-slate-500 min-h-5'>
                 {loadingBindings ? (
-                  <span>Loading...</span>
+                  <span>{t.loading}</span>
                 ) : !initialized ? (
                   <span>{bindingError || t.steamVrBindingsUnavailable}</span>
                 ) : (
                   <div className='space-y-1'>
                     <p>
-                      <span className='font-semibold'>Toggle:</span>{' '}
+                      <span className='font-semibold'>{t.steamVrBindingsToggleLabel}:</span>{' '}
                       {formatBindings(toggleBindings)}
                     </p>
                     <p>
-                      <span className='font-semibold'>Trigger:</span>{' '}
+                      <span className='font-semibold'>{t.steamVrBindingsTriggerLabel}:</span>{' '}
                       {formatBindings(triggerBindings)}
                     </p>
                     <p>
-                      <span className='font-semibold'>Grip:</span>{' '}
+                      <span className='font-semibold'>{t.steamVrBindingsGripLabel}:</span>{' '}
                       {formatBindings(gripBindings)}
                     </p>
                   </div>

@@ -1,10 +1,10 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import SettingsModal from './SettingsModal';
 
-const { mockSetConfig, mockConfig } = vi.hoisted(() => ({
-  mockSetConfig: vi.fn(),
-  mockConfig: {
+const { mockSetConfig, getCurrentConfig, resetMockConfig, mockReloadWindow } =
+  vi.hoisted(() => {
+  const createInitialConfig = () => ({
     bridgeUrl: 'ws://127.0.0.1:8080',
     oscPort: 9000,
     autoSend: false,
@@ -14,14 +14,32 @@ const { mockSetConfig, mockConfig } = vi.hoisted(() => ({
     theme: 'dark' as const,
     accentColor: 'cyan',
     updateCheckInterval: 'weekly' as const,
+    disableOverlay: false,
     steamVrAutoLaunch: false,
-  },
-}));
+  });
+
+  let currentConfig = createInitialConfig();
+  const mockSetConfig = vi.fn((newConfig: any) => {
+    currentConfig = { ...newConfig };
+  });
+  const getCurrentConfig = () => currentConfig;
+  const resetMockConfig = () => {
+    currentConfig = createInitialConfig();
+    mockSetConfig.mockClear();
+  };
+
+  return {
+    mockSetConfig,
+    getCurrentConfig,
+    resetMockConfig,
+    mockReloadWindow: vi.fn(),
+  };
+});
 
 vi.mock('../stores/configStore', () => ({
   useConfigStore: (selector: any) =>
     selector({
-      config: mockConfig,
+      config: getCurrentConfig(),
       setConfig: mockSetConfig,
     }),
 }));
@@ -32,6 +50,10 @@ vi.mock('../hooks/useModalAnimation', () => ({
     animationClass: '',
     modalAnimationClass: '',
   }),
+}));
+
+vi.mock('../utils/windowUtils', () => ({
+  reloadWindow: mockReloadWindow,
 }));
 
 vi.mock('./ConfirmDialog', () => ({
@@ -52,6 +74,7 @@ vi.mock('./ConfirmDialog', () => ({
 describe('SettingsModal oscPort input behavior', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    resetMockConfig();
     delete (window as any).electronAPI;
   });
 
@@ -111,11 +134,22 @@ describe('SettingsModal oscPort input behavior', () => {
       );
     });
   });
+
+  it('keeps oscPort draft input when other settings are changed while open', () => {
+    renderModal();
+    const input = screen.getByPlaceholderText('9000') as HTMLInputElement;
+
+    fireEvent.change(input, { target: { value: '1234' } });
+    fireEvent.click(screen.getByRole('button', { name: 'ライト' }));
+
+    expect(input.value).toBe('1234');
+  });
 });
 
 describe('SettingsModal reset behavior', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    resetMockConfig();
     delete (window as any).electronAPI;
   });
 
@@ -145,6 +179,7 @@ describe('SettingsModal reset behavior', () => {
     await waitFor(() => {
       expect(clearSpy).toHaveBeenCalled();
       expect(restartApp).toHaveBeenCalled();
+      expect(mockReloadWindow).not.toHaveBeenCalled();
       expect(localStorage.getItem('test-key')).toBeNull();
     });
   });
@@ -158,6 +193,7 @@ describe('SettingsModal reset behavior', () => {
 
     await waitFor(() => {
       expect(clearSpy).toHaveBeenCalled();
+      expect(mockReloadWindow).toHaveBeenCalled();
       expect(localStorage.getItem('test-key')).toBeNull();
     });
   });
@@ -174,6 +210,7 @@ describe('SettingsModal reset behavior', () => {
     await waitFor(() => {
       expect(clearSpy).toHaveBeenCalled();
       expect(restartApp).toHaveBeenCalled();
+      expect(mockReloadWindow).toHaveBeenCalled();
       expect(localStorage.getItem('test-key')).toBeNull();
     });
   });
@@ -182,8 +219,8 @@ describe('SettingsModal reset behavior', () => {
 describe('SettingsModal accent color behavior', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    resetMockConfig();
     delete (window as any).electronAPI;
-    mockConfig.accentColor = 'cyan';
   });
 
   const renderModal = () =>
@@ -233,4 +270,75 @@ describe('SettingsModal accent color behavior', () => {
 
     expect(mockSetConfig).not.toHaveBeenCalled();
   });
+});
+
+describe('SettingsModal async config updates', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    resetMockConfig();
+  });
+
+  it('does not overwrite newer settings when SteamVR auto-launch update resolves', async () => {
+    let resolveSetSteamVrAutoLaunch:
+      | ((result: { success: boolean }) => void)
+      | undefined;
+    const setSteamVrAutoLaunch = vi.fn(
+      () =>
+        new Promise<{ success: boolean }>((resolve) => {
+          resolveSetSteamVrAutoLaunch = resolve;
+        }),
+    );
+    (window as any).electronAPI = { setSteamVrAutoLaunch };
+
+    render(
+      <SettingsModal
+        isOpen={true}
+        onClose={vi.fn()}
+        onShowTutorial={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '登録' }));
+    fireEvent.click(screen.getByRole('button', { name: 'ライト' }));
+    mockSetConfig.mockClear();
+
+    resolveSetSteamVrAutoLaunch?.({ success: true });
+
+    await waitFor(() => {
+      expect(mockSetConfig).toHaveBeenCalledWith(
+        expect.objectContaining({
+          theme: 'light',
+          steamVrAutoLaunch: true,
+        }),
+      );
+    });
+  });
+});
+
+describe('SettingsModal accessibility', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    resetMockConfig();
+    delete (window as any).electronAPI;
+  });
+
+  it('is exposed as a dialog and supports Escape to close', () => {
+    const onClose = vi.fn();
+    render(
+      <SettingsModal
+        isOpen={true}
+        onClose={onClose}
+        onShowTutorial={vi.fn()}
+      />,
+    );
+
+    const dialog = screen.getByRole('dialog');
+    fireEvent.keyDown(dialog, { key: 'Escape' });
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
 });

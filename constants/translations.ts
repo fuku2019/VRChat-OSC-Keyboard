@@ -18,6 +18,9 @@ export interface TranslationStrings {
     steamVrBindingsTitle: string;
     steamVrBindingsEmpty: string;
     steamVrBindingsUnavailable: string;
+    steamVrBindingsToggleLabel: string;
+    steamVrBindingsTriggerLabel: string;
+    steamVrBindingsGripLabel: string;
     steamVrBindingsRefresh: string;
     openSteamVrBindingUi: string;
     steamVrBindingsMissingActions: string;
@@ -42,6 +45,7 @@ export interface TranslationStrings {
     openReleasePage: string;
     latestVersion: string;
     checking: string;
+    loading: string;
     updateError: string;
     resetTitle: string;
     resetDesc: string;
@@ -114,6 +118,9 @@ export const TRANSLATIONS: TranslationsMap = {
       steamVrBindingsTitle: 'SteamVR 割り当て',
       steamVrBindingsEmpty: '現在の割り当てはありません',
       steamVrBindingsUnavailable: 'SteamVR Input は利用できません',
+      steamVrBindingsToggleLabel: 'トグル',
+      steamVrBindingsTriggerLabel: 'トリガー',
+      steamVrBindingsGripLabel: 'グリップ',
       steamVrBindingsRefresh: '割り当てを更新',
       openSteamVrBindingUi: 'バインドUIを開く',
       steamVrBindingsMissingActions: '未割り当て: Trigger/Grip のアクションをBinding UIで設定してください。',
@@ -138,6 +145,7 @@ export const TRANSLATIONS: TranslationsMap = {
       openReleasePage: 'リリースページを開く',
       latestVersion: '最新です',
       checking: '確認中...',
+      loading: '読み込み中...',
       updateError: '確認エラー',
       resetTitle: '設定の初期化',
       resetDesc: '全ての設定をデフォルトに戻します',
@@ -206,6 +214,9 @@ export const TRANSLATIONS: TranslationsMap = {
       steamVrBindingsTitle: 'SteamVR Bindings',
       steamVrBindingsEmpty: 'No active binding found',
       steamVrBindingsUnavailable: 'SteamVR Input is unavailable',
+      steamVrBindingsToggleLabel: 'Toggle',
+      steamVrBindingsTriggerLabel: 'Trigger',
+      steamVrBindingsGripLabel: 'Grip',
       steamVrBindingsRefresh: 'Refresh Bindings',
       openSteamVrBindingUi: 'Open Binding UI',
       steamVrBindingsMissingActions: 'Missing bindings: assign Trigger/Grip actions in Binding UI.',
@@ -230,6 +241,7 @@ export const TRANSLATIONS: TranslationsMap = {
       openReleasePage: 'Open Release Page',
       latestVersion: 'Latest',
       checking: 'Checking...',
+      loading: 'Loading...',
       updateError: 'Check Error',
       resetTitle: 'Reset Settings',
       resetDesc: 'Reset all settings to default',
