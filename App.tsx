@@ -19,6 +19,7 @@ import { useTheme } from './hooks/useTheme';
 import { useTypingIndicator } from './hooks/useTypingIndicator';
 import { useOscSender } from './hooks/useOscSender';
 import { useKeyboardController } from './hooks/useKeyboardController';
+import { useVrScrollSelectionGuard } from './hooks/useVrScrollSelectionGuard';
 import { TRANSLATIONS, STORAGE_KEYS, TIMEOUTS, CHATBOX } from './constants';
 
 const App = () => {
@@ -45,6 +46,7 @@ const App = () => {
 
   // Use custom hooks / カスタムフックを使用
   useTheme();
+  useVrScrollSelectionGuard();
   const { sendTypingStatus, resetTypingTimeout, cancelTypingTimeout } =
     useTypingIndicator();
   const {

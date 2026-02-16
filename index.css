@@ -72,6 +72,19 @@
   :root.dark ::-webkit-scrollbar-track { background: #1e293b; }
   :root.dark ::-webkit-scrollbar-thumb { background: #475569; }
   :root.dark ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+  html.vr-scroll-select-lock,
+  html.vr-scroll-select-lock * {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  html.vr-scroll-select-lock input,
+  html.vr-scroll-select-lock textarea,
+  html.vr-scroll-select-lock [contenteditable="true"] {
+    -webkit-user-select: text;
+    user-select: text;
+  }
   
   html, body { 
     height: 100%; 
