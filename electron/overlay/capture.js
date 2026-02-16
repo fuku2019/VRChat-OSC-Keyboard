@@ -55,18 +55,6 @@ function deriveSizeFromBuffer(size, bufferLength) {
   return { width, height };
 }
 
-function applyOpaqueAlpha(buffer) {
-  if (!buffer || buffer.length < 4 || buffer.length % 4 !== 0) return;
-  const view = new Uint32Array(
-    buffer.buffer,
-    buffer.byteOffset,
-    buffer.byteLength / 4,
-  );
-  for (let i = 0; i < view.length; i++) {
-    view[i] |= 0xff000000;
-  }
-}
-
 function retainFrame(buffer, image) {
   state.frameRetention.push({ buffer, image });
   if (state.frameRetention.length > MAX_FRAME_RETENTION) {
@@ -139,10 +127,6 @@ function updateOverlayFromImage(image) {
       );
       state.lastSizeMismatchTime = now;
     }
-  }
-
-  if (state.forceOpaqueAlpha) {
-    applyOpaqueAlpha(bgraBuffer);
   }
 
   // Keep references alive in case native side reads asynchronously

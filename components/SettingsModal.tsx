@@ -325,16 +325,6 @@ const SettingsModal: FC<SettingsModalProps> = ({
     }
   };
 
-  const handleToggleOffscreenCapture = (value: boolean) => {
-    const newConfig = { ...localConfig, useOffscreenCapture: value };
-    saveConfigImmediately(newConfig);
-  };
-
-  const handleToggleForceOpaqueAlpha = (value: boolean) => {
-    const newConfig = { ...localConfig, forceOpaqueAlpha: value };
-    saveConfigImmediately(newConfig);
-  };
-
   const handleToggleDisableOverlay = (value: boolean) => {
     const newConfig = { ...localConfig, disableOverlay: value };
     saveConfigImmediately(newConfig);
@@ -705,19 +695,6 @@ const SettingsModal: FC<SettingsModalProps> = ({
             {steamVrAutoLaunchError && (
               <p className='text-xs text-red-400'>{steamVrAutoLaunchError}</p>
             )}
-            <ToggleRow
-              label={t.offscreenCapture}
-              description={t.offscreenCaptureDesc}
-              enabled={localConfig.useOffscreenCapture}
-              onToggle={handleToggleOffscreenCapture}
-            />
-            <ToggleRow
-              label={t.forceOpaqueAlpha}
-              description={t.forceOpaqueAlphaDesc}
-              enabled={localConfig.forceOpaqueAlpha}
-              onToggle={handleToggleForceOpaqueAlpha}
-            />
-
             <div className='rounded-xl border dark:border-slate-600/60 border-slate-200 p-4 space-y-3 dark:bg-slate-700/20 bg-slate-50'>
               <p className='text-sm font-semibold dark:text-slate-200 text-slate-700'>
                 {t.steamVrBindingsTitle}

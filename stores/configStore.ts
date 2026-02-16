@@ -41,10 +41,6 @@ const loadConfigFromStorage = (): OscConfig => {
         accentColor: parsed.accentColor || DEFAULT_CONFIG.ACCENT_COLOR,
         updateCheckInterval:
           parsed.updateCheckInterval || DEFAULT_CONFIG.UPDATE_CHECK_INTERVAL,
-        useOffscreenCapture:
-          parsed.useOffscreenCapture ?? DEFAULT_CONFIG.USE_OFFSCREEN_CAPTURE,
-        forceOpaqueAlpha:
-          parsed.forceOpaqueAlpha ?? DEFAULT_CONFIG.FORCE_OPAQUE_ALPHA,
         disableOverlay:
           parsed.disableOverlay ?? DEFAULT_CONFIG.DISABLE_OVERLAY,
         steamVrAutoLaunch:
@@ -66,8 +62,6 @@ const loadConfigFromStorage = (): OscConfig => {
     theme: DEFAULT_CONFIG.THEME,
     accentColor: DEFAULT_CONFIG.ACCENT_COLOR,
     updateCheckInterval: DEFAULT_CONFIG.UPDATE_CHECK_INTERVAL,
-    useOffscreenCapture: DEFAULT_CONFIG.USE_OFFSCREEN_CAPTURE,
-    forceOpaqueAlpha: DEFAULT_CONFIG.FORCE_OPAQUE_ALPHA,
     disableOverlay: DEFAULT_CONFIG.DISABLE_OVERLAY,
     steamVrAutoLaunch: DEFAULT_CONFIG.STEAMVR_AUTO_LAUNCH,
   };
@@ -116,8 +110,6 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
     // Sync overlay settings with Electron / オーバーレイ設定をElectronに同期
     if (electronAPI?.setOverlaySettings) {
       electronAPI.setOverlaySettings({
-        useOffscreenCapture: config.useOffscreenCapture,
-        forceOpaqueAlpha: config.forceOpaqueAlpha,
         disableOverlay: config.disableOverlay,
       });
     }
@@ -146,9 +138,7 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
 
     // Sync overlay settings if changed / オーバーレイ設定を同期
     if (
-      (key === 'useOffscreenCapture' ||
-        key === 'forceOpaqueAlpha' ||
-        key === 'disableOverlay') &&
+      key === 'disableOverlay' &&
       window.electronAPI?.setOverlaySettings
     ) {
       window.electronAPI.setOverlaySettings({ [key]: value });
@@ -175,8 +165,6 @@ if (typeof window !== 'undefined' && window.electronAPI) {
     // Sync overlay settings on startup / 起動時にオーバーレイ設定を同期
     if (window.electronAPI?.setOverlaySettings) {
       window.electronAPI.setOverlaySettings({
-        useOffscreenCapture: currentConfig.useOffscreenCapture,
-        forceOpaqueAlpha: currentConfig.forceOpaqueAlpha,
         disableOverlay: currentConfig.disableOverlay,
       });
     }

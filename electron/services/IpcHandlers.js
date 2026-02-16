@@ -10,7 +10,7 @@ import {
   getActiveWsPort,
   sendTypingStatus,
 } from './OscBridgeService.js';
-import { resetOverlayPosition, setOverlayPreferences, updateRendererMetrics } from '../overlay.js';
+import { resetOverlayPosition, updateRendererMetrics } from '../overlay.js';
 import { updateWindowSize } from '../input_handler.js';
 import {
   getOverlaySettings,
@@ -209,7 +209,6 @@ export function registerIpcHandlers(APP_VERSION) {
 
   ipcMain.handle('set-overlay-settings', (event, settings) => {
     setOverlaySettings(settings);
-    setOverlayPreferences(settings);
     return { success: true, settings: getOverlaySettings() };
   });
 

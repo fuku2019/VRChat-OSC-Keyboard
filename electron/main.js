@@ -35,7 +35,6 @@ import {
 import {
   initOverlay,
   initSplash,
-  setOverlayPreferences,
   shutdownOverlay,
   startCapture,
 } from './overlay.js';
@@ -77,7 +76,6 @@ if (!gotTheLock) {
     createWindow();
     const settings = getOverlaySettings();
     const steamVrSettings = getSteamVrSettings();
-    setOverlayPreferences(settings);
 
     if (steamVrSettings.autoLaunch) {
       const manifestRegistration = ensureSteamVrManifestRegistered();

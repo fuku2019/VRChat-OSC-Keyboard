@@ -89,13 +89,6 @@ export function updateRendererMetrics(metrics) {
   state.rendererMetrics.updatedAt = Date.now();
 }
 
-export function setOverlayPreferences(preferences) {
-  if (!preferences) return;
-  if (typeof preferences.forceOpaqueAlpha === 'boolean') {
-    state.forceOpaqueAlpha = preferences.forceOpaqueAlpha;
-  }
-}
-
 /**
  * Respawn specific overlay handle at ideal position relative to HMD
  * HMDに対する理想的な位置に指定のオーバーレイを再スポーン

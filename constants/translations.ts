@@ -8,10 +8,6 @@ export interface TranslationStrings {
     oscPort: string;
     oscPortDesc: string;
     overlayTitle: string;
-    offscreenCapture: string;
-    offscreenCaptureDesc: string;
-    forceOpaqueAlpha: string;
-    forceOpaqueAlphaDesc: string;
     disableOverlay: string;
     disableOverlayDesc: string;
     steamVrAutoLaunch: string;
@@ -108,10 +104,6 @@ export const TRANSLATIONS: TranslationsMap = {
       oscPort: 'VRChat OSC ポート',
       oscPortDesc: 'VRChatにOSCメッセージを送信するポート（デフォルト: 9000）\n 注意:間違ったOSCポートを指定しても、エラーは表示されずVRChatにはチャットが送信されません。',
       overlayTitle: 'VRオーバーレイ',
-      offscreenCapture: 'オフスクリーン描画を使う',
-      offscreenCaptureDesc: 'paintイベント駆動で安定化します。変更は再起動後に反映されます。',
-      forceOpaqueAlpha: 'アルファを不透明に固定',
-      forceOpaqueAlphaDesc: '黒縁やちらつきが出る場合の暫定対策。画質に影響する可能性があります。',
       disableOverlay: 'VRオーバーレイを起動しない',
       disableOverlayDesc: 'VR上に画面を表示しません（デスクトップ使用時など）。変更は再起動後に反映されます。',
       steamVrAutoLaunch: 'SteamVRスタートアップに登録',
@@ -204,10 +196,6 @@ export const TRANSLATIONS: TranslationsMap = {
       oscPort: 'VRChat OSC Port',
       oscPortDesc: 'VRChat OSC Send Port (Default: 9000) \n Note: Incorrect port settings will not trigger an error, but chat will not be sent.',
       overlayTitle: 'VR Overlay',
-      offscreenCapture: 'Use Offscreen Rendering',
-      offscreenCaptureDesc: 'Enables paint-driven capture for stability. Takes effect after restart.',
-      forceOpaqueAlpha: 'Force Opaque Alpha',
-      forceOpaqueAlphaDesc: 'Workaround for black fringes or flicker. May affect visual quality.',
       disableOverlay: 'Disable VR Overlay',
       disableOverlayDesc: 'Do not launch VR overlay (for desktop use). Takes effect after restart.',
       steamVrAutoLaunch: 'Register in SteamVR Startup Apps',

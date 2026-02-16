@@ -20,7 +20,6 @@ export const state = {
   lastFrameBuffer: null,
   lastFrameImage: null,
   frameRetention: [],
-  forceOpaqueAlpha: false,
   rendererMetrics: {
     cssWidth: 0,
     cssHeight: 0,
