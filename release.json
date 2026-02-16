@@ -1,9 +1,9 @@
 {
-  "url": "https://api.github.com/repos/fuku2019/VRChat-OSC-Keyboard/releases/284036734",
-  "assets_url": "https://api.github.com/repos/fuku2019/VRChat-OSC-Keyboard/releases/284036734/assets",
-  "upload_url": "https://uploads.github.com/repos/fuku2019/VRChat-OSC-Keyboard/releases/284036734/assets{?name,label}",
-  "html_url": "https://github.com/fuku2019/VRChat-OSC-Keyboard/releases/tag/v1.4.0",
-  "id": 284036734,
+  "url": "https://api.github.com/repos/fuku2019/VRChat-OSC-Keyboard/releases/286858764",
+  "assets_url": "https://api.github.com/repos/fuku2019/VRChat-OSC-Keyboard/releases/286858764/assets",
+  "upload_url": "https://uploads.github.com/repos/fuku2019/VRChat-OSC-Keyboard/releases/286858764/assets{?name,label}",
+  "html_url": "https://github.com/fuku2019/VRChat-OSC-Keyboard/releases/tag/v2.0.0",
+  "id": 286858764,
   "author": {
     "login": "github-actions[bot]",
     "id": 41898282,
@@ -25,22 +25,22 @@
     "user_view_type": "public",
     "site_admin": false
   },
-  "node_id": "RE_kwDOQ82V584Q7g5-",
-  "tag_name": "v1.4.0",
+  "node_id": "RE_kwDOQ82V584RGR4M",
+  "tag_name": "v2.0.0",
   "target_commitish": "main",
-  "name": "v1.4.0",
+  "name": "v2.0.0",
   "draft": false,
   "immutable": false,
   "prerelease": false,
-  "created_at": "2026-02-07T14:35:39Z",
-  "updated_at": "2026-02-07T14:42:36Z",
-  "published_at": "2026-02-07T14:39:30Z",
+  "created_at": "2026-02-16T13:32:13Z",
+  "updated_at": "2026-02-16T13:36:13Z",
+  "published_at": "2026-02-16T13:36:07Z",
   "assets": [
     {
-      "url": "https://api.github.com/repos/fuku2019/VRChat-OSC-Keyboard/releases/assets/352206295",
-      "id": 352206295,
-      "node_id": "RA_kwDOQ82V584U_j3X",
-      "name": "VRChat-OSC-Keyboard-v1.4.0.zip",
+      "url": "https://api.github.com/repos/fuku2019/VRChat-OSC-Keyboard/releases/assets/356753323",
+      "id": 356753323,
+      "node_id": "RA_kwDOQ82V584VQ5-r",
+      "name": "VRChat-OSC-Keyboard-v2.0.0.zip",
       "label": "",
       "uploader": {
         "login": "github-actions[bot]",
@@ -65,18 +65,18 @@
       },
       "content_type": "application/zip",
       "state": "uploaded",
-      "size": 127355061,
-      "digest": "sha256:234020cd413a74b4ff9929f44d61f45625830bd25c3f7ade1429f952048346da",
-      "download_count": 3,
-      "created_at": "2026-02-07T14:39:30Z",
-      "updated_at": "2026-02-07T14:39:34Z",
-      "browser_download_url": "https://github.com/fuku2019/VRChat-OSC-Keyboard/releases/download/v1.4.0/VRChat-OSC-Keyboard-v1.4.0.zip"
+      "size": 128617054,
+      "digest": "sha256:26ce888a207aad54cd25d388c8ed87a6f8d8951443c8408887414c42133cb072",
+      "download_count": 0,
+      "created_at": "2026-02-16T13:36:08Z",
+      "updated_at": "2026-02-16T13:36:13Z",
+      "browser_download_url": "https://github.com/fuku2019/VRChat-OSC-Keyboard/releases/download/v2.0.0/VRChat-OSC-Keyboard-v2.0.0.zip"
     },
     {
-      "url": "https://api.github.com/repos/fuku2019/VRChat-OSC-Keyboard/releases/assets/352206294",
-      "id": 352206294,
-      "node_id": "RA_kwDOQ82V584U_j3W",
-      "name": "VRChat.OSC.Keyboard.Setup.v1.4.0.exe",
+      "url": "https://api.github.com/repos/fuku2019/VRChat-OSC-Keyboard/releases/assets/356753322",
+      "id": 356753322,
+      "node_id": "RA_kwDOQ82V584VQ5-q",
+      "name": "VRChat.OSC.Keyboard.Setup.v2.0.0.exe",
       "label": "",
       "uploader": {
         "login": "github-actions[bot]",
@@ -101,15 +101,16 @@
       },
       "content_type": "application/octet-stream",
       "state": "uploaded",
-      "size": 88496491,
-      "digest": "sha256:46d66f6282f25583f778bd2b0c6f28bcebf28ba052e96f603aaccf5d5c1f54f7",
-      "download_count": 2,
-      "created_at": "2026-02-07T14:39:30Z",
-      "updated_at": "2026-02-07T14:39:33Z",
-      "browser_download_url": "https://github.com/fuku2019/VRChat-OSC-Keyboard/releases/download/v1.4.0/VRChat.OSC.Keyboard.Setup.v1.4.0.exe"
+      "size": 89469277,
+      "digest": "sha256:76b8e3fd5c27fa470714f1dc600b548125a693b79e1bea65056f77363ee9cdc1",
+      "download_count": 1,
+      "created_at": "2026-02-16T13:36:08Z",
+      "updated_at": "2026-02-16T13:36:11Z",
+      "browser_download_url": "https://github.com/fuku2019/VRChat-OSC-Keyboard/releases/download/v2.0.0/VRChat.OSC.Keyboard.Setup.v2.0.0.exe"
     }
   ],
-  "tarball_url": "https://api.github.com/repos/fuku2019/VRChat-OSC-Keyboard/tarball/v1.4.0",
-  "zipball_url": "https://api.github.com/repos/fuku2019/VRChat-OSC-Keyboard/zipball/v1.4.0",
-  "body": "### ・コピーモードを追加\r\n・レイアウトを修正\r\n・設定リセットボタンを追加\r\n**Full Changelog**: https://github.com/fuku2019/VRC-OSC-Keyboard/compare/v1.3.4...v1.4.0\r\n<img width=\"1621\" height=\"977\" alt=\"スクリーンショット 2026-02-07 232950\" src=\"https://github.com/user-attachments/assets/46a96f6f-16c4-4e42-ae90-3cad5b438749\" />\r\n<img width=\"798\" height=\"354\" alt=\"スクリーンショット 2026-02-07 234219\" src=\"https://github.com/user-attachments/assets/ba9127f6-166a-44bf-96ff-2bd1259643c6\" />\r\n"
+  "tarball_url": "https://api.github.com/repos/fuku2019/VRChat-OSC-Keyboard/tarball/v2.0.0",
+  "zipball_url": "https://api.github.com/repos/fuku2019/VRChat-OSC-Keyboard/zipball/v2.0.0",
+  "body": "## What's Changed\n* VRオーバーレイの実装 by @fuku2019 in https://github.com/fuku2019/VRChat-OSC-Keyboard/pull/1\n\n## New Contributors\n* @fuku2019 made their first contribution in https://github.com/fuku2019/VRChat-OSC-Keyboard/pull/1\n\n**Full Changelog**: https://github.com/fuku2019/VRChat-OSC-Keyboard/compare/v1.4.0...v2.0.0",
+  "mentions_count": 1
 }
