@@ -14,7 +14,7 @@ import packageJson from '../package.json';
 import { ConfirmDialog } from './ConfirmDialog';
 
 const APP_VERSION = packageJson.version;
-const DEFAULT_CUSTOM_ACCENT_COLOR = '#06b6d4';
+const DEFAULT_CUSTOM_ACCENT_COLOR = '#ff0000';
 
 const isPresetAccentColor = (color?: string) =>
   !color || color === 'cyan' || color === 'purple';

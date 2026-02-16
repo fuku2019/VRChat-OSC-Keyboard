@@ -201,7 +201,7 @@ describe('SettingsModal accent color behavior', () => {
     fireEvent.click(screen.getByRole('button', { name: 'カスタム' }));
     await waitFor(() => {
       expect(mockSetConfig).toHaveBeenCalledWith(
-        expect.objectContaining({ accentColor: '#06b6d4' }),
+        expect.objectContaining({ accentColor: '#ff0000' }),
       );
     });
 
