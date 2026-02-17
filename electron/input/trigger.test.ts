@@ -11,15 +11,16 @@ describe('handleTriggerInput', () => {
     vi.clearAllMocks();
   });
 
-  it('sends mouseDown once on initial press with hit', async () => {
+  it('sends mouseDown + mouseUp(clickCount=1) on initial press with hit', async () => {
     const { handleTriggerInput } = await import('./trigger.js');
     const { state } = await import('./state.js');
     const { sendClickEvent } = await import('./events.js');
 
     handleTriggerInput(1, { triggerPressed: true }, { u: 0.1, v: 0.2 });
 
-    expect(sendClickEvent).toHaveBeenCalledTimes(1);
-    expect(sendClickEvent).toHaveBeenCalledWith(0.1, 0.2, 'mouseDown');
+    expect(sendClickEvent).toHaveBeenCalledTimes(2);
+    expect(sendClickEvent).toHaveBeenNthCalledWith(1, 0.1, 0.2, 'mouseDown');
+    expect(sendClickEvent).toHaveBeenNthCalledWith(2, 0.1, 0.2, 'mouseUp', 1);
     expect(state.triggerDragState[1]).toMatchObject({
       startU: 0.1,
       startV: 0.2,
@@ -27,11 +28,11 @@ describe('handleTriggerInput', () => {
       lastV: 0.2,
       moved: false,
       dragging: false,
-      downSent: true,
+      downSent: false,
     });
   });
 
-  it('sends mouseUp(clickCount=1) on release after short press', async () => {
+  it('does not send additional click event on release after short press', async () => {
     const { handleTriggerInput } = await import('./trigger.js');
     const { sendClickEvent } = await import('./events.js');
 
@@ -49,7 +50,7 @@ describe('handleTriggerInput', () => {
     );
   });
 
-  it('sends mouseUp(clickCount=0) when movement exceeds click cancel threshold', async () => {
+  it('does not send additional click event when movement exceeds click cancel threshold', async () => {
     const { handleTriggerInput } = await import('./trigger.js');
     const { sendClickEvent } = await import('./events.js');
 
@@ -58,16 +59,11 @@ describe('handleTriggerInput', () => {
     handleTriggerInput(3, { triggerPressed: false }, null);
 
     expect(sendClickEvent).toHaveBeenCalledTimes(2);
-    expect(sendClickEvent).toHaveBeenNthCalledWith(
-      2,
-      0.24,
-      0.2,
-      'mouseUp',
-      0,
-    );
+    expect(sendClickEvent).toHaveBeenNthCalledWith(1, 0.2, 0.2, 'mouseDown');
+    expect(sendClickEvent).toHaveBeenNthCalledWith(2, 0.2, 0.2, 'mouseUp', 1);
   });
 
-  it('sends mouseUp(clickCount=0) immediately when drag/scroll starts', async () => {
+  it('starts drag/scroll without sending additional click events', async () => {
     const { handleTriggerInput } = await import('./trigger.js');
     const { state } = await import('./state.js');
     const { sendClickEvent, sendScrollEvent } = await import('./events.js');
@@ -78,13 +74,8 @@ describe('handleTriggerInput', () => {
 
     expect(sendScrollEvent).toHaveBeenCalled();
     expect(sendClickEvent).toHaveBeenCalledTimes(2);
-    expect(sendClickEvent).toHaveBeenNthCalledWith(
-      2,
-      0.3,
-      0.35,
-      'mouseUp',
-      0,
-    );
+    expect(sendClickEvent).toHaveBeenNthCalledWith(1, 0.3, 0.3, 'mouseDown');
+    expect(sendClickEvent).toHaveBeenNthCalledWith(2, 0.3, 0.3, 'mouseUp', 1);
     expect(state.triggerDragState[4]).toMatchObject({
       dragging: true,
       moved: true,
@@ -107,7 +98,7 @@ describe('handleTriggerInput', () => {
     expect(state.triggerDragState[5]).toBeUndefined();
   });
 
-  it('sends mouseUp(clickCount=0) when hit is lost while pressed', async () => {
+  it('does not send additional click event when hit is lost while pressed', async () => {
     const { handleTriggerInput } = await import('./trigger.js');
     const { sendClickEvent } = await import('./events.js');
 
@@ -117,7 +108,7 @@ describe('handleTriggerInput', () => {
 
     expect(sendClickEvent).toHaveBeenCalledTimes(2);
     expect(sendClickEvent).toHaveBeenNthCalledWith(1, 0.4, 0.4, 'mouseDown');
-    expect(sendClickEvent).toHaveBeenNthCalledWith(2, 0.4, 0.4, 'mouseUp', 0);
+    expect(sendClickEvent).toHaveBeenNthCalledWith(2, 0.4, 0.4, 'mouseUp', 1);
   });
 
   it('does not send duplicate mouseUp when releasing controller with downSent=false', async () => {

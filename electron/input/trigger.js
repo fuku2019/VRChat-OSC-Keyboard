@@ -27,6 +27,7 @@ export function handleTriggerInput(controllerId, controllerState, hit) {
     if (!existing) {
       if (!hit) return;
       sendClickEvent(hit.u, hit.v, 'mouseDown');
+      sendClickEvent(hit.u, hit.v, 'mouseUp', 1);
       state.triggerDragState[controllerId] = {
         startU: hit.u,
         startV: hit.v,
@@ -34,7 +35,7 @@ export function handleTriggerInput(controllerId, controllerState, hit) {
         lastV: hit.v,
         dragging: false,
         moved: false,
-        downSent: true,
+        downSent: false,
       };
       return;
     }
@@ -78,7 +79,6 @@ export function handleTriggerInput(controllerId, controllerState, hit) {
   }
 
   if (existing) {
-    releaseTriggerState(existing);
     delete state.triggerDragState[controllerId];
   }
 }
