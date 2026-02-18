@@ -7,17 +7,6 @@ import {
 import { sendClickEvent, sendScrollEvent } from './events.js';
 import { state } from './state.js';
 
-function releaseTriggerState(existing, clickCountOverride = null) {
-  if (!existing || !existing.downSent) return;
-  if (!Number.isFinite(existing.lastU) || !Number.isFinite(existing.lastV)) {
-    return;
-  }
-  const clickCount =
-    clickCountOverride ??
-    (existing.dragging || existing.moved ? 0 : 1);
-  sendClickEvent(existing.lastU, existing.lastV, 'mouseUp', clickCount);
-}
-
 export function handleTriggerInput(controllerId, controllerState, hit) {
   if (!controllerState) return;
   const pressed = !!controllerState.triggerPressed;
@@ -35,7 +24,6 @@ export function handleTriggerInput(controllerId, controllerState, hit) {
         lastV: hit.v,
         dragging: false,
         moved: false,
-        downSent: false,
       };
       return;
     }
@@ -54,11 +42,6 @@ export function handleTriggerInput(controllerId, controllerState, hit) {
     }
     const deltaV = hit.v - existing.lastV;
     if (!existing.dragging && Math.abs(totalV) > TRIGGER_DRAG_THRESHOLD) {
-      // End pressed state as soon as scroll-drag starts to avoid selection conflicts.
-      if (existing.downSent) {
-        sendClickEvent(hit.u, hit.v, 'mouseUp', 0);
-        existing.downSent = false;
-      }
       existing.dragging = true;
       existing.moved = true;
     }
@@ -85,9 +68,7 @@ export function handleTriggerInput(controllerId, controllerState, hit) {
 
 export function releaseTriggerForController(
   controllerId,
-  clickCountOverride = null,
+  _clickCountOverride = null,
 ) {
-  const existing = state.triggerDragState[controllerId];
-  releaseTriggerState(existing, clickCountOverride);
   delete state.triggerDragState[controllerId];
 }

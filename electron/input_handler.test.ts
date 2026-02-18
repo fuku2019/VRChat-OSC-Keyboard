@@ -23,6 +23,10 @@ vi.mock('./input/controllers.js', () => ({
   processController: vi.fn(),
 }));
 
+vi.mock('./input/drag.js', () => ({
+  endDrag: vi.fn(),
+}));
+
 vi.mock('./input/events.js', () => ({
   sendClickEvent: vi.fn(),
   sendCursorEvent: vi.fn(),
@@ -46,7 +50,7 @@ describe('input_handler cleanup behavior', () => {
     const { state } = await import('./input/state.js');
     const { startInputLoop, stopInputLoop } = await import('./input_handler.js');
     const { computeHitFromPose } = await import('./input/controllers.js');
-    const { sendCursorHideEvent } = await import('./input/events.js');
+    const { sendCursorHideEvent, sendTriggerStateEvent } = await import('./input/events.js');
 
     let activeControllers = [1];
     overlayManagerMock.getControllerIds.mockImplementation(() => activeControllers);
@@ -68,11 +72,13 @@ describe('input_handler cleanup behavior', () => {
 
     expect(state.lastCursorHitState[1]).toBe(true);
     expect(state.lastHitByController[1]).toBeTruthy();
+    state.lastTriggerPressedState[1] = true;
 
     activeControllers = [];
     captureFrameListener?.();
 
     expect(sendCursorHideEvent).toHaveBeenCalledWith(1);
+    expect(sendTriggerStateEvent).toHaveBeenCalledWith(1, false);
     expect(state.lastCursorHitState[1]).toBeUndefined();
     expect(state.lastHitByController[1]).toBeUndefined();
     expect(state.lastMoveAtByController[1]).toBeUndefined();
@@ -83,10 +89,11 @@ describe('input_handler cleanup behavior', () => {
     stopInputLoop();
   });
 
-  it('stopInputLoop sends mouse leave, releases trigger, and resets runtime state', async () => {
+  it('stopInputLoop sends mouse leave, releases pressed state, and resets runtime state', async () => {
     const { state } = await import('./input/state.js');
     const { stopInputLoop } = await import('./input_handler.js');
-    const { sendClickEvent, sendMouseLeaveEvent } = await import('./input/events.js');
+    const { sendMouseLeaveEvent, sendTriggerStateEvent } = await import('./input/events.js');
+    const { endDrag } = await import('./input/drag.js');
 
     state.lastMouseHit = true;
     state.lastMousePosition = { x: 30, y: 40 };
@@ -104,18 +111,20 @@ describe('input_handler cleanup behavior', () => {
         lastV: 0.2,
         dragging: true,
         moved: true,
-        downSent: true,
       },
     };
     state.inputSmoothers = {
       2: { reset: vi.fn() },
     };
     state.captureSyncUnsubscribe = unsubscribeMock;
+    state.drag.isDragging = true;
+    state.drag.draggingControllerId = 2;
 
     stopInputLoop();
 
     expect(sendMouseLeaveEvent).toHaveBeenCalledWith({ x: 30, y: 40 });
-    expect(sendClickEvent).toHaveBeenCalledWith(0.1, 0.2, 'mouseUp', 0);
+    expect(sendTriggerStateEvent).toHaveBeenCalledWith(2, false);
+    expect(endDrag).toHaveBeenCalledTimes(1);
     expect(unsubscribeMock).toHaveBeenCalledTimes(1);
     expect(state.lastMouseHit).toBe(false);
     expect(state.lastMouseControllerId).toBeNull();
@@ -126,5 +135,45 @@ describe('input_handler cleanup behavior', () => {
     expect(state.lastTriggerPressedState).toEqual({});
     expect(state.triggerDragState).toEqual({});
     expect(state.inputSmoothers).toEqual({});
+  });
+
+  it('cleans controller runtime state when pose is temporarily unavailable', async () => {
+    const { state } = await import('./input/state.js');
+    const { startInputLoop, stopInputLoop } = await import('./input_handler.js');
+    const { computeHitFromPose } = await import('./input/controllers.js');
+    const { sendCursorHideEvent, sendTriggerStateEvent } = await import('./input/events.js');
+
+    let poseAvailable = true;
+    overlayManagerMock.getControllerIds.mockReturnValue([1]);
+    overlayManagerMock.getControllerPose.mockImplementation(() =>
+      poseAvailable
+        ? [
+            1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 1, 0,
+            0, 0, 0, 1,
+          ]
+        : null,
+    );
+    overlayManagerMock.getControllerState.mockReturnValue({
+      triggerPressed: true,
+      gripPressed: false,
+    });
+    vi.mocked(computeHitFromPose).mockReturnValue({ u: 0.2, v: 0.3 });
+
+    startInputLoop(120, {} as Electron.WebContents);
+    captureFrameListener?.();
+    expect(state.lastCursorHitState[1]).toBe(true);
+    expect(state.lastTriggerPressedState[1]).toBe(true);
+
+    poseAvailable = false;
+    captureFrameListener?.();
+
+    expect(sendCursorHideEvent).toHaveBeenCalledWith(1);
+    expect(sendTriggerStateEvent).toHaveBeenCalledWith(1, false);
+    expect(state.lastCursorHitState[1]).toBeUndefined();
+    expect(state.lastTriggerPressedState[1]).toBeUndefined();
+
+    stopInputLoop();
   });
 });

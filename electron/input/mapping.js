@@ -3,18 +3,15 @@ import { state } from './state.js';
 export function updateWindowSize(
   width,
   height,
-  devicePixelRatio = null,
+  _devicePixelRatio = null,
   zoomFactor = null,
 ) {
   state.windowSize = { width, height };
-  if (Number.isFinite(devicePixelRatio) && devicePixelRatio > 0) {
-    state.windowScale.devicePixelRatio = devicePixelRatio;
-  }
   if (Number.isFinite(zoomFactor) && zoomFactor > 0) {
     state.windowScale.zoomFactor = zoomFactor;
   }
   console.log(
-    `Updated window size for input: ${width}x${height} (dpr=${state.windowScale.devicePixelRatio}, zoom=${state.windowScale.zoomFactor})`,
+    `Updated window size for input: ${width}x${height} (zoom=${state.windowScale.zoomFactor})`,
   );
 }
 
@@ -41,7 +38,7 @@ function getInputSurfaceSize() {
   try {
     const owner = state.targetWebContents.getOwnerBrowserWindow();
     if (!owner) return null;
-    const bounds = owner.getBounds();
+    const bounds = owner.getContentBounds();
     return {
       width: Math.max(1, Math.round(bounds.width)),
       height: Math.max(1, Math.round(bounds.height)),

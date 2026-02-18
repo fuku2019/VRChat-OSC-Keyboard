@@ -28,7 +28,6 @@ describe('handleTriggerInput', () => {
       lastV: 0.2,
       moved: false,
       dragging: false,
-      downSent: false,
     });
   });
 
@@ -79,7 +78,6 @@ describe('handleTriggerInput', () => {
     expect(state.triggerDragState[4]).toMatchObject({
       dragging: true,
       moved: true,
-      downSent: false,
     });
 
     handleTriggerInput(4, { triggerPressed: false }, null);
@@ -111,7 +109,7 @@ describe('handleTriggerInput', () => {
     expect(sendClickEvent).toHaveBeenNthCalledWith(2, 0.4, 0.4, 'mouseUp', 1);
   });
 
-  it('does not send duplicate mouseUp when releasing controller with downSent=false', async () => {
+  it('cleans state without sending extra click events on controller release', async () => {
     const { handleTriggerInput, releaseTriggerForController } = await import('./trigger.js');
     const { state } = await import('./state.js');
     const { sendClickEvent } = await import('./events.js');
@@ -119,7 +117,6 @@ describe('handleTriggerInput', () => {
 
     handleTriggerInput(7, { triggerPressed: true }, { u: 0.45, v: 0.45 });
     handleTriggerInput(7, { triggerPressed: true }, { u: 0.45, v: 0.5 });
-    expect(state.triggerDragState[7]?.downSent).toBe(false);
     expect(sendClickEvent).toHaveBeenCalledTimes(2);
 
     releaseTriggerForController(7, 0);

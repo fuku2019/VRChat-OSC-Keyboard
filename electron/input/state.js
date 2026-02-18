@@ -17,11 +17,10 @@ export const state = {
   lastMoveAtByController: {},
   lastTriggerPressedState: {},
   // Per-controller trigger press state:
-  // { startU, startV, lastU, lastV, dragging, moved, downSent }
-  // downSent can flip to false once drag-scroll starts and mouseUp(0) is sent.
+  // { startU, startV, lastU, lastV, dragging, moved }
   triggerDragState: {},
   windowSize: { width: 0, height: 0 },
-  windowScale: { devicePixelRatio: 1, zoomFactor: 1 },
+  windowScale: { zoomFactor: 1 },
   drag: {
     isDragging: false,
     draggingControllerId: null,
