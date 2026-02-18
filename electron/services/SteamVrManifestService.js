@@ -6,6 +6,11 @@ import { getAssetPath } from '../overlay/native.js';
 
 const MANIFEST_FILE_NAME = 'vrchat-osc-keyboard.vrmanifest';
 
+function normalizePathForComparison(targetPath) {
+  const normalized = path.normalize(path.resolve(targetPath));
+  return process.platform === 'win32' ? normalized.toLowerCase() : normalized;
+}
+
 function resolveSteamPathFromRegistry() {
   try {
     const output = execFileSync(
@@ -128,8 +133,9 @@ function ensureManifestPathInAppConfig(manifestPath) {
     ? appConfig.manifest_paths.filter((entry) => typeof entry === 'string')
     : [];
 
+  const targetPath = normalizePathForComparison(manifestPath);
   const hasManifest = currentPaths.some(
-    (entry) => path.normalize(entry) === path.normalize(manifestPath),
+    (entry) => normalizePathForComparison(entry) === targetPath,
   );
   if (hasManifest) {
     return { success: true, appConfigPath, updated: false };
@@ -160,8 +166,9 @@ function removeManifestPathFromAppConfig(manifestPath) {
     ? appConfig.manifest_paths.filter((entry) => typeof entry === 'string')
     : [];
 
+  const targetPath = normalizePathForComparison(manifestPath);
   const nextPaths = currentPaths.filter(
-    (entry) => path.normalize(entry) !== path.normalize(manifestPath),
+    (entry) => normalizePathForComparison(entry) !== targetPath,
   );
   if (nextPaths.length === currentPaths.length) {
     return { success: true, appConfigPath, updated: false };

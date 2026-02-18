@@ -35,6 +35,18 @@ import {
 const GITHUB_API_URL =
   'https://api.github.com/repos/fuku2019/VRC-OSC-Keyboard/releases/latest';
 
+export function isSafeExternalUrl(url) {
+  if (typeof url !== 'string' || !url.trim()) {
+    return false;
+  }
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === 'https:' || parsed.protocol === 'http:';
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Helper for semantic version comparison / セマンティックバージョン比較用ヘルパー
  */
@@ -140,6 +152,9 @@ export function registerIpcHandlers(APP_VERSION) {
   // Open external URL / 外部URLを開く
   ipcMain.handle('open-external', async (event, url) => {
     try {
+      if (!isSafeExternalUrl(url)) {
+        return { success: false, error: 'Invalid or unsupported URL' };
+      }
       await shell.openExternal(url);
       return { success: true };
     } catch (error) {

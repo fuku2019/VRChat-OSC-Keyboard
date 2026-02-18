@@ -18,6 +18,46 @@ let wss = null;
 let OSC_PORT = 9000;
 let ACTIVE_WS_PORT = null;
 
+function closeOscClient() {
+  if (oscClient && oscClient._socket) {
+    try {
+      oscClient.close();
+    } catch (e) {
+      console.warn('[OSC] Warning closing client:', e.message);
+    }
+  }
+  oscClient = null;
+}
+
+function closeWebSocketServer() {
+  if (wss) {
+    try {
+      wss.close();
+    } catch (e) {
+      console.warn('[WS] Warning closing server:', e.message);
+    }
+  }
+  wss = null;
+  ACTIVE_WS_PORT = null;
+}
+
+export function parseChatboxMessagePayload(data) {
+  if (!data || typeof data !== 'object') {
+    return { success: false, error: 'Invalid payload' };
+  }
+  if (typeof data.text !== 'string') {
+    return { success: false, error: 'text must be a string' };
+  }
+
+  const direct = data.direct !== undefined ? data.direct : true;
+  const sound = data.sound !== undefined ? data.sound : true;
+  if (typeof direct !== 'boolean' || typeof sound !== 'boolean') {
+    return { success: false, error: 'direct and sound must be booleans' };
+  }
+
+  return { success: true, args: [data.text, direct, sound] };
+}
+
 /**
  * Get current OSC port / 現在のOSCポートを取得
  */
@@ -44,17 +84,7 @@ export function updateOscClient(newPort) {
   OSC_PORT = newPort;
 
   // Close existing client / 既存のクライアントを閉じる
-  if (oscClient && oscClient._socket) {
-    try {
-      oscClient.close();
-    } catch (e) {
-      // Log warning but continue - old client may already be closed / 警告をログに出力するが続行 - 古いクライアントは既に閉じている可能性がある
-      console.warn(
-        '[OSC] Warning closing old client (may already be closed):',
-        e.message,
-      );
-    }
-  }
+  closeOscClient();
 
   // Create new client with updated port / 更新されたポートで新しいクライアントを作成
   oscClient = new Client(OSC_IP, OSC_PORT);
@@ -67,12 +97,16 @@ export function updateOscClient(newPort) {
 function tryStartWebSocket(port) {
   return new Promise((resolve) => {
     let resolved = false; // Prevent multiple resolves / 複数回のresolveを防ぐ
+    let timeoutId = null;
 
     const testWss = new WebSocketServer({ port, host: WS_HOST });
 
     const cleanup = (success, data) => {
       if (resolved) return;
       resolved = true;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
 
       if (!success && testWss) {
         try {
@@ -97,7 +131,7 @@ function tryStartWebSocket(port) {
     });
 
     // Timeout in case events don't fire / イベントが発火しない場合のタイムアウト
-    setTimeout(() => {
+    timeoutId = setTimeout(() => {
       cleanup(false, { success: false, error: 'Timeout' });
     }, 1000);
   });
@@ -109,6 +143,9 @@ function tryStartWebSocket(port) {
 export async function startBridge() {
   console.log('⚡ Starting OSC Bridge in Electron Main Process...');
   try {
+    // Ensure idempotent start and avoid stale resource leaks.
+    closeWebSocketServer();
+    closeOscClient();
     oscClient = new Client(OSC_IP, OSC_PORT);
 
     // Try ports from WS_PORT_START to WS_PORT_END / WS_PORT_STARTからWS_PORT_ENDまでポートを試行
@@ -129,19 +166,19 @@ export async function startBridge() {
           ws.on('message', async (message) => {
             try {
               const data = JSON.parse(message.toString());
-              // Allow empty string for clearing chatbox / チャットボックスをクリアするための空文字を許可
-              if (typeof data.text === 'string') {
-                // Default to direct=true, sound=true if not specified / 指定がない場合はdirect=true, sound=trueをデフォルトとする
-                const direct = data.direct !== undefined ? data.direct : true;
-                const sound = data.sound !== undefined ? data.sound : true;
-
-                await oscClient.send('/chatbox/input', [
-                  data.text,
-                  direct,
-                  sound,
-                ]);
-                ws.send(JSON.stringify({ success: true }));
+              const payload = parseChatboxMessagePayload(data);
+              if (!payload.success) {
+                ws.send(
+                  JSON.stringify({
+                    success: false,
+                    error: payload.error,
+                  }),
+                );
+                return;
               }
+
+              await oscClient.send('/chatbox/input', payload.args);
+              ws.send(JSON.stringify({ success: true }));
             } catch (e) {
               console.error('[OSC Bridge] Error:', e);
               ws.send(
@@ -163,6 +200,7 @@ export async function startBridge() {
 
     // All ports failed / すべてのポートが失敗
     console.error(`❌ All ports (${WS_PORT_START}-${WS_PORT_END}) are in use.`);
+    closeOscClient();
     const { dialog } = await import('electron');
     dialog.showErrorBox(
       'Port Unavailable / ポート使用不可',
@@ -170,6 +208,8 @@ export async function startBridge() {
     );
   } catch (err) {
     console.error('Failed to start bridge:', err);
+    closeWebSocketServer();
+    closeOscClient();
   }
 }
 
@@ -192,12 +232,6 @@ export async function sendTypingStatus(isTyping) {
  * Cleanup bridge resources / ブリッジリソースをクリーンアップ
  */
 export function cleanup() {
-  if (wss) wss.close();
-  if (oscClient && oscClient._socket) {
-    try {
-      oscClient.close();
-    } catch (e) {
-      console.warn('[OSC] Warning closing client on exit:', e.message);
-    }
-  }
+  closeWebSocketServer();
+  closeOscClient();
 }

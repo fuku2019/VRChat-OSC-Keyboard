@@ -3,7 +3,7 @@
  * IpcHandlersテスト - compareVersionsロジックに注目
  */
 import { describe, it, expect } from 'vitest';
-import { compareVersions } from './IpcHandlers.js';
+import { compareVersions, isSafeExternalUrl } from './IpcHandlers.js';
 
 describe('compareVersions / バージョン比較', () => {
   describe('basic comparison / 基本比較', () => {
@@ -93,5 +93,19 @@ describe('compareVersions / バージョン比較', () => {
       // Current: 1.3.4, Latest: 1.3.4 => same / 同じ
       expect(compareVersions('v1.3.4', 'v1.3.4')).toBe(0);
     });
+  });
+});
+
+describe('isSafeExternalUrl / 外部URL検証', () => {
+  it('allows only http/https URLs', () => {
+    expect(isSafeExternalUrl('https://example.com')).toBe(true);
+    expect(isSafeExternalUrl('http://example.com/path')).toBe(true);
+  });
+
+  it('rejects dangerous or invalid URLs', () => {
+    expect(isSafeExternalUrl('file:///C:/Windows/System32/calc.exe')).toBe(false);
+    expect(isSafeExternalUrl('javascript:alert(1)')).toBe(false);
+    expect(isSafeExternalUrl('')).toBe(false);
+    expect(isSafeExternalUrl('not-a-url')).toBe(false);
   });
 });
