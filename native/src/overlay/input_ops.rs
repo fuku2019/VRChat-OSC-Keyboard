@@ -1,7 +1,7 @@
 use napi_derive::napi;
 use openvr_sys as vr;
 use std::collections::BTreeSet;
-use std::ffi::{c_char, CStr, CString};
+use std::ffi::{c_char, CString};
 
 use super::errors::{input_error, require_fn};
 use super::manager::OverlayManager;
@@ -34,11 +34,10 @@ fn is_non_fatal_binding_info_error(err: vr::EVRInputError) -> bool {
 }
 
 fn read_c_buffer(buf: &[c_char]) -> String {
-    let ptr = buf.as_ptr();
-    if ptr.is_null() {
-        return String::new();
-    }
-    unsafe { CStr::from_ptr(ptr) }.to_string_lossy().trim().to_string()
+    // Safely scan for NUL within buffer bounds / バッファ境界内で安全にNULをスキャン
+    let bytes = unsafe { std::slice::from_raw_parts(buf.as_ptr() as *const u8, buf.len()) };
+    let len = bytes.iter().position(|&b| b == 0).unwrap_or(buf.len());
+    String::from_utf8_lossy(&bytes[..len]).trim().to_string()
 }
 
 fn get_binding_labels(
@@ -161,7 +160,7 @@ impl OverlayManager {
             )?;
         }
 
-        let mut cache = self.input_cache().borrow_mut();
+        let mut cache = self.borrow_input_cache_mut()?;
         cache.initialized = true;
         cache.action_set_handle = action_set_handle;
         cache.toggle_action_handle = toggle_action_handle;
@@ -178,7 +177,7 @@ impl OverlayManager {
     #[napi]
     pub fn poll_toggle_clicked(&self) -> napi::Result<bool> {
         let input = self.input()?;
-        let mut cache = self.input_cache().borrow_mut();
+        let mut cache = self.borrow_input_cache_mut()?;
         if !cache.initialized {
             return Err(napi::Error::from_reason("SteamVR input is not initialized"));
         }
@@ -200,7 +199,11 @@ impl OverlayManager {
         unsafe {
             input_error_if_needed(
                 "UpdateActionState",
-                update_action_state_fn(&mut active_set, std::mem::size_of::<vr::VRActiveActionSet_t>() as u32, 1),
+                update_action_state_fn(
+                    &mut active_set,
+                    std::mem::size_of::<vr::VRActiveActionSet_t>() as u32,
+                    1,
+                ),
             )?;
             input_error_if_needed(
                 "GetDigitalActionData",
@@ -238,7 +241,7 @@ impl OverlayManager {
     #[napi]
     pub fn open_binding_ui(&self, app_key: String, show_on_desktop: bool) -> napi::Result<()> {
         let input = self.input()?;
-        let cache = self.input_cache().borrow();
+        let cache = self.borrow_input_cache()?;
         if !cache.initialized {
             return Err(napi::Error::from_reason("SteamVR input is not initialized"));
         }
@@ -247,31 +250,25 @@ impl OverlayManager {
         if app_key.trim().is_empty() {
             return Err(napi::Error::from_reason("app key is required"));
         }
-        let app_key_ptr = to_cstring(&app_key, "app key")?.into_raw();
+        let app_key_cstring = to_cstring(&app_key, "app key")?;
 
-        let result = unsafe {
-            let res = input_error_if_needed(
+        unsafe {
+            input_error_if_needed(
                 "OpenBindingUI",
                 open_binding_ui_fn(
-                    app_key_ptr,
+                    app_key_cstring.as_ptr() as *mut c_char,
                     cache.action_set_handle,
                     vr::k_ulInvalidInputValueHandle,
                     show_on_desktop,
                 ),
-            );
-            if !app_key_ptr.is_null() {
-                let _ = CString::from_raw(app_key_ptr);
-            }
-            res
-        };
-
-        result
+            )
+        }
     }
 
     #[napi]
     pub fn get_current_bindings(&self) -> napi::Result<CurrentBindings> {
         let input = self.input()?;
-        let cache = self.input_cache().borrow();
+        let cache = self.borrow_input_cache()?;
         if !cache.initialized {
             return Ok(CurrentBindings {
                 initialized: false,
@@ -287,13 +284,16 @@ impl OverlayManager {
         let trigger_labels = get_binding_labels(input, cache.trigger_action_handle)?;
         let grip_labels = get_binding_labels(input, cache.grip_action_handle)?;
 
+        let trigger_bound = !trigger_labels.is_empty();
+        let grip_bound = !grip_labels.is_empty();
+
         Ok(CurrentBindings {
             initialized: true,
             toggleOverlay: toggle_labels,
-            triggerBindings: trigger_labels.clone(),
-            gripBindings: grip_labels.clone(),
-            triggerBound: !trigger_labels.is_empty(),
-            gripBound: !grip_labels.is_empty(),
+            triggerBindings: trigger_labels,
+            gripBindings: grip_labels,
+            triggerBound: trigger_bound,
+            gripBound: grip_bound,
         })
     }
 }

@@ -5,14 +5,14 @@ use super::constants::HMD_DEVICE_INDEX;
 use super::errors::{overlay_error, require_fn};
 use super::handles::overlay_handle;
 use super::manager::OverlayManager;
-use super::math::validate_matrix;
+use super::math::{hmd_matrix34_to_vec, validate_matrix};
 use super::types::OverlayRelativeTransform;
 
 #[napi]
 impl OverlayManager {
     #[napi]
     pub fn set_overlay_transform_hmd(&self, handle: i64, distance: f64) -> napi::Result<()> {
-        let overlay = self.overlay();
+        let overlay = self.overlay()?;
         let set_transform_fn = require_fn(
             overlay.SetOverlayTransformTrackedDeviceRelative,
             "SetOverlayTransformTrackedDeviceRelative",
@@ -23,8 +23,8 @@ impl OverlayManager {
             // 変換行列を作成: HMDの前方`distance`メートルにオーバーレイを配置
             let mut transform = vr::HmdMatrix34_t {
                 m: [
-                    [1.0, 0.0, 0.0, 0.0], // X axis
-                    [0.0, 1.0, 0.0, 0.0], // Y axis
+                    [1.0, 0.0, 0.0, 0.0],                // X axis
+                    [0.0, 1.0, 0.0, 0.0],                // Y axis
                     [0.0, 0.0, 1.0, -(distance as f32)], // Z axis (negative = in front)
                 ],
             };
@@ -44,9 +44,11 @@ impl OverlayManager {
 
     #[napi]
     pub fn get_overlay_transform_absolute(&self, handle: i64) -> napi::Result<Vec<f64>> {
-        let overlay = self.overlay();
-        let get_transform_fn =
-            require_fn(overlay.GetOverlayTransformAbsolute, "GetOverlayTransformAbsolute")?;
+        let overlay = self.overlay()?;
+        let get_transform_fn = require_fn(
+            overlay.GetOverlayTransformAbsolute,
+            "GetOverlayTransformAbsolute",
+        )?;
         let handle = overlay_handle(handle)?;
         unsafe {
             let mut origin = vr::ETrackingUniverseOrigin_TrackingUniverseStanding;
@@ -58,28 +60,7 @@ impl OverlayManager {
                 return Err(overlay_error("GetOverlayTransformAbsolute", overlay, err));
             }
 
-            // Convert 3x4 to 4x4 flattened (Row-Major for JS)
-            let m = transform.m;
-            let matrix = vec![
-                m[0][0] as f64,
-                m[0][1] as f64,
-                m[0][2] as f64,
-                m[0][3] as f64,
-                m[1][0] as f64,
-                m[1][1] as f64,
-                m[1][2] as f64,
-                m[1][3] as f64,
-                m[2][0] as f64,
-                m[2][1] as f64,
-                m[2][2] as f64,
-                m[2][3] as f64,
-                0.0,
-                0.0,
-                0.0,
-                1.0,
-            ];
-
-            Ok(matrix)
+            Ok(hmd_matrix34_to_vec(&transform.m))
         }
     }
 
@@ -91,9 +72,11 @@ impl OverlayManager {
     ) -> napi::Result<()> {
         validate_matrix(&matrix, "transform matrix")?;
 
-        let overlay = self.overlay();
-        let set_transform_fn =
-            require_fn(overlay.SetOverlayTransformAbsolute, "SetOverlayTransformAbsolute")?;
+        let overlay = self.overlay()?;
+        let set_transform_fn = require_fn(
+            overlay.SetOverlayTransformAbsolute,
+            "SetOverlayTransformAbsolute",
+        )?;
         let handle = overlay_handle(handle)?;
         unsafe {
             let mut transform = vr::HmdMatrix34_t {
@@ -138,7 +121,7 @@ impl OverlayManager {
 
     #[napi]
     pub fn get_overlay_transform_type(&self, handle: i64) -> napi::Result<u32> {
-        let overlay = self.overlay();
+        let overlay = self.overlay()?;
         let get_transform_type_fn =
             require_fn(overlay.GetOverlayTransformType, "GetOverlayTransformType")?;
         let handle = overlay_handle(handle)?;
@@ -159,7 +142,7 @@ impl OverlayManager {
         &self,
         handle: i64,
     ) -> napi::Result<OverlayRelativeTransform> {
-        let overlay = self.overlay();
+        let overlay = self.overlay()?;
         let get_transform_fn = require_fn(
             overlay.GetOverlayTransformTrackedDeviceRelative,
             "GetOverlayTransformTrackedDeviceRelative",
@@ -179,29 +162,9 @@ impl OverlayManager {
                 ));
             }
 
-            let m = transform.m;
-            let matrix = vec![
-                m[0][0] as f64,
-                m[0][1] as f64,
-                m[0][2] as f64,
-                m[0][3] as f64,
-                m[1][0] as f64,
-                m[1][1] as f64,
-                m[1][2] as f64,
-                m[1][3] as f64,
-                m[2][0] as f64,
-                m[2][1] as f64,
-                m[2][2] as f64,
-                m[2][3] as f64,
-                0.0,
-                0.0,
-                0.0,
-                1.0,
-            ];
-
             Ok(OverlayRelativeTransform {
                 trackedDeviceIndex: device_index,
-                transform: matrix,
+                transform: hmd_matrix34_to_vec(&transform.m),
             })
         }
     }

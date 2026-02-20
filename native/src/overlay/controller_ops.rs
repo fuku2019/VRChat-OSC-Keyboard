@@ -7,6 +7,7 @@ use super::constants::{
 };
 use super::errors::require_fn;
 use super::manager::OverlayManager;
+use super::math::hmd_matrix34_to_vec;
 use super::types::ControllerState;
 
 fn empty_controller_state() -> ControllerState {
@@ -44,7 +45,8 @@ impl OverlayManager {
 
     #[napi]
     pub fn get_controller_pose(&self, index: u32) -> napi::Result<Vec<f64>> {
-        // Get pose matrix for controller (4x4 flattened) / コントローラーのポーズ行列を取得 (4x4フラット)
+        // TODO: Add frame-level caching to avoid redundant GetDeviceToAbsoluteTrackingPose calls
+        // TODO: フレーム単位のキャッシュを追加し、重複する GetDeviceToAbsoluteTrackingPose 呼び出しを避ける
         let system = self.system()?;
         let get_pose_fn = require_fn(
             system.GetDeviceToAbsoluteTrackingPose,
@@ -55,7 +57,7 @@ impl OverlayManager {
             return Err(napi::Error::from_reason("Invalid device index"));
         }
 
-        let mut poses = self.poses_cache().borrow_mut();
+        let mut poses = self.borrow_poses_cache()?;
         let pose_count = vr::k_unMaxTrackedDeviceCount as usize;
         debug_assert_eq!(poses.len(), pose_count);
         if poses.len() != pose_count {
@@ -77,38 +79,14 @@ impl OverlayManager {
                 return Ok(vec![]); // Valid but not tracking/connected / 有効だが未トラッキング or 未接続
             }
 
-            let m = pose.mDeviceToAbsoluteTracking.m;
-            // Convert 3x4 to 4x4 flattened (column-major for WebGL/Three.js usually? No, let's return row-major and handle in JS)
-            // Three.js Matrix4.set() takes row-major (n11, n12, n13, n14, ...)
-
-            let matrix = vec![
-                m[0][0] as f64,
-                m[0][1] as f64,
-                m[0][2] as f64,
-                m[0][3] as f64,
-                m[1][0] as f64,
-                m[1][1] as f64,
-                m[1][2] as f64,
-                m[1][3] as f64,
-                m[2][0] as f64,
-                m[2][1] as f64,
-                m[2][2] as f64,
-                m[2][3] as f64,
-                0.0,
-                0.0,
-                0.0,
-                1.0,
-            ];
-
-            Ok(matrix)
+            Ok(hmd_matrix34_to_vec(&pose.mDeviceToAbsoluteTracking.m))
         }
     }
 
     #[napi]
     pub fn get_controller_state(&self, controller_index: u32) -> napi::Result<ControllerState> {
         let system = self.system()?;
-        let get_controller_state_fn =
-            require_fn(system.GetControllerState, "GetControllerState")?;
+        let get_controller_state_fn = require_fn(system.GetControllerState, "GetControllerState")?;
         let get_role_fn = system.GetControllerRoleForTrackedDeviceIndex;
 
         if controller_index >= vr::k_unMaxTrackedDeviceCount {
@@ -140,89 +118,73 @@ impl OverlayManager {
             };
 
             // SteamVR Input integration:
-            // If action manifest is active, legacy GetControllerState may no longer expose trigger/grip reliably.
+            // Read action data from the most recent UpdateActionState (called by poll_toggle_clicked).
+            // SteamVR Input 統合:
+            // poll_toggle_clicked で呼ばれた最新の UpdateActionState の結果からアクションデータを読み取る。
             if let Ok(input) = self.input() {
-                let cache = self.input_cache().borrow();
+                let cache = self.borrow_input_cache()?;
                 if cache.initialized {
-                    if let (Some(update_action_state_fn), Some(get_digital_action_data_fn)) =
-                        (input.UpdateActionState, input.GetDigitalActionData)
-                    {
-                        let mut active_set = vr::VRActiveActionSet_t {
-                            ulActionSet: cache.action_set_handle,
-                            ulRestrictedToDevice: vr::k_ulInvalidInputValueHandle,
-                            ulSecondaryActionSet: vr::k_ulInvalidActionSetHandle,
-                            unPadding: 0,
-                            nPriority: 0,
+                    if let Some(get_digital_action_data_fn) = input.GetDigitalActionData {
+                        let preferred_source = if let Some(get_role_fn) = get_role_fn {
+                            match get_role_fn(controller_index) {
+                                vr::ETrackedControllerRole_TrackedControllerRole_LeftHand => {
+                                    cache.left_hand_source
+                                }
+                                vr::ETrackedControllerRole_TrackedControllerRole_RightHand => {
+                                    cache.right_hand_source
+                                }
+                                _ => vr::k_ulInvalidInputValueHandle,
+                            }
+                        } else {
+                            vr::k_ulInvalidInputValueHandle
                         };
 
-                        let update_err = update_action_state_fn(
-                            &mut active_set,
-                            std::mem::size_of::<vr::VRActiveActionSet_t>() as u32,
-                            1,
-                        );
-                        if update_err == vr::EVRInputError_VRInputError_None {
-                            let preferred_source = if let Some(get_role_fn) = get_role_fn {
-                                match get_role_fn(controller_index) {
-                                    vr::ETrackedControllerRole_TrackedControllerRole_LeftHand => {
-                                        cache.left_hand_source
-                                    }
-                                    vr::ETrackedControllerRole_TrackedControllerRole_RightHand => {
-                                        cache.right_hand_source
-                                    }
-                                    _ => vr::k_ulInvalidInputValueHandle,
-                                }
-                            } else {
-                                vr::k_ulInvalidInputValueHandle
-                            };
+                        let sources = [preferred_source, vr::k_ulInvalidInputValueHandle];
+                        let source_count = if preferred_source == vr::k_ulInvalidInputValueHandle {
+                            1
+                        } else {
+                            2
+                        };
 
-                            let sources = [preferred_source, vr::k_ulInvalidInputValueHandle];
-                            let source_count = if preferred_source == vr::k_ulInvalidInputValueHandle
-                            {
-                                1
-                            } else {
-                                2
-                            };
-
-                            let mut trigger_overridden = false;
-                            let mut grip_overridden = false;
-                            for source in sources.iter().take(source_count).copied() {
-                                if !trigger_overridden {
-                                    let mut trigger_data: vr::InputDigitalActionData_t =
-                                        std::mem::zeroed();
-                                    let trigger_err = get_digital_action_data_fn(
-                                        cache.trigger_action_handle,
-                                        &mut trigger_data,
-                                        std::mem::size_of::<vr::InputDigitalActionData_t>() as u32,
-                                        source,
-                                    );
-                                    if trigger_err == vr::EVRInputError_VRInputError_None
-                                        && trigger_data.bActive
-                                    {
-                                        result.triggerPressed = trigger_data.bState;
-                                        trigger_overridden = true;
-                                    }
+                        let mut trigger_overridden = false;
+                        let mut grip_overridden = false;
+                        for source in sources.iter().take(source_count).copied() {
+                            if !trigger_overridden {
+                                let mut trigger_data: vr::InputDigitalActionData_t =
+                                    std::mem::zeroed();
+                                let trigger_err = get_digital_action_data_fn(
+                                    cache.trigger_action_handle,
+                                    &mut trigger_data,
+                                    std::mem::size_of::<vr::InputDigitalActionData_t>() as u32,
+                                    source,
+                                );
+                                if trigger_err == vr::EVRInputError_VRInputError_None
+                                    && trigger_data.bActive
+                                {
+                                    result.triggerPressed = trigger_data.bState;
+                                    trigger_overridden = true;
                                 }
+                            }
 
-                                if !grip_overridden {
-                                    let mut grip_data: vr::InputDigitalActionData_t =
-                                        std::mem::zeroed();
-                                    let grip_err = get_digital_action_data_fn(
-                                        cache.grip_action_handle,
-                                        &mut grip_data,
-                                        std::mem::size_of::<vr::InputDigitalActionData_t>() as u32,
-                                        source,
-                                    );
-                                    if grip_err == vr::EVRInputError_VRInputError_None
-                                        && grip_data.bActive
-                                    {
-                                        result.gripPressed = grip_data.bState;
-                                        grip_overridden = true;
-                                    }
+                            if !grip_overridden {
+                                let mut grip_data: vr::InputDigitalActionData_t =
+                                    std::mem::zeroed();
+                                let grip_err = get_digital_action_data_fn(
+                                    cache.grip_action_handle,
+                                    &mut grip_data,
+                                    std::mem::size_of::<vr::InputDigitalActionData_t>() as u32,
+                                    source,
+                                );
+                                if grip_err == vr::EVRInputError_VRInputError_None
+                                    && grip_data.bActive
+                                {
+                                    result.gripPressed = grip_data.bState;
+                                    grip_overridden = true;
                                 }
+                            }
 
-                                if trigger_overridden && grip_overridden {
-                                    break;
-                                }
+                            if trigger_overridden && grip_overridden {
+                                break;
                             }
                         }
                     }
