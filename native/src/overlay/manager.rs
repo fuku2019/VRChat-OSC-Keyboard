@@ -22,15 +22,14 @@ static VR_INIT_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
 
 fn create_poses_cache() -> Vec<vr::TrackedDevicePose_t> {
     let mut poses = Vec::with_capacity(vr::k_unMaxTrackedDeviceCount as usize);
-    poses.resize_with(
-        vr::k_unMaxTrackedDeviceCount as usize,
-        || unsafe { std::mem::zeroed() },
-    );
+    poses.resize_with(vr::k_unMaxTrackedDeviceCount as usize, || unsafe {
+        std::mem::zeroed()
+    });
     poses
 }
 
 struct VrContext {
-    overlay: NonNull<vr::VR_IVROverlay_FnTable>,
+    overlay: Option<NonNull<vr::VR_IVROverlay_FnTable>>,
     system: Option<NonNull<vr::VR_IVRSystem_FnTable>>,
     input: Option<NonNull<vr::VR_IVRInput_FnTable>>,
 }
@@ -80,12 +79,18 @@ pub struct OverlayManager {
 }
 
 impl OverlayManager {
-    pub(super) fn overlay(&self) -> &vr::VR_IVROverlay_FnTable {
-        unsafe { self.context.overlay.as_ref() }
+    pub(super) fn overlay(&self) -> napi::Result<&vr::VR_IVROverlay_FnTable> {
+        let ptr = self
+            .context
+            .overlay
+            .ok_or_else(|| napi::Error::from_reason("Overlay interface is null"))?;
+        Ok(unsafe { ptr.as_ref() })
     }
 
-    pub(super) fn overlay_ptr(&self) -> NonNull<vr::VR_IVROverlay_FnTable> {
-        self.context.overlay
+    pub(super) fn overlay_ptr(&self) -> napi::Result<NonNull<vr::VR_IVROverlay_FnTable>> {
+        self.context
+            .overlay
+            .ok_or_else(|| napi::Error::from_reason("Overlay interface is null"))
     }
 
     pub(super) fn system(&self) -> napi::Result<&vr::VR_IVRSystem_FnTable> {
@@ -100,8 +105,12 @@ impl OverlayManager {
         self.d3d11.as_mut()
     }
 
-    pub(super) fn poses_cache(&self) -> &RefCell<Vec<vr::TrackedDevicePose_t>> {
-        &self.poses_cache
+    pub(super) fn borrow_poses_cache(
+        &self,
+    ) -> napi::Result<std::cell::RefMut<'_, Vec<vr::TrackedDevicePose_t>>> {
+        self.poses_cache
+            .try_borrow_mut()
+            .map_err(|_| napi::Error::from_reason("poses_cache is already borrowed"))
     }
 
     pub(super) fn input(&self) -> napi::Result<&vr::VR_IVRInput_FnTable> {
@@ -112,8 +121,18 @@ impl OverlayManager {
         Ok(unsafe { ptr.as_ref() })
     }
 
-    pub(super) fn input_cache(&self) -> &RefCell<InputActionCache> {
-        &self.input_cache
+    pub(super) fn borrow_input_cache(&self) -> napi::Result<std::cell::Ref<'_, InputActionCache>> {
+        self.input_cache
+            .try_borrow()
+            .map_err(|_| napi::Error::from_reason("input_cache is already borrowed"))
+    }
+
+    pub(super) fn borrow_input_cache_mut(
+        &self,
+    ) -> napi::Result<std::cell::RefMut<'_, InputActionCache>> {
+        self.input_cache
+            .try_borrow_mut()
+            .map_err(|_| napi::Error::from_reason("input_cache is already mutably borrowed"))
     }
 }
 
@@ -183,8 +202,7 @@ impl OverlayManager {
             let system_raw = vr::VR_GetGenericInterface(system_ver.as_ptr(), &mut error)
                 as *mut vr::VR_IVRSystem_FnTable;
 
-            let system_ptr = if system_raw.is_null() || error != vr::EVRInitError_VRInitError_None
-            {
+            let system_ptr = if system_raw.is_null() || error != vr::EVRInitError_VRInitError_None {
                 // System interface is not mandatory but kept // Systemインターフェースは必須ではないが取っておく
                 // Error handling omitted // エラーハンドリングは省略
                 None
@@ -203,14 +221,25 @@ impl OverlayManager {
                 NonNull::new(input_raw)
             };
 
-            VR_INIT_COUNT.fetch_add(1, Ordering::SeqCst);
-
             // Initialize D3D11 device for texture sharing / テクスチャ共有用のD3D11デバイスを初期化
-            let d3d11_ctx = d3d11::init().ok();
+            let d3d11_ctx = match d3d11::init() {
+                Ok(ctx) => Some(ctx),
+                Err(e) => {
+                    eprintln!(
+                        "[vr-overlay-native] D3D11 init failed (falling back to raw): {}",
+                        e
+                    );
+                    None
+                }
+            };
+
+            // Increment after all failable steps so early return won't leave stale count
+            // 失敗しうる処理の後にインクリメントし、途中returnでカウンタが不整合にならないようにする
+            VR_INIT_COUNT.fetch_add(1, Ordering::SeqCst);
 
             Ok(OverlayManager {
                 context: VrContext {
-                    overlay: overlay_ptr,
+                    overlay: Some(overlay_ptr),
                     system: system_ptr,
                     input: input_ptr,
                 },
@@ -226,21 +255,36 @@ impl OverlayManager {
 
 impl Drop for OverlayManager {
     fn drop(&mut self) {
+        // Clear pointers before VR shutdown to prevent dangling access
+        // VR シャットダウン前にポインタをクリアしダングリングアクセスを防止
+        self.context.overlay = None;
+        self.context.system = None;
+        self.context.input = None;
+
+        // Drop D3D11 resources before VR shutdown
+        // VR シャットダウン前に D3D11 リソースを解放
+        self.d3d11 = None;
+
         let init_lock = VR_INIT_LOCK.get_or_init(|| Mutex::new(()));
         let _guard = match init_lock.lock() {
             Ok(guard) => guard,
             Err(poisoned) => poisoned.into_inner(),
         };
 
-        let prev = VR_INIT_COUNT.load(Ordering::SeqCst);
-        if prev == 0 {
-            debug_assert!(false, "VR_INIT_COUNT underflow");
-            return;
-        }
+        // Atomically decrement; abort if already zero to prevent underflow
+        // アトミックにデクリメント。既にゼロならアンダーフロー防止のため中断
+        let result = VR_INIT_COUNT.fetch_update(Ordering::SeqCst, Ordering::SeqCst, |count| {
+            if count == 0 {
+                None
+            } else {
+                Some(count - 1)
+            }
+        });
 
-        let prev = VR_INIT_COUNT.fetch_sub(1, Ordering::SeqCst);
-        if prev == 1 {
-            unsafe { vr::VR_ShutdownInternal() };
+        match result {
+            Ok(1) => unsafe { vr::VR_ShutdownInternal() },
+            Err(_) => debug_assert!(false, "VR_INIT_COUNT underflow"),
+            _ => {}
         }
     }
 }

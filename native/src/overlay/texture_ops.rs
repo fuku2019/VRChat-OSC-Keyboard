@@ -20,7 +20,7 @@ impl OverlayManager {
         let c_path = CString::new(file_path.as_str())
             .map_err(|_| napi::Error::from_reason("File path contains null byte"))?;
 
-        let overlay = self.overlay();
+        let overlay = self.overlay()?;
         let set_from_file_fn = require_fn(overlay.SetOverlayFromFile, "SetOverlayFromFile")?;
         let handle = overlay_handle(handle)?;
         unsafe {
@@ -46,17 +46,19 @@ impl OverlayManager {
         width: u32,
         height: u32,
     ) -> napi::Result<()> {
-        // Set overlay texture from raw RGBA buffer / RGBAバッファからテクスチャを設定
-        // Buffer from Electron's capturePage().toBitmap() / ElectronのcapturePage().toBitmap()からのバッファ
+        // NOTE: This method expects RGBA-ordered buffer. If the source is BGRA
+        // (e.g. Electron capturePage().toBitmap() on Windows), colors will be
+        // inverted. Use set_overlay_textures_d3d11() for automatic conversion.
+        // 注意: このメソッドはRGBA順序のバッファを期待する。ソースがBGRAの場合
+        // (例: WindowsのElectron capturePage().toBitmap())、色が反転する。
+        // 自動変換にはset_overlay_textures_d3d11()を使用すること。
         if width == 0 || height == 0 {
             return Ok(());
         }
-        let overlay = self.overlay();
+        let overlay = self.overlay()?;
         let set_raw_fn = require_fn(overlay.SetOverlayRaw, "SetOverlayRaw")?;
         let handle = overlay_handle(handle)?;
         unsafe {
-            // Buffer is RGBA, 4 bytes per pixel / バッファはRGBA、ピクセルあたり4バイト
-            // Note: Electron capturePage().toBitmap() on Windows is typically BGRA.
             let expected_size = expected_rgba_size(width, height)?;
 
             if buffer.len() != expected_size {
@@ -98,7 +100,7 @@ impl OverlayManager {
         if width == 0 || height == 0 {
             return Ok(());
         }
-        let overlay_ptr = self.overlay_ptr();
+        let overlay_ptr = self.overlay_ptr()?;
         let set_texture_fn = {
             let overlay = unsafe { overlay_ptr.as_ref() };
             require_fn(overlay.SetOverlayTexture, "SetOverlayTexture")?
@@ -132,7 +134,7 @@ impl OverlayManager {
                 .clone();
 
             // Upload BGRA bytes and run GPU conversion pass
-            d3d11.upload_bgra_buffer(buffer.as_ptr(), row_pitch, width, height)?;
+            d3d11.upload_bgra_buffer(buffer.as_ptr(), buffer.len(), row_pitch, width, height)?;
             d3d11.convert_bgra_to_rgba(width, height)?;
 
             // Set overlay texture using SetOverlayTexture / SetOverlayTextureを使用してオーバーレイテクスチャを設定
@@ -155,7 +157,7 @@ impl OverlayManager {
                 ));
             }
 
-            if back_handle.as_u64() != 0 {
+            if back_handle.as_u64() != vr::k_ulOverlayHandleInvalid {
                 let err = set_texture_fn(back_handle.as_u64(), &mut vr_texture);
                 if err != vr::EVROverlayError_VROverlayError_None {
                     return Err(overlay_error(

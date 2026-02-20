@@ -18,7 +18,7 @@ impl OverlayManager {
             .map_err(|_| napi::Error::from_reason("Overlay name contains null byte"))?;
         let mut handle = vr::k_ulOverlayHandleInvalid;
 
-        let overlay = self.overlay();
+        let overlay = self.overlay()?;
         let create_overlay_fn = require_fn(overlay.CreateOverlay, "CreateOverlay")?;
         unsafe {
             let err = create_overlay_fn(
@@ -38,7 +38,7 @@ impl OverlayManager {
 
     #[napi]
     pub fn destroy_overlay(&self, handle: i64) -> napi::Result<()> {
-        let overlay = self.overlay();
+        let overlay = self.overlay()?;
         let destroy_overlay_fn = require_fn(overlay.DestroyOverlay, "DestroyOverlay")?;
         let handle = overlay_handle(handle)?;
         unsafe {
@@ -52,7 +52,7 @@ impl OverlayManager {
 
     #[napi]
     pub fn show_overlay(&self, handle: i64) -> napi::Result<()> {
-        let overlay = self.overlay();
+        let overlay = self.overlay()?;
         let show_overlay_fn = require_fn(overlay.ShowOverlay, "ShowOverlay")?;
         let handle = overlay_handle(handle)?;
         unsafe {
@@ -66,7 +66,7 @@ impl OverlayManager {
 
     #[napi]
     pub fn hide_overlay(&self, handle: i64) -> napi::Result<()> {
-        let overlay = self.overlay();
+        let overlay = self.overlay()?;
         let hide_overlay_fn = require_fn(overlay.HideOverlay, "HideOverlay")?;
         let handle = overlay_handle(handle)?;
         unsafe {
@@ -80,7 +80,7 @@ impl OverlayManager {
 
     #[napi]
     pub fn toggle_overlay(&self, handle: i64) -> napi::Result<()> {
-        let overlay = self.overlay();
+        let overlay = self.overlay()?;
         let is_visible_fn = require_fn(overlay.IsOverlayVisible, "IsOverlayVisible")?;
         let show_overlay_fn = require_fn(overlay.ShowOverlay, "ShowOverlay")?;
         let hide_overlay_fn = require_fn(overlay.HideOverlay, "HideOverlay")?;
@@ -104,7 +104,7 @@ impl OverlayManager {
 
     #[napi]
     pub fn set_overlay_width(&self, handle: i64, width_meters: f64) -> napi::Result<()> {
-        let overlay = self.overlay();
+        let overlay = self.overlay()?;
         let set_width_fn = require_fn(overlay.SetOverlayWidthInMeters, "SetOverlayWidthInMeters")?;
         let handle = overlay_handle(handle)?;
         unsafe {
@@ -125,9 +125,8 @@ impl OverlayManager {
         u_max: f64,
         v_max: f64,
     ) -> napi::Result<()> {
-        let overlay = self.overlay();
-        let set_bounds_fn =
-            require_fn(overlay.SetOverlayTextureBounds, "SetOverlayTextureBounds")?;
+        let overlay = self.overlay()?;
+        let set_bounds_fn = require_fn(overlay.SetOverlayTextureBounds, "SetOverlayTextureBounds")?;
         let handle = overlay_handle(handle)?;
         unsafe {
             let mut bounds = vr::VRTextureBounds_t {
@@ -152,7 +151,7 @@ impl OverlayManager {
         source: Vec<f64>,
         direction: Vec<f64>,
     ) -> napi::Result<Option<IntersectionResult>> {
-        let overlay = self.overlay();
+        let overlay = self.overlay()?;
         let compute_intersection_fn = require_fn(
             overlay.ComputeOverlayIntersection,
             "ComputeOverlayIntersection",
@@ -174,8 +173,7 @@ impl OverlayManager {
                 fDistance: 0.0,
             };
 
-            let success =
-                compute_intersection_fn(handle.as_u64(), &mut params, &mut results);
+            let success = compute_intersection_fn(handle.as_u64(), &mut params, &mut results);
 
             if success {
                 Ok(Some(IntersectionResult {

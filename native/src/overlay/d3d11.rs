@@ -10,8 +10,8 @@ use windows::Win32::Graphics::Direct3D11::{
     ID3D11RenderTargetView, ID3D11Resource, ID3D11SamplerState, ID3D11ShaderResourceView,
     ID3D11Texture2D, ID3D11VertexShader, D3D11_BIND_RENDER_TARGET, D3D11_BIND_SHADER_RESOURCE,
     D3D11_CPU_ACCESS_READ, D3D11_CPU_ACCESS_WRITE, D3D11_CREATE_DEVICE_FLAG,
-    D3D11_FILTER_MIN_MAG_MIP_POINT, D3D11_MAP_READ, D3D11_MAP_WRITE_DISCARD,
-    D3D11_MAPPED_SUBRESOURCE, D3D11_SAMPLER_DESC, D3D11_SDK_VERSION, D3D11_TEXTURE2D_DESC,
+    D3D11_FILTER_MIN_MAG_MIP_POINT, D3D11_MAPPED_SUBRESOURCE, D3D11_MAP_READ,
+    D3D11_MAP_WRITE_DISCARD, D3D11_SAMPLER_DESC, D3D11_SDK_VERSION, D3D11_TEXTURE2D_DESC,
     D3D11_TEXTURE_ADDRESS_CLAMP, D3D11_USAGE_DEFAULT, D3D11_USAGE_DYNAMIC, D3D11_USAGE_STAGING,
     D3D11_VIEWPORT,
 };
@@ -20,20 +20,27 @@ use windows::Win32::Graphics::Dxgi::Common::{
 };
 
 pub struct D3D11Context {
+    // Core device / コアデバイス
     pub device: ID3D11Device,
     pub context: ID3D11DeviceContext,
+
+    // Texture resources / テクスチャリソース
     pub staging_bgra_texture: Option<ID3D11Texture2D>,
     pub output_rgba_texture: Option<ID3D11Texture2D>,
     pub bgra_srv: Option<ID3D11ShaderResourceView>,
     pub rgba_rtv: Option<ID3D11RenderTargetView>,
+    pub texture_width: u32,
+    pub texture_height: u32,
+
+    // Shader pipeline / シェーダパイプライン
     pub vertex_shader: Option<ID3D11VertexShader>,
     pub pixel_shader_passthrough: Option<ID3D11PixelShader>,
     pub pixel_shader_swizzle: Option<ID3D11PixelShader>,
+    pub sampler_state: Option<ID3D11SamplerState>,
+
+    // Channel probe state / チャネルプローブ状態
     pub swap_rb_required: bool,
     pub channel_probe_done: bool,
-    pub sampler_state: Option<ID3D11SamplerState>,
-    pub texture_width: u32,
-    pub texture_height: u32,
 }
 
 impl D3D11Context {
@@ -72,7 +79,10 @@ impl D3D11Context {
             MipLevels: 1,
             ArraySize: 1,
             Format: DXGI_FORMAT_B8G8R8A8_UNORM,
-            SampleDesc: DXGI_SAMPLE_DESC { Count: 1, Quality: 0 },
+            SampleDesc: DXGI_SAMPLE_DESC {
+                Count: 1,
+                Quality: 0,
+            },
             Usage: D3D11_USAGE_DYNAMIC,
             BindFlags: D3D11_BIND_SHADER_RESOURCE.0 as u32,
             CPUAccessFlags: D3D11_CPU_ACCESS_WRITE.0 as u32,
@@ -84,7 +94,10 @@ impl D3D11Context {
             MipLevels: 1,
             ArraySize: 1,
             Format: DXGI_FORMAT_R8G8B8A8_UNORM,
-            SampleDesc: DXGI_SAMPLE_DESC { Count: 1, Quality: 0 },
+            SampleDesc: DXGI_SAMPLE_DESC {
+                Count: 1,
+                Quality: 0,
+            },
             Usage: D3D11_USAGE_DEFAULT,
             BindFlags: (D3D11_BIND_SHADER_RESOURCE.0 | D3D11_BIND_RENDER_TARGET.0) as u32,
             CPUAccessFlags: 0,
@@ -96,14 +109,13 @@ impl D3D11Context {
         unsafe {
             self.device
                 .CreateTexture2D(&staging_desc, None, Some(&mut staging_texture))
-                .map_err(|e| napi::Error::from_reason(format!("CreateTexture2D failed: {:?}", e)))?;
+                .map_err(|e| {
+                    napi::Error::from_reason(format!("CreateTexture2D failed: {:?}", e))
+                })?;
             self.device
                 .CreateTexture2D(&output_desc, None, Some(&mut output_texture))
                 .map_err(|e| {
-                    napi::Error::from_reason(format!(
-                        "Create output texture failed: {:?}",
-                        e
-                    ))
+                    napi::Error::from_reason(format!("Create output texture failed: {:?}", e))
                 })?;
         }
 
@@ -159,13 +171,26 @@ impl D3D11Context {
     pub fn upload_bgra_buffer(
         &self,
         src: *const u8,
+        src_len: usize,
         src_row_pitch: usize,
         width: u32,
         height: u32,
     ) -> napi::Result<()> {
-        let texture = self.staging_bgra_texture.as_ref().ok_or_else(|| {
-            napi::Error::from_reason("Staging BGRA texture is not initialized")
-        })?;
+        // Validate source buffer bounds / ソースバッファの境界を検証
+        let required_len = (height as usize)
+            .checked_mul(src_row_pitch)
+            .ok_or_else(|| napi::Error::from_reason("Source buffer size overflow"))?;
+        if src_len < required_len {
+            return Err(napi::Error::from_reason(format!(
+                "Source buffer too small: need {} bytes, got {}",
+                required_len, src_len
+            )));
+        }
+
+        let texture = self
+            .staging_bgra_texture
+            .as_ref()
+            .ok_or_else(|| napi::Error::from_reason("Staging BGRA texture is not initialized"))?;
         let resource: ID3D11Resource = texture.cast().map_err(|e| {
             napi::Error::from_reason(format!(
                 "Staging texture cast to ID3D11Resource failed: {:?}",
@@ -208,6 +233,13 @@ impl D3D11Context {
         Ok(())
     }
 
+    /// WARNING: This method modifies D3D11 pipeline state (IA topology, VS, PS,
+    /// sampler, viewport, RTV). No save/restore is performed. If other D3D11
+    /// consumers are added in the future, a state save/restore pattern should
+    /// be introduced.
+    /// 警告: このメソッドはD3D11パイプラインステート (IA topology, VS, PS, sampler,
+    /// viewport, RTV) を変更する。保存・復元は行わない。将来他のD3D11利用者が
+    /// 追加された場合、ステート保存・復元パターンを導入すること。
     pub fn convert_bgra_to_rgba(&self, width: u32, height: u32) -> napi::Result<()> {
         let rtv = self
             .rgba_rtv
@@ -232,7 +264,9 @@ impl D3D11Context {
         } else {
             self.pixel_shader_passthrough
                 .as_ref()
-                .ok_or_else(|| napi::Error::from_reason("Passthrough pixel shader is not initialized"))?
+                .ok_or_else(|| {
+                    napi::Error::from_reason("Passthrough pixel shader is not initialized")
+                })?
                 .clone()
         };
         let sampler = self
@@ -251,26 +285,27 @@ impl D3D11Context {
         };
 
         unsafe {
-            self.context
-                .OMSetRenderTargets(Some(&[Some(rtv)]), None);
+            self.context.OMSetRenderTargets(Some(&[Some(rtv)]), None);
             self.context.RSSetViewports(Some(&[viewport]));
             self.context
                 .IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
             self.context.VSSetShader(&vs, None);
             self.context.PSSetShader(&ps, None);
-            self.context
-                .PSSetShaderResources(0, Some(&[Some(srv)]));
-            self.context
-                .PSSetSamplers(0, Some(&[Some(sampler)]));
+            self.context.PSSetShaderResources(0, Some(&[Some(srv)]));
+            self.context.PSSetSamplers(0, Some(&[Some(sampler)]));
             self.context.Draw(3, 0);
 
             // Unbind SRV to avoid binding hazards on subsequent frames.
+            // Unbind RTV to prevent stale references / RTV をアンバインドして古参照を防止
             self.context.PSSetShaderResources(0, Some(&[None]));
+            self.context.OMSetRenderTargets(None, None);
         }
 
         Ok(())
     }
 
+    // TODO: Replace runtime D3DCompile with precompiled CSO bytecode using include_bytes!
+    // TODO: ランタイム D3DCompile をプリコンパイル済み CSO バイトコード (include_bytes!) に置換する
     fn ensure_shaders(&mut self) -> napi::Result<()> {
         if self.vertex_shader.is_some()
             && self.pixel_shader_passthrough.is_some()
@@ -341,29 +376,29 @@ float4 main(float4 pos : SV_POSITION, float2 uv : TEXCOORD0) : SV_TARGET {
 
         unsafe {
             self.device
-                .CreateVertexShader(
-                    &vs_blob,
-                    None,
-                    Some(&mut vertex_shader),
-                )
-                .map_err(|e| napi::Error::from_reason(format!("CreateVertexShader failed: {:?}", e)))?;
+                .CreateVertexShader(&vs_blob, None, Some(&mut vertex_shader))
+                .map_err(|e| {
+                    napi::Error::from_reason(format!("CreateVertexShader failed: {:?}", e))
+                })?;
             self.device
                 .CreatePixelShader(
                     &ps_passthrough_blob,
                     None,
                     Some(&mut pixel_shader_passthrough),
                 )
-                .map_err(|e| napi::Error::from_reason(format!("CreatePixelShader failed: {:?}", e)))?;
+                .map_err(|e| {
+                    napi::Error::from_reason(format!("CreatePixelShader failed: {:?}", e))
+                })?;
             self.device
-                .CreatePixelShader(
-                    &ps_swizzle_blob,
-                    None,
-                    Some(&mut pixel_shader_swizzle),
-                )
-                .map_err(|e| napi::Error::from_reason(format!("CreatePixelShader failed: {:?}", e)))?;
+                .CreatePixelShader(&ps_swizzle_blob, None, Some(&mut pixel_shader_swizzle))
+                .map_err(|e| {
+                    napi::Error::from_reason(format!("CreatePixelShader failed: {:?}", e))
+                })?;
             self.device
                 .CreateSamplerState(&sampler_desc, Some(&mut sampler_state))
-                .map_err(|e| napi::Error::from_reason(format!("CreateSamplerState failed: {:?}", e)))?;
+                .map_err(|e| {
+                    napi::Error::from_reason(format!("CreateSamplerState failed: {:?}", e))
+                })?;
         }
 
         self.vertex_shader = vertex_shader;
@@ -399,7 +434,10 @@ float4 main(float4 pos : SV_POSITION, float2 uv : TEXCOORD0) : SV_TARGET {
             MipLevels: 1,
             ArraySize: 1,
             Format: DXGI_FORMAT_B8G8R8A8_UNORM,
-            SampleDesc: DXGI_SAMPLE_DESC { Count: 1, Quality: 0 },
+            SampleDesc: DXGI_SAMPLE_DESC {
+                Count: 1,
+                Quality: 0,
+            },
             Usage: D3D11_USAGE_DYNAMIC,
             BindFlags: D3D11_BIND_SHADER_RESOURCE.0 as u32,
             CPUAccessFlags: D3D11_CPU_ACCESS_WRITE.0 as u32,
@@ -411,7 +449,10 @@ float4 main(float4 pos : SV_POSITION, float2 uv : TEXCOORD0) : SV_TARGET {
             MipLevels: 1,
             ArraySize: 1,
             Format: DXGI_FORMAT_R8G8B8A8_UNORM,
-            SampleDesc: DXGI_SAMPLE_DESC { Count: 1, Quality: 0 },
+            SampleDesc: DXGI_SAMPLE_DESC {
+                Count: 1,
+                Quality: 0,
+            },
             Usage: D3D11_USAGE_DEFAULT,
             BindFlags: D3D11_BIND_RENDER_TARGET.0 as u32,
             CPUAccessFlags: 0,
@@ -423,7 +464,10 @@ float4 main(float4 pos : SV_POSITION, float2 uv : TEXCOORD0) : SV_TARGET {
             MipLevels: 1,
             ArraySize: 1,
             Format: DXGI_FORMAT_R8G8B8A8_UNORM,
-            SampleDesc: DXGI_SAMPLE_DESC { Count: 1, Quality: 0 },
+            SampleDesc: DXGI_SAMPLE_DESC {
+                Count: 1,
+                Quality: 0,
+            },
             Usage: D3D11_USAGE_STAGING,
             BindFlags: 0,
             CPUAccessFlags: D3D11_CPU_ACCESS_READ.0 as u32,
@@ -436,28 +480,43 @@ float4 main(float4 pos : SV_POSITION, float2 uv : TEXCOORD0) : SV_TARGET {
         unsafe {
             self.device
                 .CreateTexture2D(&input_desc, None, Some(&mut input_tex))
-                .map_err(|e| napi::Error::from_reason(format!("Probe input texture creation failed: {:?}", e)))?;
+                .map_err(|e| {
+                    napi::Error::from_reason(format!(
+                        "Probe input texture creation failed: {:?}",
+                        e
+                    ))
+                })?;
             self.device
                 .CreateTexture2D(&output_desc, None, Some(&mut output_tex))
-                .map_err(|e| napi::Error::from_reason(format!("Probe output texture creation failed: {:?}", e)))?;
+                .map_err(|e| {
+                    napi::Error::from_reason(format!(
+                        "Probe output texture creation failed: {:?}",
+                        e
+                    ))
+                })?;
             self.device
                 .CreateTexture2D(&readback_desc, None, Some(&mut readback_tex))
-                .map_err(|e| napi::Error::from_reason(format!("Probe readback texture creation failed: {:?}", e)))?;
+                .map_err(|e| {
+                    napi::Error::from_reason(format!(
+                        "Probe readback texture creation failed: {:?}",
+                        e
+                    ))
+                })?;
         }
 
-        let input_tex = input_tex
-            .ok_or_else(|| napi::Error::from_reason("Probe input texture is null"))?;
-        let output_tex = output_tex
-            .ok_or_else(|| napi::Error::from_reason("Probe output texture is null"))?;
+        let input_tex =
+            input_tex.ok_or_else(|| napi::Error::from_reason("Probe input texture is null"))?;
+        let output_tex =
+            output_tex.ok_or_else(|| napi::Error::from_reason("Probe output texture is null"))?;
         let readback_tex = readback_tex
             .ok_or_else(|| napi::Error::from_reason("Probe readback texture is null"))?;
 
-        let input_resource: ID3D11Resource = input_tex.cast().map_err(|e| {
-            napi::Error::from_reason(format!("Probe input cast failed: {:?}", e))
-        })?;
-        let output_resource: ID3D11Resource = output_tex.cast().map_err(|e| {
-            napi::Error::from_reason(format!("Probe output cast failed: {:?}", e))
-        })?;
+        let input_resource: ID3D11Resource = input_tex
+            .cast()
+            .map_err(|e| napi::Error::from_reason(format!("Probe input cast failed: {:?}", e)))?;
+        let output_resource: ID3D11Resource = output_tex
+            .cast()
+            .map_err(|e| napi::Error::from_reason(format!("Probe output cast failed: {:?}", e)))?;
         let readback_resource: ID3D11Resource = readback_tex.cast().map_err(|e| {
             napi::Error::from_reason(format!("Probe readback cast failed: {:?}", e))
         })?;
@@ -467,10 +526,14 @@ float4 main(float4 pos : SV_POSITION, float2 uv : TEXCOORD0) : SV_TARGET {
         unsafe {
             self.device
                 .CreateShaderResourceView(&input_resource, None, Some(&mut probe_srv))
-                .map_err(|e| napi::Error::from_reason(format!("Probe SRV creation failed: {:?}", e)))?;
+                .map_err(|e| {
+                    napi::Error::from_reason(format!("Probe SRV creation failed: {:?}", e))
+                })?;
             self.device
                 .CreateRenderTargetView(&output_resource, None, Some(&mut probe_rtv))
-                .map_err(|e| napi::Error::from_reason(format!("Probe RTV creation failed: {:?}", e)))?;
+                .map_err(|e| {
+                    napi::Error::from_reason(format!("Probe RTV creation failed: {:?}", e))
+                })?;
         }
         let probe_srv = probe_srv.ok_or_else(|| napi::Error::from_reason("Probe SRV is null"))?;
         let probe_rtv = probe_rtv.ok_or_else(|| napi::Error::from_reason("Probe RTV is null"))?;
@@ -478,12 +541,22 @@ float4 main(float4 pos : SV_POSITION, float2 uv : TEXCOORD0) : SV_TARGET {
         unsafe {
             let mut mapped = D3D11_MAPPED_SUBRESOURCE::default();
             self.context
-                .Map(&input_resource, 0, D3D11_MAP_WRITE_DISCARD, 0, Some(&mut mapped))
-                .map_err(|e| napi::Error::from_reason(format!("Probe input map failed: {:?}", e)))?;
+                .Map(
+                    &input_resource,
+                    0,
+                    D3D11_MAP_WRITE_DISCARD,
+                    0,
+                    Some(&mut mapped),
+                )
+                .map_err(|e| {
+                    napi::Error::from_reason(format!("Probe input map failed: {:?}", e))
+                })?;
             let dst = mapped.pData as *mut u8;
             if dst.is_null() {
                 self.context.Unmap(&input_resource, 0);
-                return Err(napi::Error::from_reason("Probe input mapped pointer is null"));
+                return Err(napi::Error::from_reason(
+                    "Probe input mapped pointer is null",
+                ));
             }
             // BGRA bytes for pure red.
             *dst.add(0) = 0;
@@ -509,17 +582,26 @@ float4 main(float4 pos : SV_POSITION, float2 uv : TEXCOORD0) : SV_TARGET {
             self.context.PSSetShader(&ps_passthrough, None);
             self.context
                 .PSSetShaderResources(0, Some(&[Some(probe_srv)]));
-            self.context
-                .PSSetSamplers(0, Some(&[Some(sampler)]));
+            self.context.PSSetSamplers(0, Some(&[Some(sampler)]));
             self.context.Draw(3, 0);
             self.context.PSSetShaderResources(0, Some(&[None]));
+            self.context.OMSetRenderTargets(None, None);
 
-            self.context.CopyResource(&readback_resource, &output_resource);
+            self.context
+                .CopyResource(&readback_resource, &output_resource);
 
             let mut mapped_read = D3D11_MAPPED_SUBRESOURCE::default();
             self.context
-                .Map(&readback_resource, 0, D3D11_MAP_READ, 0, Some(&mut mapped_read))
-                .map_err(|e| napi::Error::from_reason(format!("Probe readback map failed: {:?}", e)))?;
+                .Map(
+                    &readback_resource,
+                    0,
+                    D3D11_MAP_READ,
+                    0,
+                    Some(&mut mapped_read),
+                )
+                .map_err(|e| {
+                    napi::Error::from_reason(format!("Probe readback map failed: {:?}", e))
+                })?;
             let src = mapped_read.pData as *const u8;
             if src.is_null() {
                 self.context.Unmap(&readback_resource, 0);
@@ -561,11 +643,15 @@ fn compile_shader(source: &[u8], entry: &[u8], target: &[u8]) -> napi::Result<Ve
             } else {
                 format!("{:?}", e)
             };
-            napi::Error::from_reason(format!("D3DCompile failed: {}", message))
+            napi::Error::from_reason(format!(
+                "D3DCompile failed (ensure d3dcompiler_47.dll is available): {}",
+                message
+            ))
         })?;
     }
 
-    let blob = shader_blob.ok_or_else(|| napi::Error::from_reason("D3DCompile returned null blob"))?;
+    let blob =
+        shader_blob.ok_or_else(|| napi::Error::from_reason("D3DCompile returned null blob"))?;
     unsafe {
         let ptr = blob.GetBufferPointer() as *const u8;
         let len = blob.GetBufferSize();
@@ -611,5 +697,19 @@ pub fn init() -> napi::Result<D3D11Context> {
             texture_width: 0,
             texture_height: 0,
         })
+    }
+}
+
+impl Drop for D3D11Context {
+    fn drop(&mut self) {
+        // Release GPU resources in safe order: views -> textures -> shaders -> sampler
+        // GPU リソースを安全な順序で解放: ビュー -> テクスチャ -> シェーダ -> サンプラー
+        self.reset_texture();
+        self.vertex_shader = None;
+        self.pixel_shader_passthrough = None;
+        self.pixel_shader_swizzle = None;
+        self.sampler_state = None;
+        // device and context are dropped last by Rust's struct drop order
+        // device と context は Rust の構造体ドロップ順序で最後に解放される
     }
 }
