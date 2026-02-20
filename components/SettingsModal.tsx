@@ -23,6 +23,13 @@ const APP_VERSION = packageJson.version;
 const DEFAULT_CUSTOM_ACCENT_COLOR = '#ff0000';
 const SETTINGS_MODAL_TITLE_ID = 'settings-modal-title';
 
+// Shared CSS class constants / 共通CSSクラス定数
+const SECTION_LABEL_CLASS = 'block dark:text-slate-300 text-slate-600 mb-3 text-sm font-semibold uppercase tracking-wider';
+const BTN_ACTIVE_CLASS = 'dark:bg-primary-900/40 bg-primary-50 border-primary-500 dark:text-primary-300 text-primary-700 shadow-[0_0_15px_rgb(var(--color-primary-500)_/_0.15)]';
+const BTN_INACTIVE_CLASS = 'dark:bg-slate-900 bg-slate-50 dark:border-slate-700 border-slate-300 dark:text-slate-400 text-slate-500 hover:border-slate-400 dark:hover:border-slate-500';
+const selectedBtnClass = (active: boolean) =>
+  `flex-1 py-3 px-4 rounded-xl border transition-all ${active ? BTN_ACTIVE_CLASS : BTN_INACTIVE_CLASS}`;
+
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -31,6 +38,17 @@ interface SettingsModalProps {
   updateAvailableVersion?: string;
 }
 
+// Shared label + description UI / 共通ラベル+説明文UI
+const SettingLabel: FC<{ label: string; description: string }> = ({ label, description }) => (
+  <div className='flex-1'>
+    <p className='text-sm font-semibold dark:text-slate-200 text-slate-700'>{label}</p>
+    <p className='text-xs text-slate-500 mt-1 flex items-start gap-2'>
+      <Info size={14} className='text-slate-400 mt-0.5 flex-shrink-0' />
+      <span>{description}</span>
+    </p>
+  </div>
+);
+
 const ToggleRow: FC<{
   label: string;
   description: string;
@@ -38,50 +56,33 @@ const ToggleRow: FC<{
   onToggle: (value: boolean) => void;
   enabledText?: string;
   disabledText?: string;
-}> = ({
-  label,
-  description,
-  enabled,
-  onToggle,
-  enabledText,
-  disabledText,
-}) => {
-  return (
-    <div className='flex items-center justify-between gap-4'>
-      <div className='flex-1'>
-        <p className='text-sm font-semibold dark:text-slate-200 text-slate-700'>
-          {label}
-        </p>
-        <p className='text-xs text-slate-500 mt-1 flex items-start gap-2'>
-          <Info size={14} className='text-slate-400 mt-0.5 flex-shrink-0' />
-          <span>{description}</span>
-        </p>
-      </div>
-      <button
-        type='button'
-        onClick={() => onToggle(!enabled)}
-        aria-pressed={enabled}
-        aria-label={enabled ? enabledText || label : disabledText || label}
-        className={`relative inline-flex h-8 w-14 items-center rounded-full border transition-colors ${
-          enabled
-            ? 'bg-primary-500/80 border-primary-500'
-            : 'bg-slate-200 dark:bg-slate-700 border-slate-300 dark:border-slate-600'
+}> = ({ label, description, enabled, onToggle, enabledText, disabledText }) => (
+  <div className='flex items-center justify-between gap-4'>
+    <SettingLabel label={label} description={description} />
+    <button
+      type='button'
+      onClick={() => onToggle(!enabled)}
+      aria-pressed={enabled}
+      aria-label={enabled ? enabledText || label : disabledText || label}
+      className={`relative inline-flex h-8 w-14 items-center rounded-full border transition-colors ${
+        enabled
+          ? 'bg-primary-500/80 border-primary-500'
+          : 'bg-slate-200 dark:bg-slate-700 border-slate-300 dark:border-slate-600'
+      }`}
+    >
+      {(enabledText || disabledText) && (
+        <span className='absolute inset-0 flex items-center justify-center text-[10px] font-semibold text-white pointer-events-none'>
+          {enabled ? enabledText : disabledText}
+        </span>
+      )}
+      <span
+        className={`inline-block h-6 w-6 transform rounded-full bg-white shadow transition-transform ${
+          enabled ? 'translate-x-7' : 'translate-x-1'
         }`}
-      >
-        {(enabledText || disabledText) && (
-          <span className='absolute inset-0 flex items-center justify-center text-[10px] font-semibold text-white pointer-events-none'>
-            {enabled ? enabledText : disabledText}
-          </span>
-        )}
-        <span
-          className={`inline-block h-6 w-6 transform rounded-full bg-white shadow transition-transform ${
-            enabled ? 'translate-x-7' : 'translate-x-1'
-          }`}
-        />
-      </button>
-    </div>
-  );
-};
+      />
+    </button>
+  </div>
+);
 
 const TextSwitchRow: FC<{
   label: string;
@@ -90,41 +91,24 @@ const TextSwitchRow: FC<{
   onToggle: (value: boolean) => void;
   enabledText: string;
   disabledText: string;
-}> = ({
-  label,
-  description,
-  enabled,
-  onToggle,
-  enabledText,
-  disabledText,
-}) => {
-  return (
-    <div className='flex items-center justify-between gap-4'>
-      <div className='flex-1'>
-        <p className='text-sm font-semibold dark:text-slate-200 text-slate-700'>
-          {label}
-        </p>
-        <p className='text-xs text-slate-500 mt-1 flex items-start gap-2'>
-          <Info size={14} className='text-slate-400 mt-0.5 flex-shrink-0' />
-          <span>{description}</span>
-        </p>
-      </div>
-      <button
-        type='button'
-        onClick={() => onToggle(!enabled)}
-        aria-pressed={enabled}
-        aria-label={enabled ? enabledText : disabledText}
-        className={`px-3 py-2 rounded-lg text-xs font-semibold border min-w-[92px] transition-colors ${
-          enabled
-            ? 'bg-primary-600 hover:bg-primary-500 border-primary-600 text-[rgb(var(--rgb-on-primary))]'
-            : 'dark:bg-slate-700/40 bg-slate-100 hover:bg-slate-200 dark:hover:bg-slate-600/60 dark:border-slate-500 border-slate-300 dark:text-slate-200 text-slate-700'
-        }`}
-      >
-        {enabled ? enabledText : disabledText}
-      </button>
-    </div>
-  );
-};
+}> = ({ label, description, enabled, onToggle, enabledText, disabledText }) => (
+  <div className='flex items-center justify-between gap-4'>
+    <SettingLabel label={label} description={description} />
+    <button
+      type='button'
+      onClick={() => onToggle(!enabled)}
+      aria-pressed={enabled}
+      aria-label={enabled ? enabledText : disabledText}
+      className={`px-3 py-2 rounded-lg text-xs font-semibold border min-w-[92px] transition-colors ${
+        enabled
+          ? 'bg-primary-600 hover:bg-primary-500 border-primary-600 text-[rgb(var(--rgb-on-primary))]'
+          : 'dark:bg-slate-700/40 bg-slate-100 hover:bg-slate-200 dark:hover:bg-slate-600/60 dark:border-slate-500 border-slate-300 dark:text-slate-200 text-slate-700'
+      }`}
+    >
+      {enabled ? enabledText : disabledText}
+    </button>
+  </div>
+);
 
 const SettingsModal: FC<SettingsModalProps> = ({
   isOpen,
@@ -227,20 +211,18 @@ const SettingsModal: FC<SettingsModalProps> = ({
   }, [isOpen]);
 
   useEffect(() => {
+    if (isOpen) return;
+    if (delayedRefreshTimerRef.current) {
+      clearTimeout(delayedRefreshTimerRef.current);
+      delayedRefreshTimerRef.current = null;
+    }
+    // Cleanup on unmount / アンマウント時のクリーンアップ
     return () => {
       if (delayedRefreshTimerRef.current) {
         clearTimeout(delayedRefreshTimerRef.current);
         delayedRefreshTimerRef.current = null;
       }
     };
-  }, []);
-
-  useEffect(() => {
-    if (isOpen) return;
-    if (delayedRefreshTimerRef.current) {
-      clearTimeout(delayedRefreshTimerRef.current);
-      delayedRefreshTimerRef.current = null;
-    }
   }, [isOpen]);
 
   useEffect(() => {
@@ -311,55 +293,34 @@ const SettingsModal: FC<SettingsModalProps> = ({
   ) => {
     setLocalConfig((currentConfig) => {
       const nextConfig = update(currentConfig);
-      if (nextConfig === currentConfig) {
-        return currentConfig;
-      }
+      if (nextConfig === currentConfig) return currentConfig;
       setConfig(nextConfig);
       return nextConfig;
     });
   };
 
-  const handleLanguageChange = (lang: Language) => {
-    saveConfigImmediately((currentConfig) =>
-      currentConfig.language === lang
-        ? currentConfig
-        : { ...currentConfig, language: lang },
-    );
+  // Generic single-field config updater / 汎用単一フィールド設定更新
+  const updateConfig = <K extends keyof typeof localConfig>(key: K, value: (typeof localConfig)[K]) => {
+    saveConfigImmediately((c) => (c[key] === value ? c : { ...c, [key]: value }));
   };
 
-  const handleThemeChange = (theme: 'light' | 'dark' | 'pure-black') => {
-    saveConfigImmediately((currentConfig) =>
-      currentConfig.theme === theme
-        ? currentConfig
-        : { ...currentConfig, theme },
-    );
-  };
+  const handleLanguageChange = (lang: Language) => updateConfig('language', lang);
+  const handleThemeChange = (theme: 'light' | 'dark' | 'pure-black') => updateConfig('theme', theme);
+  const handleIntervalChange = (interval: UpdateCheckInterval) => updateConfig('updateCheckInterval', interval);
 
   const handleAccentColorChange = (color: string) => {
     if (color === 'cyan' || color === 'purple') {
-      saveConfigImmediately((currentConfig) =>
-        currentConfig.accentColor === color
-          ? currentConfig
-          : { ...currentConfig, accentColor: color },
-      );
+      updateConfig('accentColor', color);
       return;
     }
-    if (!isValidCustomAccentColor(color)) {
-      return;
-    }
+    if (!isValidCustomAccentColor(color)) return;
     const normalizedColor = normalizeCustomAccentColor(color);
     setLastCustomAccentColor(normalizedColor);
-    saveConfigImmediately((currentConfig) =>
-      currentConfig.accentColor === normalizedColor
-        ? currentConfig
-        : { ...currentConfig, accentColor: normalizedColor },
-    );
+    updateConfig('accentColor', normalizedColor);
   };
 
   const handleCustomAccentSelect = () => {
-    if (!isPresetAccentColor(localConfig.accentColor)) {
-      return;
-    }
+    if (!isPresetAccentColor(localConfig.accentColor)) return;
     handleAccentColorChange(lastCustomAccentColor);
   };
 
@@ -368,17 +329,12 @@ const SettingsModal: FC<SettingsModalProps> = ({
     const portNum = parseInt(trimmedValue, 10);
     if (!isNaN(portNum) && portNum >= 1 && portNum <= 65535) {
       if (portNum !== localConfig.oscPort) {
-        saveConfigImmediately((currentConfig) =>
-          currentConfig.oscPort === portNum
-            ? currentConfig
-            : { ...currentConfig, oscPort: portNum },
-        );
+        updateConfig('oscPort', portNum);
       } else {
         setOscPortInput(String(localConfig.oscPort));
       }
       return;
     }
-
     // Revert invalid input back to current config value / 無効な入力は現在の設定値に戻す
     setOscPortInput(String(localConfig.oscPort));
   };
@@ -389,14 +345,6 @@ const SettingsModal: FC<SettingsModalProps> = ({
       handleOscPortCommit();
       e.currentTarget.blur();
     }
-  };
-
-  const handleIntervalChange = (interval: UpdateCheckInterval) => {
-    saveConfigImmediately((currentConfig) =>
-      currentConfig.updateCheckInterval === interval
-        ? currentConfig
-        : { ...currentConfig, updateCheckInterval: interval },
-    );
   };
 
   const handleCheckNow = async () => {
@@ -443,33 +391,21 @@ const SettingsModal: FC<SettingsModalProps> = ({
     }
   };
 
-  const handleToggleDisableOverlay = (value: boolean) => {
-    saveConfigImmediately((currentConfig) =>
-      currentConfig.disableOverlay === value
-        ? currentConfig
-        : { ...currentConfig, disableOverlay: value },
-    );
-  };
+  const handleToggleDisableOverlay = (value: boolean) => updateConfig('disableOverlay', value);
 
   const handleToggleSteamVrAutoLaunch = async (value: boolean) => {
     if (!window.electronAPI?.setSteamVrAutoLaunch) {
       setSteamVrAutoLaunchError(t.steamVrAutoLaunchError);
       return;
     }
-
     try {
       const result = await window.electronAPI.setSteamVrAutoLaunch(value);
       if (!result?.success) {
         setSteamVrAutoLaunchError(result?.error || t.steamVrAutoLaunchError);
         return;
       }
-
       setSteamVrAutoLaunchError('');
-      saveConfigImmediately((currentConfig) =>
-        currentConfig.steamVrAutoLaunch === value
-          ? currentConfig
-          : { ...currentConfig, steamVrAutoLaunch: value },
-      );
+      updateConfig('steamVrAutoLaunch', value);
     } catch (e) {
       setSteamVrAutoLaunchError((e as Error)?.message || t.steamVrAutoLaunchError);
     }
@@ -477,33 +413,31 @@ const SettingsModal: FC<SettingsModalProps> = ({
 
   useEffect(() => {
     if (!isOpen || !window.electronAPI?.getSteamVrAutoLaunch) return;
-
     const syncSteamVrAutoLaunch = async () => {
       try {
         const result = await window.electronAPI!.getSteamVrAutoLaunch();
         if (!result?.success || typeof result.enabled !== 'boolean') return;
-
-        saveConfigImmediately((currentConfig) =>
-          currentConfig.steamVrAutoLaunch === result.enabled
-            ? currentConfig
-            : { ...currentConfig, steamVrAutoLaunch: result.enabled },
-        );
+        updateConfig('steamVrAutoLaunch', result.enabled);
       } catch {
         // no-op: this sync is best-effort only / この同期はベストエフォート
       }
     };
-
     void syncSteamVrAutoLaunch();
   }, [isOpen]);
 
+  // Reset all binding states / バインディング状態を全てリセット
+  const resetBindings = () => {
+    setInitialized(false);
+    setToggleBindings([]);
+    setTriggerBindings([]);
+    setGripBindings([]);
+    setTriggerBound(false);
+    setGripBound(false);
+  };
+
   const loadBindings = useCallback(async () => {
     if (!window.electronAPI?.getSteamVrBindings) {
-      setInitialized(false);
-      setToggleBindings([]);
-      setTriggerBindings([]);
-      setGripBindings([]);
-      setTriggerBound(false);
-      setGripBound(false);
+      resetBindings();
       return;
     }
 
@@ -513,23 +447,14 @@ const SettingsModal: FC<SettingsModalProps> = ({
     try {
       const result = await window.electronAPI.getSteamVrBindings();
       if (!result?.success || !result.bindings) {
-        setInitialized(false);
-        setToggleBindings([]);
-        setTriggerBindings([]);
-        setGripBindings([]);
-        setTriggerBound(false);
-        setGripBound(false);
+        resetBindings();
         setBindingError(getLocalizedSteamVrBindingsError());
         return;
       }
 
       const toStringArray = (value: unknown): string[] => {
-        if (Array.isArray(value)) {
-          return value.filter((entry): entry is string => typeof entry === 'string');
-        }
-        if (typeof value === 'string' && value.length > 0) {
-          return [value];
-        }
+        if (Array.isArray(value)) return value.filter((entry): entry is string => typeof entry === 'string');
+        if (typeof value === 'string' && value.length > 0) return [value];
         return [];
       };
 
@@ -540,12 +465,7 @@ const SettingsModal: FC<SettingsModalProps> = ({
       setTriggerBound(Boolean(result.bindings.triggerBound));
       setGripBound(Boolean(result.bindings.gripBound));
     } catch {
-      setInitialized(false);
-      setToggleBindings([]);
-      setTriggerBindings([]);
-      setGripBindings([]);
-      setTriggerBound(false);
-      setGripBound(false);
+      resetBindings();
       setBindingError(getLocalizedSteamVrBindingsError());
     } finally {
       setLoadingBindings(false);
@@ -651,100 +571,36 @@ const SettingsModal: FC<SettingsModalProps> = ({
         {/* Content / コンテンツ */}
         <div ref={contentRef} className='flex-1 overflow-y-auto p-6 space-y-8'>
           <section>
-            <label className='block dark:text-slate-300 text-slate-600 mb-3 text-sm font-semibold uppercase tracking-wider'>
-              {t.language}
-            </label>
+            <label className={SECTION_LABEL_CLASS}>{t.language}</label>
             <div className='flex gap-2'>
-              <button
-                onClick={() => handleLanguageChange('ja')}
-                className={`flex-1 py-3 px-4 rounded-xl border transition-all ${localConfig.language === 'ja' ? 'dark:bg-primary-900/40 bg-primary-50 border-primary-500 dark:text-primary-300 text-primary-700 shadow-[0_0_15px_rgb(var(--color-primary-500)_/_0.15)]' : 'dark:bg-slate-900 bg-slate-50 dark:border-slate-700 border-slate-300 dark:text-slate-400 text-slate-500 hover:border-slate-400 dark:hover:border-slate-500'}`}
-              >
-                日本語
-              </button>
-              <button
-                onClick={() => handleLanguageChange('en')}
-                className={`flex-1 py-3 px-4 rounded-xl border transition-all ${localConfig.language === 'en' ? 'dark:bg-primary-900/40 bg-primary-50 border-primary-500 dark:text-primary-300 text-primary-700 shadow-[0_0_15px_rgb(var(--color-primary-500)_/_0.15)]' : 'dark:bg-slate-900 bg-slate-50 dark:border-slate-700 border-slate-300 dark:text-slate-400 text-slate-500 hover:border-slate-400 dark:hover:border-slate-500'}`}
-              >
-                English
-              </button>
+              <button onClick={() => handleLanguageChange('ja')} className={selectedBtnClass(localConfig.language === 'ja')}>日本語</button>
+              <button onClick={() => handleLanguageChange('en')} className={selectedBtnClass(localConfig.language === 'en')}>English</button>
             </div>
           </section>
 
           <section>
-            <label className='block dark:text-slate-300 text-slate-600 mb-3 text-sm font-semibold uppercase tracking-wider'>
-              {t.theme}
-            </label>
+            <label className={SECTION_LABEL_CLASS}>{t.theme}</label>
             <div className='flex gap-2'>
-              <button
-                onClick={() => handleThemeChange('pure-black')}
-                className={`flex-1 py-3 px-4 rounded-xl border transition-all ${localConfig.theme === 'pure-black' ? 'dark:bg-primary-900/40 bg-primary-50 border-primary-500 dark:text-primary-300 text-primary-700 shadow-[0_0_15px_rgb(var(--color-primary-500)_/_0.15)]' : 'dark:bg-slate-900 bg-slate-50 dark:border-slate-700 border-slate-300 dark:text-slate-400 text-slate-500 hover:border-slate-400 dark:hover:border-slate-500'}`}
-              >
-                {t.themePureBlack}
-              </button>
-              <button
-                onClick={() => handleThemeChange('dark')}
-                className={`flex-1 py-3 px-4 rounded-xl border transition-all ${localConfig.theme === 'dark' ? 'dark:bg-primary-900/40 bg-primary-50 border-primary-500 dark:text-primary-300 text-primary-700 shadow-[0_0_15px_rgb(var(--color-primary-500)_/_0.15)]' : 'dark:bg-slate-900 bg-slate-50 dark:border-slate-700 border-slate-300 dark:text-slate-400 text-slate-500 hover:border-slate-400 dark:hover:border-slate-500'}`}
-              >
-                {t.themeDark}
-              </button>
-              <button
-                onClick={() => handleThemeChange('light')}
-                className={`flex-1 py-3 px-4 rounded-xl border transition-all ${localConfig.theme === 'light' ? 'dark:bg-primary-900/40 bg-primary-50 border-primary-500 dark:text-primary-300 text-primary-700 shadow-[0_0_15px_rgb(var(--color-primary-500)_/_0.15)]' : 'dark:bg-slate-900 bg-slate-50 dark:border-slate-700 border-slate-300 dark:text-slate-400 text-slate-500 hover:border-slate-400 dark:hover:border-slate-500'}`}
-              >
-                {t.themeLight}
-              </button>
+              <button onClick={() => handleThemeChange('pure-black')} className={selectedBtnClass(localConfig.theme === 'pure-black')}>{t.themePureBlack}</button>
+              <button onClick={() => handleThemeChange('dark')} className={selectedBtnClass(localConfig.theme === 'dark')}>{t.themeDark}</button>
+              <button onClick={() => handleThemeChange('light')} className={selectedBtnClass(localConfig.theme === 'light')}>{t.themeLight}</button>
             </div>
           </section>
 
           <section className='pt-4 border-t dark:border-slate-700/50 border-slate-200'>
-            <label className='block dark:text-slate-300 text-slate-600 mb-3 text-sm font-semibold uppercase tracking-wider'>
-              {t.accentColor}
-            </label>
+            <label className={SECTION_LABEL_CLASS}>{t.accentColor}</label>
             <div className='flex gap-2'>
-              <button
-                onClick={() => handleAccentColorChange('cyan')}
-                className={`flex-1 py-3 px-4 rounded-xl border transition-all flex items-center justify-center gap-2 ${
-                  localConfig.accentColor === 'cyan' || !localConfig.accentColor
-                    ? 'dark:bg-primary-900/40 bg-primary-50 border-primary-500 dark:text-primary-300 text-primary-700 shadow-[0_0_15px_rgb(var(--color-primary-500)_/_0.15)]'
-                    : 'dark:bg-slate-900 bg-slate-50 dark:border-slate-700 border-slate-300 dark:text-slate-400 text-slate-500 hover:border-slate-400 dark:hover:border-slate-500'
-                }`}
-              >
+              <button onClick={() => handleAccentColorChange('cyan')} className={`${selectedBtnClass(localConfig.accentColor === 'cyan' || !localConfig.accentColor)} flex items-center justify-center gap-2`}>
                 <div className='w-3 h-3 rounded-full bg-[#06b6d4]' />
-                <span className='text-xs md:text-sm whitespace-nowrap'>
-                  {t.accentColorCyan}
-                </span>
+                <span className='text-xs md:text-sm whitespace-nowrap'>{t.accentColorCyan}</span>
               </button>
-              <button
-                onClick={() => handleAccentColorChange('purple')}
-                className={`flex-1 py-3 px-4 rounded-xl border transition-all flex items-center justify-center gap-2 ${
-                  localConfig.accentColor === 'purple'
-                    ? 'dark:bg-primary-900/40 bg-primary-50 border-primary-500 dark:text-primary-300 text-primary-700 shadow-[0_0_15px_rgb(var(--color-primary-500)_/_0.15)]'
-                    : 'dark:bg-slate-900 bg-slate-50 dark:border-slate-700 border-slate-300 dark:text-slate-400 text-slate-500 hover:border-slate-400 dark:hover:border-slate-500'
-                }`}
-              >
+              <button onClick={() => handleAccentColorChange('purple')} className={`${selectedBtnClass(localConfig.accentColor === 'purple')} flex items-center justify-center gap-2`}>
                 <div className='w-3 h-3 rounded-full bg-[#a855f7]' />
-                <span className='text-xs md:text-sm whitespace-nowrap'>
-                  {t.accentColorPurple}
-                </span>
+                <span className='text-xs md:text-sm whitespace-nowrap'>{t.accentColorPurple}</span>
               </button>
-              <button
-                type='button'
-                onClick={handleCustomAccentSelect}
-                className={`flex-1 py-3 px-4 rounded-xl border transition-all flex items-center justify-center gap-2 ${
-                  isCustomAccentSelected
-                    ? 'dark:bg-primary-900/40 bg-primary-50 border-primary-500 dark:text-primary-300 text-primary-700 shadow-[0_0_15px_rgb(var(--color-primary-500)_/_0.15)]'
-                    : 'dark:bg-slate-900 bg-slate-50 dark:border-slate-700 border-slate-300 dark:text-slate-400 text-slate-500 hover:border-slate-400 dark:hover:border-slate-500'
-                }`}
-              >
-                <div
-                  className='w-3 h-3 rounded-full border border-slate-300 dark:border-slate-600'
-                  style={{
-                    background: customAccentColor,
-                  }}
-                />
-                <span className='text-xs md:text-sm whitespace-nowrap'>
-                  {t.accentColorCustom}
-                </span>
+              <button type='button' onClick={handleCustomAccentSelect} className={`${selectedBtnClass(isCustomAccentSelected)} flex items-center justify-center gap-2`}>
+                <div className='w-3 h-3 rounded-full border border-slate-300 dark:border-slate-600' style={{ background: customAccentColor }} />
+                <span className='text-xs md:text-sm whitespace-nowrap'>{t.accentColorCustom}</span>
               </button>
             </div>
 
@@ -788,9 +644,7 @@ const SettingsModal: FC<SettingsModalProps> = ({
           </section>
 
           <section className='pt-4 border-t dark:border-slate-700/50 border-slate-200'>
-            <label className='block dark:text-slate-300 text-slate-600 mb-3 text-sm font-semibold uppercase tracking-wider'>
-              {t.oscPort}
-            </label>
+            <label className={SECTION_LABEL_CLASS}>{t.oscPort}</label>
             <div className='relative group'>
               <input
                 type='number'
@@ -811,9 +665,7 @@ const SettingsModal: FC<SettingsModalProps> = ({
           </section>
 
           <section className='pt-4 border-t dark:border-slate-700/50 border-slate-200 space-y-5'>
-            <label className='block dark:text-slate-300 text-slate-600 mb-1 text-sm font-semibold uppercase tracking-wider'>
-              {t.overlayTitle}
-            </label>
+            <label className={`${SECTION_LABEL_CLASS} !mb-1`}>{t.overlayTitle}</label>
             <ToggleRow
               label={t.disableOverlay}
               description={t.disableOverlayDesc}
@@ -887,9 +739,7 @@ const SettingsModal: FC<SettingsModalProps> = ({
           </section>
 
           <section className='pt-4 border-t dark:border-slate-700/50 border-slate-200'>
-            <label className='block dark:text-slate-300 text-slate-600 mb-3 text-sm font-semibold uppercase tracking-wider'>
-              {t.checkInterval}
-            </label>
+            <label className={SECTION_LABEL_CLASS}>{t.checkInterval}</label>
             <div className='bg-gray-100 dark:bg-slate-900 rounded-xl p-1 mb-3 flex gap-1 overflow-x-auto'>
               {[
                 { id: 'startup' as const, label: t.intervalStartup },
