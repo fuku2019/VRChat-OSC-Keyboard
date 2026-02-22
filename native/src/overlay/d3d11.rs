@@ -1,9 +1,6 @@
-use std::ffi::c_void;
-
 use windows::core::Interface;
-use windows::core::PCSTR;
 use windows::Win32::Graphics::Direct3D::{
-    Fxc::D3DCompile, ID3DBlob, D3D_DRIVER_TYPE_HARDWARE, D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST,
+    D3D_DRIVER_TYPE_HARDWARE, D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST,
 };
 use windows::Win32::Graphics::Direct3D11::{
     D3D11CreateDevice, ID3D11Device, ID3D11DeviceContext, ID3D11PixelShader,
@@ -26,6 +23,7 @@ pub struct D3D11Context {
 
     // Texture resources / テクスチャリソース
     pub staging_bgra_texture: Option<ID3D11Texture2D>,
+    pub staging_resource: Option<ID3D11Resource>,
     pub output_rgba_texture: Option<ID3D11Texture2D>,
     pub bgra_srv: Option<ID3D11ShaderResourceView>,
     pub rgba_rtv: Option<ID3D11RenderTargetView>,
@@ -46,6 +44,7 @@ pub struct D3D11Context {
 impl D3D11Context {
     pub fn reset_texture(&mut self) {
         self.staging_bgra_texture = None;
+        self.staging_resource = None;
         self.output_rgba_texture = None;
         self.bgra_srv = None;
         self.rgba_rtv = None;
@@ -155,6 +154,7 @@ impl D3D11Context {
         }
 
         self.staging_bgra_texture = Some(staging_texture);
+        self.staging_resource = Some(staging_resource);
         self.output_rgba_texture = Some(output_texture);
         self.bgra_srv = bgra_srv;
         self.rgba_rtv = rgba_rtv;
@@ -187,31 +187,26 @@ impl D3D11Context {
             )));
         }
 
-        let texture = self
-            .staging_bgra_texture
+        // Use cached ID3D11Resource to avoid per-frame QueryInterface / キャッシュ済みID3D11Resourceを使い毎フレームのQueryInterfaceを回避
+        let resource = self
+            .staging_resource
             .as_ref()
-            .ok_or_else(|| napi::Error::from_reason("Staging BGRA texture is not initialized"))?;
-        let resource: ID3D11Resource = texture.cast().map_err(|e| {
-            napi::Error::from_reason(format!(
-                "Staging texture cast to ID3D11Resource failed: {:?}",
-                e
-            ))
-        })?;
+            .ok_or_else(|| napi::Error::from_reason("Staging resource is not initialized"))?;
 
         unsafe {
             let mut mapped = D3D11_MAPPED_SUBRESOURCE::default();
             self.context
-                .Map(&resource, 0, D3D11_MAP_WRITE_DISCARD, 0, Some(&mut mapped))
+                .Map(resource, 0, D3D11_MAP_WRITE_DISCARD, 0, Some(&mut mapped))
                 .map_err(|e| napi::Error::from_reason(format!("Map failed: {:?}", e)))?;
 
             let dst = mapped.pData as *mut u8;
             if dst.is_null() {
-                self.context.Unmap(&resource, 0);
+                self.context.Unmap(resource, 0);
                 return Err(napi::Error::from_reason("Mapped texture pointer is null"));
             }
             let dst_pitch = mapped.RowPitch as usize;
             if dst_pitch < src_row_pitch {
-                self.context.Unmap(&resource, 0);
+                self.context.Unmap(resource, 0);
                 return Err(napi::Error::from_reason(
                     "Mapped row pitch is smaller than source row size",
                 ));
@@ -221,13 +216,19 @@ impl D3D11Context {
                 .checked_mul(4)
                 .ok_or_else(|| napi::Error::from_reason("Row byte size overflow"))?;
 
-            for y in 0..height {
-                let src_row = src.add((y as usize) * src_row_pitch);
-                let dst_row = dst.add((y as usize) * dst_pitch);
-                std::ptr::copy_nonoverlapping(src_row, dst_row, copy_row_bytes);
+            if src_row_pitch == dst_pitch {
+                // Bulk copy when pitches match / ピッチが一致する場合は一括コピー
+                std::ptr::copy_nonoverlapping(src, dst, copy_row_bytes * height as usize);
+            } else {
+                // Row-by-row copy when pitches differ / ピッチが異なる場合は行ごとコピー
+                for y in 0..height {
+                    let src_row = src.add((y as usize) * src_row_pitch);
+                    let dst_row = dst.add((y as usize) * dst_pitch);
+                    std::ptr::copy_nonoverlapping(src_row, dst_row, copy_row_bytes);
+                }
             }
 
-            self.context.Unmap(&resource, 0);
+            self.context.Unmap(resource, 0);
         }
 
         Ok(())
@@ -241,39 +242,35 @@ impl D3D11Context {
     /// viewport, RTV) を変更する。保存・復元は行わない。将来他のD3D11利用者が
     /// 追加された場合、ステート保存・復元パターンを導入すること。
     pub fn convert_bgra_to_rgba(&self, width: u32, height: u32) -> napi::Result<()> {
+        // Use references instead of clone() to avoid COM AddRef/Release per frame
+        // clone()の代わりに参照を使い、毎フレームのCOM AddRef/Releaseを回避
         let rtv = self
             .rgba_rtv
             .as_ref()
-            .ok_or_else(|| napi::Error::from_reason("Output RTV is not initialized"))?
-            .clone();
+            .ok_or_else(|| napi::Error::from_reason("Output RTV is not initialized"))?;
         let srv = self
             .bgra_srv
             .as_ref()
-            .ok_or_else(|| napi::Error::from_reason("Input SRV is not initialized"))?
-            .clone();
+            .ok_or_else(|| napi::Error::from_reason("Input SRV is not initialized"))?;
         let vs = self
             .vertex_shader
             .as_ref()
-            .ok_or_else(|| napi::Error::from_reason("Vertex shader is not initialized"))?
-            .clone();
+            .ok_or_else(|| napi::Error::from_reason("Vertex shader is not initialized"))?;
         let ps = if self.swap_rb_required {
             self.pixel_shader_swizzle
                 .as_ref()
                 .ok_or_else(|| napi::Error::from_reason("Swizzle pixel shader is not initialized"))?
-                .clone()
         } else {
             self.pixel_shader_passthrough
                 .as_ref()
                 .ok_or_else(|| {
                     napi::Error::from_reason("Passthrough pixel shader is not initialized")
                 })?
-                .clone()
         };
         let sampler = self
             .sampler_state
             .as_ref()
-            .ok_or_else(|| napi::Error::from_reason("Sampler state is not initialized"))?
-            .clone();
+            .ok_or_else(|| napi::Error::from_reason("Sampler state is not initialized"))?;
 
         let viewport = D3D11_VIEWPORT {
             TopLeftX: 0.0,
@@ -285,14 +282,14 @@ impl D3D11Context {
         };
 
         unsafe {
-            self.context.OMSetRenderTargets(Some(&[Some(rtv)]), None);
+            self.context.OMSetRenderTargets(Some(&[Some(rtv.clone())]), None);
             self.context.RSSetViewports(Some(&[viewport]));
             self.context
                 .IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-            self.context.VSSetShader(&vs, None);
-            self.context.PSSetShader(&ps, None);
-            self.context.PSSetShaderResources(0, Some(&[Some(srv)]));
-            self.context.PSSetSamplers(0, Some(&[Some(sampler)]));
+            self.context.VSSetShader(vs, None);
+            self.context.PSSetShader(ps, None);
+            self.context.PSSetShaderResources(0, Some(&[Some(srv.clone())]));
+            self.context.PSSetSamplers(0, Some(&[Some(sampler.clone())]));
             self.context.Draw(3, 0);
 
             // Unbind SRV to avoid binding hazards on subsequent frames.
@@ -304,8 +301,7 @@ impl D3D11Context {
         Ok(())
     }
 
-    // TODO: Replace runtime D3DCompile with precompiled CSO bytecode using include_bytes!
-    // TODO: ランタイム D3DCompile をプリコンパイル済み CSO バイトコード (include_bytes!) に置換する
+    // Precompiled shader bytecode embedded at build time / ビルド時にプリコンパイル済みシェーダバイトコードを埋め込み
     fn ensure_shaders(&mut self) -> napi::Result<()> {
         if self.vertex_shader.is_some()
             && self.pixel_shader_passthrough.is_some()
@@ -316,45 +312,10 @@ impl D3D11Context {
             return Ok(());
         }
 
-        let vertex_shader_source = br#"
-struct VSOut {
-    float4 pos : SV_POSITION;
-    float2 uv : TEXCOORD0;
-};
-
-VSOut main(uint vid : SV_VertexID) {
-    VSOut o;
-    float2 pos;
-    if (vid == 0) pos = float2(-1.0, -1.0);
-    else if (vid == 1) pos = float2(-1.0, 3.0);
-    else pos = float2(3.0, -1.0);
-    o.pos = float4(pos, 0.0, 1.0);
-    o.uv = float2((pos.x + 1.0) * 0.5, 1.0 - ((pos.y + 1.0) * 0.5));
-    return o;
-}
-"#;
-        let pixel_shader_source = br#"
-Texture2D inputTex : register(t0);
-SamplerState samp0 : register(s0);
-
-float4 main(float4 pos : SV_POSITION, float2 uv : TEXCOORD0) : SV_TARGET {
-    float4 c = inputTex.Sample(samp0, uv);
-    return c;
-}
-"#;
-        let pixel_shader_swizzle_source = br#"
-Texture2D inputTex : register(t0);
-SamplerState samp0 : register(s0);
-
-float4 main(float4 pos : SV_POSITION, float2 uv : TEXCOORD0) : SV_TARGET {
-    float4 c = inputTex.Sample(samp0, uv);
-    return c.bgra;
-}
-"#;
-
-        let vs_blob = compile_shader(vertex_shader_source, b"main\0", b"vs_5_0\0")?;
-        let ps_passthrough_blob = compile_shader(pixel_shader_source, b"main\0", b"ps_5_0\0")?;
-        let ps_swizzle_blob = compile_shader(pixel_shader_swizzle_source, b"main\0", b"ps_5_0\0")?;
+        // Load precompiled CSO bytecode / プリコンパイル済みCSOバイトコードを読み込み
+        let vs_blob = include_bytes!(concat!(env!("OUT_DIR"), "/vs_fullscreen.cso"));
+        let ps_passthrough_blob = include_bytes!(concat!(env!("OUT_DIR"), "/ps_passthrough.cso"));
+        let ps_swizzle_blob = include_bytes!(concat!(env!("OUT_DIR"), "/ps_swizzle.cso"));
 
         let mut vertex_shader: Option<ID3D11VertexShader> = None;
         let mut pixel_shader_passthrough: Option<ID3D11PixelShader> = None;
@@ -376,13 +337,13 @@ float4 main(float4 pos : SV_POSITION, float2 uv : TEXCOORD0) : SV_TARGET {
 
         unsafe {
             self.device
-                .CreateVertexShader(&vs_blob, None, Some(&mut vertex_shader))
+                .CreateVertexShader(vs_blob, None, Some(&mut vertex_shader))
                 .map_err(|e| {
                     napi::Error::from_reason(format!("CreateVertexShader failed: {:?}", e))
                 })?;
             self.device
                 .CreatePixelShader(
-                    &ps_passthrough_blob,
+                    ps_passthrough_blob,
                     None,
                     Some(&mut pixel_shader_passthrough),
                 )
@@ -390,7 +351,7 @@ float4 main(float4 pos : SV_POSITION, float2 uv : TEXCOORD0) : SV_TARGET {
                     napi::Error::from_reason(format!("CreatePixelShader failed: {:?}", e))
                 })?;
             self.device
-                .CreatePixelShader(&ps_swizzle_blob, None, Some(&mut pixel_shader_swizzle))
+                .CreatePixelShader(ps_swizzle_blob, None, Some(&mut pixel_shader_swizzle))
                 .map_err(|e| {
                     napi::Error::from_reason(format!("CreatePixelShader failed: {:?}", e))
                 })?;
@@ -616,48 +577,7 @@ float4 main(float4 pos : SV_POSITION, float2 uv : TEXCOORD0) : SV_TARGET {
     }
 }
 
-fn compile_shader(source: &[u8], entry: &[u8], target: &[u8]) -> napi::Result<Vec<u8>> {
-    let mut shader_blob: Option<ID3DBlob> = None;
-    let mut error_blob: Option<ID3DBlob> = None;
 
-    unsafe {
-        D3DCompile(
-            source.as_ptr() as *const c_void,
-            source.len(),
-            PCSTR::null(),
-            None,
-            None,
-            PCSTR(entry.as_ptr()),
-            PCSTR(target.as_ptr()),
-            0,
-            0,
-            &mut shader_blob,
-            Some(&mut error_blob),
-        )
-        .map_err(|e| {
-            let message = if let Some(blob) = error_blob {
-                let ptr = blob.GetBufferPointer() as *const u8;
-                let len = blob.GetBufferSize();
-                let bytes = std::slice::from_raw_parts(ptr, len);
-                String::from_utf8_lossy(bytes).trim().to_string()
-            } else {
-                format!("{:?}", e)
-            };
-            napi::Error::from_reason(format!(
-                "D3DCompile failed (ensure d3dcompiler_47.dll is available): {}",
-                message
-            ))
-        })?;
-    }
-
-    let blob =
-        shader_blob.ok_or_else(|| napi::Error::from_reason("D3DCompile returned null blob"))?;
-    unsafe {
-        let ptr = blob.GetBufferPointer() as *const u8;
-        let len = blob.GetBufferSize();
-        Ok(std::slice::from_raw_parts(ptr, len).to_vec())
-    }
-}
 
 // Initialize D3D11 device and context / D3D11デバイスとコンテキストを初期化
 pub fn init() -> napi::Result<D3D11Context> {
@@ -685,6 +605,7 @@ pub fn init() -> napi::Result<D3D11Context> {
             device,
             context,
             staging_bgra_texture: None,
+            staging_resource: None,
             output_rgba_texture: None,
             bgra_srv: None,
             rgba_rtv: None,
