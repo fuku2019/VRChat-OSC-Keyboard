@@ -87,7 +87,7 @@
     },
     "win": {
       "target": "nsis",
-      "icon": "build/icon.ico",
+      "icon": "build/icon.png",
       "legalTrademarks": "VRChat OSC Keyboard",
       "executableName": "VRChat-OSC-Keyboard",
       "verifyUpdateCodeSignature": false
