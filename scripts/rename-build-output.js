@@ -14,16 +14,29 @@ const releaseDir = path.join(__dirname, '../release');
 const oldPath = path.join(releaseDir, 'win-unpacked');
 const newFolderName = `VRChat-OSC-Keyboard-v${version}`;
 const newPath = path.join(releaseDir, newFolderName);
+const RETRYABLE_ERROR_CODES = new Set(['EPERM', 'EACCES', 'EBUSY']);
 
 // Wait function with retry / リトライ付きの待機関数
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-async function retryOperation(operation, maxRetries = 5, delayMs = 1000) {
+function isRetryableError(error) {
+  return RETRYABLE_ERROR_CODES.has(error?.code);
+}
+
+async function retryOperation(
+  operation,
+  {
+    maxRetries = 5,
+    delayMs = 1000,
+    shouldRetry = (error) => isRetryableError(error),
+  } = {},
+) {
   for (let i = 0; i < maxRetries; i++) {
     try {
       await operation();
       return true;
     } catch (error) {
+      if (!shouldRetry(error)) throw error;
       if (i === maxRetries - 1) throw error;
       console.log(
         `Retry ${i + 1}/${maxRetries} after error: ${error.code || error.message}`,
@@ -42,7 +55,7 @@ async function main() {
     console.log(`Removing existing directory: ${newPath}`);
     await retryOperation(() => {
       fs.rmSync(newPath, { recursive: true, force: true });
-    });
+    }, { maxRetries: 10, delayMs: 1000 });
     // Wait a bit after deletion / 削除後に少し待機
     await sleep(500);
   }
@@ -52,7 +65,7 @@ async function main() {
       // Rename operation (with retry) / リネーム操作（リトライ付き）
       await retryOperation(() => {
         fs.renameSync(oldPath, newPath);
-      });
+      }, { maxRetries: 20, delayMs: 1000 });
       console.log(`Successfully renamed '${oldPath}' to '${newPath}'`);
 
       // Rename executable / 実行可能ファイルの名前変更
@@ -64,7 +77,7 @@ async function main() {
       if (fs.existsSync(oldExePath)) {
         await retryOperation(() => {
           fs.renameSync(oldExePath, newExePath);
-        });
+        }, { maxRetries: 20, delayMs: 1000 });
         console.log(`Successfully renamed executable to '${newExeName}'`);
       } else {
         console.warn(
@@ -79,10 +92,20 @@ async function main() {
       const newInstallerPath = path.join(releaseDir, newInstallerName);
 
       if (fs.existsSync(oldInstallerPath)) {
-        await retryOperation(() => {
-          fs.renameSync(oldInstallerPath, newInstallerPath);
-        });
-        console.log(`Successfully renamed installer to '${newInstallerName}'`);
+        try {
+          await retryOperation(() => {
+            fs.renameSync(oldInstallerPath, newInstallerPath);
+          }, { maxRetries: 30, delayMs: 1000 });
+          console.log(`Successfully renamed installer to '${newInstallerName}'`);
+        } catch (error) {
+          if (isRetryableError(error)) {
+            console.warn(
+              `Installer rename skipped due to file lock (${error.code}). Keeping original name: '${installerName}'`,
+            );
+          } else {
+            throw error;
+          }
+        }
       } else {
         console.warn(
           `Installer '${installerName}' not found. It may not have been generated.`,
