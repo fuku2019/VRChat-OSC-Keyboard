@@ -5,6 +5,7 @@ export enum InputMode {
 }
 
 export type Language = 'ja' | 'en';
+export type KeySoundVariant = 'soft' | 'mechanical';
 
 export interface KeyConfig {
   label: string;
@@ -36,6 +37,8 @@ export interface OscConfig {
   autoSend: boolean;
   copyMode: boolean;
   autoSendBeforeCopyMode: boolean;
+  keySoundEnabled: boolean;
+  keySoundVariant: KeySoundVariant;
   language: Language;
   theme: 'light' | 'dark' | 'pure-black';
   accentColor: string;

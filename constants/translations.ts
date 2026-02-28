@@ -24,6 +24,13 @@ export interface TranslationStrings {
     steamVrBindingsRefresh: string;
     openSteamVrBindingUi: string;
     steamVrBindingsMissingActions: string;
+    keySoundTitle: string;
+    keySoundEnabled: string;
+    keySoundEnabledDesc: string;
+    keySoundVariant: string;
+    keySoundVariantDesc: string;
+    keySoundSoft: string;
+    keySoundMechanical: string;
     instructionsTitle: string;
     resetWelcome: string;
     save: string;
@@ -124,6 +131,13 @@ export const TRANSLATIONS: TranslationsMap = {
       steamVrBindingsRefresh: '割り当てを更新',
       openSteamVrBindingUi: 'バインドUIを開く',
       steamVrBindingsMissingActions: '未割り当て: Trigger/Grip のアクションをBinding UIで設定してください。',
+      keySoundTitle: 'キー入力音',
+      keySoundEnabled: 'キー入力音を再生',
+      keySoundEnabledDesc: '仮想キーボード押下時のSEを再生します。',
+      keySoundVariant: '音色',
+      keySoundVariantDesc: '再生するキー入力音を選択します。',
+      keySoundSoft: 'ソフト',
+      keySoundMechanical: 'メカニカル',
       instructionsTitle: 'ヘルプ',
       resetWelcome: 'チュートリアルを表示する',
       save: '閉じる',
@@ -220,6 +234,13 @@ export const TRANSLATIONS: TranslationsMap = {
       steamVrBindingsRefresh: 'Refresh Bindings',
       openSteamVrBindingUi: 'Open Binding UI',
       steamVrBindingsMissingActions: 'Missing bindings: assign Trigger/Grip actions in Binding UI.',
+      keySoundTitle: 'Key Sound',
+      keySoundEnabled: 'Enable Key Sound',
+      keySoundEnabledDesc: 'Play a sound effect when pressing virtual keyboard keys.',
+      keySoundVariant: 'Sound Type',
+      keySoundVariantDesc: 'Choose which key sound effect to play.',
+      keySoundSoft: 'Soft',
+      keySoundMechanical: 'Mechanical',
       instructionsTitle: 'Help',
       resetWelcome: 'Show Tutorial',
       save: 'Close',

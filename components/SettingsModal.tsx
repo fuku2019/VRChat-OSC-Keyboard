@@ -6,7 +6,7 @@
 import { useState, useEffect, useRef, useCallback, FC } from 'react';
 import { X, CircleHelp, Info } from 'lucide-react';
 import { HexColorInput, HexColorPicker } from 'react-colorful';
-import { Language, UpdateCheckInterval } from '../types';
+import { KeySoundVariant, Language, UpdateCheckInterval } from '../types';
 import { TRANSLATIONS, GITHUB, STORAGE_KEYS } from '../constants';
 import { useModalAnimation } from '../hooks/useModalAnimation';
 import { useConfigStore } from '../stores/configStore';
@@ -392,6 +392,9 @@ const SettingsModal: FC<SettingsModalProps> = ({
   };
 
   const handleToggleDisableOverlay = (value: boolean) => updateConfig('disableOverlay', value);
+  const handleToggleKeySound = (value: boolean) => updateConfig('keySoundEnabled', value);
+  const handleKeySoundVariantChange = (variant: KeySoundVariant) =>
+    updateConfig('keySoundVariant', variant);
 
   const handleToggleSteamVrAutoLaunch = async (value: boolean) => {
     if (!window.electronAPI?.setSteamVrAutoLaunch) {
@@ -662,6 +665,30 @@ const SettingsModal: FC<SettingsModalProps> = ({
               <Info size={14} className='text-slate-400 mt-0.5 flex-shrink-0' />
               <span>{t.oscPortDesc}</span>
             </p>
+          </section>
+
+          <section className='pt-4 border-t dark:border-slate-700/50 border-slate-200 space-y-4'>
+            <label className={`${SECTION_LABEL_CLASS} !mb-1`}>{t.keySoundTitle}</label>
+            <ToggleRow
+              label={t.keySoundEnabled}
+              description={t.keySoundEnabledDesc}
+              enabled={localConfig.keySoundEnabled}
+              onToggle={handleToggleKeySound}
+            />
+            <div className='flex items-center justify-between gap-4'>
+              <SettingLabel label={t.keySoundVariant} description={t.keySoundVariantDesc} />
+              <select
+                value={localConfig.keySoundVariant}
+                onChange={(e) =>
+                  handleKeySoundVariantChange(e.target.value as KeySoundVariant)
+                }
+                disabled={!localConfig.keySoundEnabled}
+                className='min-w-[160px] px-3 py-2 rounded-lg text-sm border dark:bg-slate-900 bg-slate-50 dark:border-slate-600 border-slate-300 dark:text-slate-100 text-slate-800 disabled:opacity-50 disabled:cursor-not-allowed'
+              >
+                <option value='soft'>{t.keySoundSoft}</option>
+                <option value='mechanical'>{t.keySoundMechanical}</option>
+              </select>
+            </div>
           </section>
 
           <section className='pt-4 border-t dark:border-slate-700/50 border-slate-200 space-y-5'>

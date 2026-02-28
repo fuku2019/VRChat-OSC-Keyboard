@@ -18,6 +18,8 @@ const {
       autoSend: true,
       copyMode: false,
       autoSendBeforeCopyMode: false,
+      keySoundEnabled: true,
+      keySoundVariant: 'soft' as const,
       language: 'en' as const,
       theme: 'dark' as const,
       accentColor: 'cyan',

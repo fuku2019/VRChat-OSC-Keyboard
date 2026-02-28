@@ -16,6 +16,8 @@ export const DEFAULT_CONFIG = {
   AUTO_SEND: false,
   COPY_MODE: false,
   AUTO_SEND_BEFORE_COPY_MODE: false,
+  KEY_SOUND_ENABLED: true,
+  KEY_SOUND_VARIANT: 'soft' as const,
   LANGUAGE: 'ja' as const,
   THEME: 'dark' as const,
   ACCENT_COLOR: 'cyan',
