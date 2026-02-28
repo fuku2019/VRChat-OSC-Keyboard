@@ -28,6 +28,8 @@ const Key: FC<KeyProps> = ({
 
   const timerRef = useRef<number | null>(null);
   const isLongPressTriggeredRef = useRef(false);
+  const activePointerIdRef = useRef<number | null>(null);
+  const suppressNextClickRef = useRef(false);
 
   // Cleanup timer on unmount / アンマウント時にタイマーをクリーンアップ
   useEffect(() => {
@@ -40,10 +42,17 @@ const Key: FC<KeyProps> = ({
   }, []);
 
   const handlePointerDown = (e: React.PointerEvent) => {
-    // Only left click or touch / 左クリックまたはタッチのみ
-    if (e.button !== 0) return;
+    // Only primary action (left click / touch / primary pen)
+    const isPrimaryAction =
+      e.pointerType === 'mouse' ? e.button === 0 : e.isPrimary;
+    if (!isPrimaryAction) return;
 
     isLongPressTriggeredRef.current = false;
+    activePointerIdRef.current = e.pointerId;
+
+    if (e.currentTarget.hasPointerCapture?.(e.pointerId) === false) {
+      e.currentTarget.setPointerCapture?.(e.pointerId);
+    }
 
     if (onLongPress) {
       timerRef.current = window.setTimeout(() => {
@@ -54,21 +63,46 @@ const Key: FC<KeyProps> = ({
     }
   };
 
-  const handlePointerUp = () => {
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (activePointerIdRef.current === null) return;
+    if (e.pointerId !== activePointerIdRef.current) return;
+
     if (timerRef.current) {
       clearTimeout(timerRef.current);
       timerRef.current = null;
+    }
+
+    if (!isLongPressTriggeredRef.current) {
+      suppressNextClickRef.current = true;
+      onPress(config);
+    }
+
+    activePointerIdRef.current = null;
+    if (e.currentTarget.hasPointerCapture?.(e.pointerId)) {
+      e.currentTarget.releasePointerCapture?.(e.pointerId);
     }
   };
 
-  const handlePointerLeave = () => {
+  const handlePointerCancel = (e: React.PointerEvent) => {
+    if (
+      activePointerIdRef.current !== null &&
+      e.pointerId !== activePointerIdRef.current
+    ) {
+      return;
+    }
     if (timerRef.current) {
       clearTimeout(timerRef.current);
       timerRef.current = null;
     }
+    activePointerIdRef.current = null;
   };
 
   const handleClick = (e: React.MouseEvent) => {
+    if (suppressNextClickRef.current) {
+      suppressNextClickRef.current = false;
+      return;
+    }
+
     if (isLongPressTriggeredRef.current) {
       // Prevent default click action if long press happened / 長押しが発生した場合はデフォルトのクリックアクションを防ぐ
       e.stopPropagation();
@@ -116,7 +150,7 @@ const Key: FC<KeyProps> = ({
       data-vr-key='true'
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
-      onPointerLeave={handlePointerLeave}
+      onPointerCancel={handlePointerCancel}
       onMouseDown={(e) => e.preventDefault()}
       onClick={handleClick}
       type='button'
