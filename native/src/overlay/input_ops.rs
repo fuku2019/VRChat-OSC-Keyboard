@@ -221,6 +221,8 @@ impl OverlayManager {
         // Latch toggle while held:
         // avoid repeated toggles if SteamVR briefly drops action activity/state
         // during overlay visibility changes.
+        // 押しっぱなしの間のトグルをラッチする:
+        // オーバーレイの可視性が変わる間に、SteamVRがアクションのアクティビティ/状態を一時的に落とした場合の連続トグルを避けるため。
         if current_state {
             cache.toggle_release_streak = 0;
         } else if cache.toggle_release_streak < u8::MAX {

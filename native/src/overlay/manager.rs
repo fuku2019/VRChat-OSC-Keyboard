@@ -74,7 +74,7 @@ pub struct OverlayManager {
     poses_cache: RefCell<Vec<vr::TrackedDevicePose_t>>,
     input_cache: RefCell<InputActionCache>,
     _vr_token: Option<isize>,
-    // Make the manager !Send/!Sync unless we can prove thread safety.
+    // Make the manager !Send/!Sync unless we can prove thread safety / スレッドセーフティを証明できない限り、マネージャーを!Send/!Syncにする
     _not_send: PhantomData<Rc<()>>,
 }
 
@@ -178,7 +178,7 @@ impl OverlayManager {
 
             // Get IVROverlay interface // IVROverlay interface取得
             // C bindings require FnTable_ prefix for function table access
-            // CバインディングではFnTable_プレフィックスが必要
+            // Cバインディングでは関数テーブルへアクセスするための FnTable_ プレフィックスが必要
             let mut error = vr::EVRInitError_VRInitError_None;
             let overlay_raw = vr::VR_GetGenericInterface(overlay_ver.as_ptr(), &mut error)
                 as *mut vr::VR_IVROverlay_FnTable;
@@ -234,7 +234,7 @@ impl OverlayManager {
             };
 
             // Increment after all failable steps so early return won't leave stale count
-            // 失敗しうる処理の後にインクリメントし、途中returnでカウンタが不整合にならないようにする
+            // 早期リターンにより古いカウントが残らないよう、すべての失敗しうるステップの後にインクリメントする
             VR_INIT_COUNT.fetch_add(1, Ordering::SeqCst);
 
             Ok(OverlayManager {

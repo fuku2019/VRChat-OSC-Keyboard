@@ -6,16 +6,16 @@ function getOverlayWorldTransform(handle) {
   if (!state.overlayManager) {
     throw new Error('Overlay manager not available');
   }
-  // 0 = Absolute, 1 = Relative
+  // 0 = Absolute (絶対的), 1 = Relative (相対的)
   const type = state.overlayManager.getOverlayTransformType(handle);
   // console.log(`Overlay transform type: ${type}`);
 
-  // Helper for Relative Logic
+  // Helper for Relative Logic / 相対的ロジックのヘルパー
   const getRelativeAsWorld = () => {
-    // Relative: Compute World = Device * Relative
+    // Relative: Compute World = Device * Relative / 相対: Compute World = Device * Relative
     const rel = state.overlayManager.getOverlayTransformRelative(handle);
 
-    // Get Device Pose (World)
+    // Get Device Pose (World) / デバイスポーズ（ワールド）を取得
     const devicePose = state.overlayManager.getControllerPose(
       rel.trackedDeviceIndex,
     );
@@ -35,19 +35,19 @@ function getOverlayWorldTransform(handle) {
   };
 
   if (type === 0) {
-    // Absolute
+    // Absolute / 絶対的
     try {
       return state.overlayManager.getOverlayTransformAbsolute(handle);
     } catch (e) {
       console.warn(
         `GetOverlayTransformAbsolute failed (Type=0), trying relative fallback. Error: ${e.message}`,
       );
-      // Fallback to relative if Absolute fails (Workaround for "InvalidParameter" error)
+      // Fallback to relative if Absolute fails (Workaround for "InvalidParameter" error) / Absoluteが失敗した場合は相対的フォールバック（"InvalidParameter"エラーの回避策）
       return getRelativeAsWorld();
     }
   }
   if (type === 1) {
-    // Relative
+    // Relative / 相対的
     return getRelativeAsWorld();
   }
   throw new Error(`Unsupported overlay transform type: ${type}`);
@@ -57,14 +57,14 @@ export function startDrag(controllerId, poseMatrix, overlayHandle) {
   try {
     console.log(`Starting drag with controller ${controllerId}`);
 
-    // Calculate inverse start controller matrix.
+    // Calculate inverse start controller matrix / 開始コントローラー行列の逆行列を計算
     const startMat = mat4.clone(poseMatrix);
     const inverted = mat4.invert(state.drag.startControllerInverse, startMat);
     if (!inverted) {
       throw new Error('Controller pose matrix is not invertible');
     }
 
-    // Get current overlay transform (handling relative case).
+    // Get current overlay transform (handling relative case) / 現在のオーバーレイ変換を取得（相対の場合の処理を含む）
     const overlayTransform = getOverlayWorldTransform(overlayHandle);
     mat4.copy(state.drag.startOverlayTransform, overlayTransform);
 
@@ -78,10 +78,10 @@ export function startDrag(controllerId, poseMatrix, overlayHandle) {
 
 export function updateDrag(controllerId, poseMatrix, overlayHandle) {
   try {
-    // Current Controller Matrix (Row-Major array, treated as Transpose(Current))
+    // Current Controller Matrix (Row-Major array, treated as Transpose(Current)) / 現在のコントローラー行列（Row-Major配列、現在の転置として扱う）
     const currentMat = mat4.clone(poseMatrix);
 
-    // Calculate Delta
+    // Calculate Delta / 差分を計算する
     // We want Delta = Current * Start^-1
     // In our storage convention (Transposed):
     // Delta_gl = (Current * Start^-1)^T = (Start^-1)^T * Current^T
@@ -89,7 +89,7 @@ export function updateDrag(controllerId, poseMatrix, overlayHandle) {
     const delta = mat4.create();
     mat4.multiply(delta, state.drag.startControllerInverse, currentMat);
 
-    // Calculate New Overlay
+    // Calculate New Overlay / 新しいオーバーレイを計算する
     // NewOverlay = Delta * StartOverlay (Apply delta to overlay)
     // Wait, for Rigid body attachment (grabing logic): NewOverlay * Inverse(StartOverlay) = Delta ?
     // Standard "Object follows Controller":
@@ -108,7 +108,7 @@ export function updateDrag(controllerId, poseMatrix, overlayHandle) {
     const newOverlay = mat4.create();
     mat4.multiply(newOverlay, state.drag.startOverlayTransform, delta);
 
-    // While dragging, face the overlay toward the HMD
+    // While dragging, face the overlay toward the HMD / ドラッグ中、オーバーレイをHMDの方に向ける
     orientOverlayTowardHmd(newOverlay);
 
     // Apply to Native / ネイティブに適用
@@ -133,7 +133,7 @@ export function processGripDrag(
   controllerState,
   hit,
 ) {
-  // 2. Grip Interaction (Move Overlay)
+  // 2. Grip Interaction (Move Overlay) / グリップインタラクション（オーバーレイ移動）
   // Priority: If already dragging, continue. If not, checking grip press.
   if (!state.drag.isDragging) {
     if (controllerState.gripPressed && hit) {
@@ -153,7 +153,7 @@ function orientOverlayTowardHmd(overlayMat) {
   const hmdPose = state.overlayManager.getControllerPose(0);
   if (!hmdPose || hmdPose.length === 0) return false;
 
-  // Row-major translation
+  // Row-major translation / 行優先（Row-major）の平行移動
   const overlayPos = vec3.fromValues(
     overlayMat[3],
     overlayMat[7],
@@ -167,7 +167,7 @@ function orientOverlayTowardHmd(overlayMat) {
   if (!Number.isFinite(distance) || distance < 1e-5) return false;
   vec3.scale(toHmd, toHmd, 1 / distance);
 
-  // OpenVR forward uses -Z axis, so set forward column toward HMD direction
+  // OpenVR forward uses -Z axis, so set forward column toward HMD direction / OpenVRの前方は -Z 軸を使用するため、前方カラムをHMD方向に設定する
   const forward = vec3.create();
   vec3.scale(forward, toHmd, 1);
 
@@ -185,7 +185,7 @@ function orientOverlayTowardHmd(overlayMat) {
   vec3.cross(trueUp, forward, right);
   vec3.normalize(trueUp, trueUp);
 
-  // Set rotation columns (row-major: columns are basis vectors)
+  // Set rotation columns (row-major: columns are basis vectors) / 回転列を設定する（行優先: 列は基底ベクトル）
   overlayMat[0] = right[0];
   overlayMat[4] = right[1];
   overlayMat[8] = right[2];

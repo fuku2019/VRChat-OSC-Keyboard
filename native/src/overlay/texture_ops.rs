@@ -134,6 +134,7 @@ impl OverlayManager {
                 .clone();
 
             // Upload BGRA bytes and run GPU conversion pass
+            // BGRAバイトをアップロードし、GPU変換パスを実行する
             d3d11.upload_bgra_buffer(buffer.as_ptr(), buffer.len(), row_pitch, width, height)?;
             d3d11.convert_bgra_to_rgba(width, height)?;
 

@@ -81,7 +81,7 @@ const App = () => {
       return;
     }
 
-    // Typing Indicator Logic
+    // Typing Indicator Logic タイピングインジケーターのロジック
     if (text.length > 0) {
       sendTypingStatus(true);
       resetTypingTimeout();
@@ -91,7 +91,7 @@ const App = () => {
       sendTypingStatus(false);
     }
 
-    // Auto-Send Logic
+    // Auto-Send Logic 自動送信ロジック
     if (config.autoSend) {
       throttledAutoSend(text, config.bridgeUrl);
     }
@@ -128,8 +128,10 @@ const App = () => {
     handleInputEffect,
   });
 
+  // Create virtual key handlers / 仮想キーハンドラーを作成
   const virtualKeyHandlers = createVirtualKeyHandlers();
 
+  // Get translations / 翻訳を取得
   const t = TRANSLATIONS[config.language];
 
   // Check for first launch to show tutorial / 初回起動を確認してチュートリアルを表示
@@ -150,22 +152,26 @@ const App = () => {
     sendTypingStatus(false);
   };
 
+  // Handle tutorial close / チュートリアルを閉じる処理
   const handleTutorialClose = () => {
     setIsTutorialOpen(false);
     localStorage.setItem(STORAGE_KEYS.HAS_SEEN_TUTORIAL, 'true');
     setTimeout(() => textareaRef.current?.focus(), TIMEOUTS.FOCUS_DELAY);
   };
 
+  // Open tutorial from settings / 設定からチュートリアルを開く処理
   const handleOpenTutorialFromSettings = () => {
     setIsSettingsOpen(false);
     setIsTutorialOpen(true);
   };
 
+  // Toggle auto-send mode / 自動送信モードの切り替え
   const handleAutoSendToggle = () => {
     if (config.copyMode) return;
     updateConfig('autoSend', !config.autoSend);
   };
 
+  // Toggle copy mode / コピーモードの切り替え
   const handleCopyModeToggle = () => {
     if (!config.copyMode) {
       updateConfig('autoSendBeforeCopyMode', config.autoSend);
@@ -180,6 +186,7 @@ const App = () => {
     updateConfig('autoSend', config.autoSendBeforeCopyMode);
   };
 
+  // Copy text to clipboard / クリップボードへテキストをコピー
   const copyTextToClipboard = async (text: string): Promise<boolean> => {
     try {
       if (navigator.clipboard?.writeText) {
@@ -214,6 +221,7 @@ const App = () => {
     }
   };
 
+  // Handle primary action (Send or Copy) / プライマリアクション（送信またはコピー）の処理
   async function handlePrimaryAction() {
     if (!config.copyMode) {
       await triggerSend(textareaRef);
@@ -265,11 +273,15 @@ const App = () => {
                   : 'dark:bg-slate-800/80 bg-white/80 dark:hover:bg-slate-700 hover:bg-slate-100 dark:text-slate-500 text-slate-400 border-slate-200 dark:border-slate-700'
               }
             `}
-            title={config.copyMode ? t.controls.copyModeOn : t.controls.copyModeOff}
+            title={
+              config.copyMode ? t.controls.copyModeOn : t.controls.copyModeOff
+            }
           >
             <Copy size={20} />
             <span className='text-xs font-bold hidden md:inline'>
-              {config.copyMode ? t.controls.copyOnShort : t.controls.copyOffShort}
+              {config.copyMode
+                ? t.controls.copyOnShort
+                : t.controls.copyOffShort}
             </span>
           </button>
 
@@ -324,7 +336,7 @@ const App = () => {
       <div className='w-full max-w-5xl mb-4 relative shrink-0 group px-1'>
         <div
           className={`
-          relative w-full h-24 md:h-32 dark:bg-slate-900/80 bg-white/80 rounded-2xl border-2 
+          relative w-full h-24 md:h-32 dark:bg-slate-900/80 bg-white/80 rounded-2xl border-2
           flex flex-col px-6 py-2 shadow-inner backdrop-blur transition-colors
           ${error ? 'border-red-500/50' : 'dark:border-slate-700 border-slate-200 focus-within:border-primary-500/50'}
         `}

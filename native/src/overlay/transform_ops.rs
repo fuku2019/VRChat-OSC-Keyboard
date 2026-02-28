@@ -29,7 +29,7 @@ impl OverlayManager {
                 ],
             };
 
-            // k_unTrackedDeviceIndex_Hmd = 0 (HMD device index)
+            // k_unTrackedDeviceIndex_Hmd = 0 (HMD device index) / HMDのデバイスインデックス
             let err = set_transform_fn(handle.as_u64(), HMD_DEVICE_INDEX, &mut transform);
             if err != vr::EVROverlayError_VROverlayError_None {
                 return Err(overlay_error(
@@ -105,6 +105,9 @@ impl OverlayManager {
             // Calculate inverse to correct OpenVR's expectation?
             // Actually SetOverlayTransformAbsolute takes the transform from TrackingOrigin to Overlay.
             // If the matrix provided is the world transform of the overlay, it should be correct directly.
+            // OpenVRの期待値に合わせるために逆行列を計算するか？
+            // 実際には SetOverlayTransformAbsolute は TrackingOrigin からの Overlay の変換を取る。
+            // 提供された行列がオーバーレイのワールド変換であれば、直接そのままで正しいはず。
 
             let err = set_transform_fn(
                 handle.as_u64(),

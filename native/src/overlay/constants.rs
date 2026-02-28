@@ -7,13 +7,13 @@ pub(super) const DEFAULT_INPUT_INTERFACE: &str = "FnTable:IVRInput_010";
 pub(super) const BYTES_PER_PIXEL: u32 = 4;
 pub(super) const HMD_DEVICE_INDEX: u32 = 0;
 
-// Controller button bitmasks
+// Controller button bitmasks / コントローラーボタンのビットマスク
 pub(super) const BUTTON_TRIGGER: u64 = 1u64 << 33; // k_EButton_SteamVR_Trigger
 pub(super) const BUTTON_GRIP: u64 = 1u64 << 2; // k_EButton_Grip
 pub(super) const BUTTON_TOUCHPAD: u64 = 1u64 << 32; // k_EButton_SteamVR_Touchpad
-pub(super) const BUTTON_JOYSTICK: u64 = 1u64 << 34; // k_EButton_Axis2 (often joystick click)
+pub(super) const BUTTON_JOYSTICK: u64 = 1u64 << 34; // k_EButton_Axis2 (often joystick click) / k_EButton_Axis2 (多くの場合ジョイスティックのクリック)
 
-// Controller axis indices
+// Controller axis indices / コントローラー軸のインデックス
 pub(super) const AXIS_TRIGGER: usize = 1;
 pub(super) const AXIS_TOUCHPAD: usize = 0;
 pub(super) const AXIS_JOYSTICK: usize = 2;

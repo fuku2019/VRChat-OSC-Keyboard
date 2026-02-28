@@ -67,6 +67,8 @@ impl OverlayManager {
         unsafe {
             // Getting generic tracker pose
             // OpenVR API gets array of poses.
+            // 汎用トラッカーポーズの取得
+            // OpenVR APIはポーズの配列を取得する。
             get_pose_fn(
                 vr::ETrackingUniverseOrigin_TrackingUniverseStanding,
                 0.0,

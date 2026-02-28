@@ -32,7 +32,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getBridgePort: () => ipcRenderer.invoke('get-bridge-port'),
 
   // Japanese IME candidate conversion / 日本語IME候補変換
-  imeConvert: (kana, context) => ipcRenderer.invoke('jp-ime:convert', kana, context),
+  imeConvert: (kana, context) =>
+    ipcRenderer.invoke('jp-ime:convert', kana, context),
   imeNextCandidate: () => ipcRenderer.invoke('jp-ime:next-candidate'),
   imePrevCandidate: () => ipcRenderer.invoke('jp-ime:prev-candidate'),
   imeCommitCandidate: (candidateIndex, context) =>
@@ -40,9 +41,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   imeCancelConversion: () => ipcRenderer.invoke('jp-ime:cancel'),
 
   // Send window size to main process / メインプロセスにウィンドウサイズを送信
-  sendWindowSize: (width, height) => ipcRenderer.send('window-size', { width, height }),
+  sendWindowSize: (width, height) =>
+    ipcRenderer.send('window-size', { width, height }),
   // Send renderer metrics to main process / レンダラーメトリクスをメインプロセスに送信
-  sendRendererMetrics: (metrics) => ipcRenderer.send('renderer-metrics', metrics),
+  sendRendererMetrics: (metrics) =>
+    ipcRenderer.send('renderer-metrics', metrics),
 
   // VR Controller cursor events / VRコントローラーカーソルイベント
   onCursorMove: (callback) => {
@@ -111,13 +114,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.removeListener('input-scroll', wrapped);
     inputScrollListenerMap.delete(callback);
   },
-  
-  // Reset overlay position
+
+  // Reset overlay position / オーバーレイ位置のリセット
   resetOverlayPosition: () => ipcRenderer.invoke('reset-overlay-position'),
   restartApp: () => ipcRenderer.invoke('restart-app'),
-  // Overlay settings
+  // Overlay settings / オーバーレイ設定
   getOverlaySettings: () => ipcRenderer.invoke('get-overlay-settings'),
-  setOverlaySettings: (settings) => ipcRenderer.invoke('set-overlay-settings', settings),
+  setOverlaySettings: (settings) =>
+    ipcRenderer.invoke('set-overlay-settings', settings),
   getSteamVrAutoLaunch: () => ipcRenderer.invoke('get-steamvr-auto-launch'),
   setSteamVrAutoLaunch: (enabled) =>
     ipcRenderer.invoke('set-steamvr-auto-launch', enabled),
