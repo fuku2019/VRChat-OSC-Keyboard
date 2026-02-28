@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 
-const DEFAULT_SOUND_SRC = 'sounds/key-soft.wav';
+const DEFAULT_SOUND_SRC = '/sounds/key-soft.mp3';
 const AUDIO_POOL_SIZE = 6;
 const DEFAULT_VOLUME = 0.22;
 
@@ -20,6 +20,7 @@ export const useKeyPressSound = ({
   const audioPoolRef = useRef<HTMLAudioElement[]>([]);
   const audioIndexRef = useRef(0);
   const audioFileErroredRef = useRef(false);
+  const audioLoadErrorCountRef = useRef(0);
   const audioContextRef = useRef<AudioContext | null>(null);
   const normalizedVolume = clampVolume(volume);
 
@@ -30,25 +31,31 @@ export const useKeyPressSound = ({
     }
 
     audioFileErroredRef.current = false;
-    const pool = Array.from({ length: AUDIO_POOL_SIZE }, () => {
+    audioLoadErrorCountRef.current = 0;
+    const poolWithHandlers = Array.from({ length: AUDIO_POOL_SIZE }, () => {
       const audio = new Audio(src);
       audio.preload = 'auto';
       audio.volume = normalizedVolume;
+      const handleError = () => {
+        audioLoadErrorCountRef.current += 1;
+        if (audioLoadErrorCountRef.current >= AUDIO_POOL_SIZE) {
+          audioFileErroredRef.current = true;
+        }
+      };
       audio.addEventListener(
         'error',
-        () => {
-          audioFileErroredRef.current = true;
-        },
+        handleError,
         { once: true },
       );
-      return audio;
+      return { audio, handleError };
     });
+    const pool = poolWithHandlers.map((entry) => entry.audio);
 
     audioPoolRef.current = pool;
     return () => {
-      pool.forEach((audio) => {
+      poolWithHandlers.forEach(({ audio, handleError }) => {
+        audio.removeEventListener('error', handleError);
         audio.pause();
-        audio.src = '';
       });
       audioPoolRef.current = [];
     };
@@ -99,12 +106,23 @@ export const useKeyPressSound = ({
     }
 
     const pool = audioPoolRef.current;
-    const audio = pool[audioIndexRef.current];
-    audioIndexRef.current = (audioIndexRef.current + 1) % pool.length;
-    audio.currentTime = 0;
-    void audio.play().catch(() => {
-      playFallbackClick();
-    });
+    for (let i = 0; i < pool.length; i += 1) {
+      const index = audioIndexRef.current;
+      const audio = pool[index];
+      audioIndexRef.current = (audioIndexRef.current + 1) % pool.length;
+
+      if (audio.error) {
+        continue;
+      }
+
+      audio.currentTime = 0;
+      void audio.play().catch(() => {
+        playFallbackClick();
+      });
+      return;
+    }
+
+    playFallbackClick();
   }, [enabled, playFallbackClick]);
 
   return play;

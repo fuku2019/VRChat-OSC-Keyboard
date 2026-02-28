@@ -4,11 +4,11 @@ Place your key press sound files in this directory.
 
 ## Selectable files
 
-- `key-soft.wav` (soft)
-- `key-mechanical.wav` (mechanical)
+- `key-soft.mp3` (soft)
+- `key-mechanical.mp3` (mechanical)
 
 ## Notes
 
-- Recommended format: very short WAV/OGG (10-80ms).
+- Recommended format: very short MP3/OGG (10-80ms).
 - Keep peak volume low to avoid clipping on rapid typing.
-- Current implementation plays `sounds/key-soft.wav` or `sounds/key-mechanical.wav` from the app root.
+- Current implementation plays `/sounds/key-soft.mp3` or `/sounds/key-mechanical.mp3` from the app root.
