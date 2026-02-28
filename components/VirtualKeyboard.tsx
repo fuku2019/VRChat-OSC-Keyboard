@@ -7,6 +7,7 @@ import { useKeyPressSound } from '../hooks/useKeyPressSound';
 import packageJson from '../package.json';
 
 const APP_VERSION = packageJson.version;
+const SOUND_BASE_URL = `${import.meta.env.BASE_URL}sounds/`;
 
 interface VirtualKeyboardProps {
   onChar: (char: string) => void;
@@ -27,8 +28,8 @@ interface VirtualKeyboardProps {
 }
 
 const SOUND_SRC_MAP: Record<KeySoundVariant, string> = {
-  soft: '/sounds/key-soft.mp3',
-  mechanical: '/sounds/key-mechanical.mp3',
+  soft: `${SOUND_BASE_URL}key-soft.mp3`,
+  mechanical: `${SOUND_BASE_URL}key-mechanical.mp3`,
 };
 
 const VirtualKeyboard: FC<VirtualKeyboardProps> = ({
