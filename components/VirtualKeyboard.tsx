@@ -1,8 +1,9 @@
 import { useState, FC, memo } from 'react';
 import { KEYBOARD_LAYOUT, TRANSLATIONS, KEYBOARD_GRID } from '../constants';
-import { KeyConfig, InputMode, Language } from '../types';
+import { KeyConfig, InputMode, Language, KeySoundVariant } from '../types';
 import type { ImeCandidate } from '../types/ime';
 import Key from './Key';
+import { useKeyPressSound } from '../hooks/useKeyPressSound';
 import packageJson from '../package.json';
 
 const APP_VERSION = packageJson.version;
@@ -21,7 +22,14 @@ interface VirtualKeyboardProps {
   isConverting: boolean;
   onCommitCandidate: (index: number) => void;
   language: Language;
+  keySoundEnabled: boolean;
+  keySoundVariant: KeySoundVariant;
 }
+
+const SOUND_SRC_MAP: Record<KeySoundVariant, string> = {
+  soft: 'sounds/key-soft.wav',
+  mechanical: 'sounds/key-mechanical.wav',
+};
 
 const VirtualKeyboard: FC<VirtualKeyboardProps> = ({
   onChar,
@@ -37,12 +45,20 @@ const VirtualKeyboard: FC<VirtualKeyboardProps> = ({
   isConverting,
   onCommitCandidate,
   language,
+  keySoundEnabled,
+  keySoundVariant,
 }) => {
   const [shift, setShift] = useState(false);
   const [capsLock, setCapsLock] = useState(false);
   const tKeys = TRANSLATIONS[language].keys;
+  const playKeyPressSound = useKeyPressSound({
+    enabled: keySoundEnabled,
+    src: SOUND_SRC_MAP[keySoundVariant],
+  });
 
   const handleKeyPress = (key: KeyConfig) => {
+    playKeyPressSound();
+
     switch (key.action) {
       case 'shift':
         if (capsLock) {
@@ -90,8 +106,19 @@ const VirtualKeyboard: FC<VirtualKeyboardProps> = ({
   };
 
   const handleShiftLongPress = () => {
+    playKeyPressSound();
     setCapsLock(!capsLock);
     setShift(false); // Reset temp shift logic / 一時的なシフトロジックをリセット
+  };
+
+  const handleCandidateCommit = (index: number) => {
+    playKeyPressSound();
+    onCommitCandidate(index);
+  };
+
+  const handlePrevCandidate = () => {
+    playKeyPressSound();
+    onPrevCandidate();
   };
 
   return (
@@ -104,7 +131,7 @@ const VirtualKeyboard: FC<VirtualKeyboardProps> = ({
                 <button
                   key={`${candidate.text}-${index}`}
                   type='button'
-                  onClick={() => onCommitCandidate(index)}
+                  onClick={() => handleCandidateCommit(index)}
                   className={`h-7 px-3 rounded-lg text-sm border transition-colors whitespace-nowrap ${
                     index === candidateIndex
                       ? 'bg-primary-500/20 border-primary-500 text-primary-700 dark:text-primary-200'
@@ -121,7 +148,7 @@ const VirtualKeyboard: FC<VirtualKeyboardProps> = ({
         </div>
         <button
           type='button'
-          onClick={onPrevCandidate}
+          onClick={handlePrevCandidate}
           className='h-7 text-xs px-2 rounded border dark:border-slate-600 border-slate-400 dark:text-slate-200 text-slate-700 dark:bg-slate-800/70 bg-white/70 hover:border-primary-500 transition-colors'
           title='Previous candidate (Shift+Space)'
         >

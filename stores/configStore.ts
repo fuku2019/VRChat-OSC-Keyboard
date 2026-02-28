@@ -11,6 +11,11 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const isValidPort = (port: unknown): port is number =>
   typeof port === 'number' && Number.isInteger(port) && port >= 1 && port <= 65535;
 
+const isValidKeySoundVariant = (
+  value: unknown,
+): value is 'soft' | 'mechanical' =>
+  value === 'soft' || value === 'mechanical';
+
 // Store state type / ストアの状態型
 interface ConfigStore {
   config: OscConfig;
@@ -37,6 +42,11 @@ const loadConfigFromStorage = (): OscConfig => {
         autoSendBeforeCopyMode:
           parsed.autoSendBeforeCopyMode ??
           DEFAULT_CONFIG.AUTO_SEND_BEFORE_COPY_MODE,
+        keySoundEnabled:
+          parsed.keySoundEnabled ?? DEFAULT_CONFIG.KEY_SOUND_ENABLED,
+        keySoundVariant: isValidKeySoundVariant(parsed.keySoundVariant)
+          ? parsed.keySoundVariant
+          : DEFAULT_CONFIG.KEY_SOUND_VARIANT,
         language: parsed.language || DEFAULT_CONFIG.LANGUAGE,
         theme: parsed.theme || DEFAULT_CONFIG.THEME,
         accentColor: sanitizeAccentColor(
@@ -62,6 +72,8 @@ const loadConfigFromStorage = (): OscConfig => {
     autoSend: DEFAULT_CONFIG.AUTO_SEND,
     copyMode: DEFAULT_CONFIG.COPY_MODE,
     autoSendBeforeCopyMode: DEFAULT_CONFIG.AUTO_SEND_BEFORE_COPY_MODE,
+    keySoundEnabled: DEFAULT_CONFIG.KEY_SOUND_ENABLED,
+    keySoundVariant: DEFAULT_CONFIG.KEY_SOUND_VARIANT,
     language: DEFAULT_CONFIG.LANGUAGE,
     theme: DEFAULT_CONFIG.THEME,
     accentColor: DEFAULT_CONFIG.ACCENT_COLOR,

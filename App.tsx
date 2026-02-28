@@ -375,6 +375,8 @@ const App = () => {
           isConverting={isConverting}
           onCommitCandidate={handleCommitCandidate}
           language={config.language}
+          keySoundEnabled={config.keySoundEnabled}
+          keySoundVariant={config.keySoundVariant}
         />
       </div>
 
