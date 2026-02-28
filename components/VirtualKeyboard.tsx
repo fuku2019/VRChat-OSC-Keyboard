@@ -11,7 +11,8 @@ interface VirtualKeyboardProps {
   onBackspace: () => void;
   onClear: () => void;
   onSend: () => void;
-  onSpace: () => void;
+  onSpace: (options?: { shift?: boolean }) => void;
+  onPrevCandidate: () => void;
   mode: InputMode;
   onToggleMode: () => void;
   buffer: string;
@@ -24,6 +25,7 @@ const VirtualKeyboard: FC<VirtualKeyboardProps> = ({
   onClear,
   onSend,
   onSpace,
+  onPrevCandidate,
   mode,
   onToggleMode,
   buffer,
@@ -53,7 +55,10 @@ const VirtualKeyboard: FC<VirtualKeyboardProps> = ({
         onSend();
         return;
       case 'space':
-        onSpace();
+        onSpace({ shift: shift || capsLock });
+        if (shift && !capsLock) {
+          setShift(false);
+        }
         return;
       case 'mode':
         onToggleMode();
@@ -84,12 +89,22 @@ const VirtualKeyboard: FC<VirtualKeyboardProps> = ({
 
   return (
     <div className='flex flex-col w-full max-w-5xl mx-auto p-2 dark:bg-slate-900/90 bg-slate-100/90 rounded-2xl shadow-2xl border dark:border-slate-700 border-slate-300 select-none backdrop-blur-sm transition-colors duration-300'>
-      <div className='h-8 mb-2 px-4 flex items-center dark:text-primary-300 text-primary-700 font-mono text-lg overflow-hidden'>
-        {buffer && (
-          <span className='border-b-2 border-primary-500 animate-pulse dark:bg-primary-900/30 bg-primary-100 px-1 rounded'>
-            {buffer}
-          </span>
-        )}
+      <div className='h-8 mb-2 px-4 flex items-center justify-between dark:text-primary-300 text-primary-700 font-mono text-lg overflow-hidden'>
+        <div className='overflow-hidden'>
+          {buffer && (
+            <span className='border-b-2 border-primary-500 animate-pulse dark:bg-primary-900/30 bg-primary-100 px-1 rounded'>
+              {buffer}
+            </span>
+          )}
+        </div>
+        <button
+          type='button'
+          onClick={onPrevCandidate}
+          className='text-xs px-2 py-1 rounded border dark:border-slate-600 border-slate-400 dark:text-slate-200 text-slate-700 dark:bg-slate-800/70 bg-white/70 hover:border-primary-500 transition-colors'
+          title='Previous candidate (Shift+Space)'
+        >
+          Prev
+        </button>
       </div>
 
       <div

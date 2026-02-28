@@ -1,6 +1,8 @@
 // Global TypeScript declarations / グローバルTypeScript宣言
 // This file defines global types and constants / このファイルはグローバル型と定数を定義
 
+import type { ImeContext, ImeResponse } from './ime';
+
 // Electron API exposed via preload / preload経由で公開されるElectron API
 interface UpdateOscPortResult {
   success: boolean;
@@ -39,6 +41,14 @@ interface ElectronAPI {
     newValue: any,
   ) => Promise<{ success: boolean; error?: string }>;
   sendTypingStatus: (isTyping: boolean) => Promise<{ success: boolean; error?: string }>;
+  imeConvert: (kana: string, context?: ImeContext) => Promise<ImeResponse>;
+  imeNextCandidate: () => Promise<ImeResponse>;
+  imePrevCandidate: () => Promise<ImeResponse>;
+  imeCommitCandidate: (
+    candidateIndex?: number,
+    context?: { previousWord?: string; currentInput?: string },
+  ) => Promise<ImeResponse>;
+  imeCancelConversion: () => Promise<ImeResponse>;
   resetOverlayPosition: () => Promise<{ success: boolean }>;
   restartApp: () => Promise<{ success: boolean; error?: string }>;
   sendWindowSize: (width: number, height: number) => void;

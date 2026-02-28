@@ -28,6 +28,9 @@ const App = () => {
   const {
     input,
     buffer,
+    candidates,
+    candidateIndex,
+    isConverting,
     displayText,
     mode,
     setMode,
@@ -37,6 +40,9 @@ const App = () => {
     handleBackspace,
     handleClear,
     handleSpace,
+    handlePrevCandidate,
+    handleCommitCandidate,
+    handleCancelConversion,
     commitBuffer,
   } = useIME(InputMode.HIRAGANA);
 
@@ -105,6 +111,7 @@ const App = () => {
     input,
     buffer,
     displayText,
+    isConverting,
     mode,
     setMode,
     setInput,
@@ -113,6 +120,9 @@ const App = () => {
     handleBackspace,
     handleClear,
     handleSpace,
+    handlePrevCandidate,
+    handleCommitCandidate,
+    handleCancelConversion,
     commitBuffer,
     handlePrimaryAction,
     handleInputEffect,
@@ -353,6 +363,26 @@ const App = () => {
             autoFocus
           />
         </div>
+        {isConverting && candidates.length > 0 && (
+          <div className='mt-2 px-2 flex flex-wrap items-center gap-2'>
+            {candidates.slice(0, 5).map((candidate, index) => (
+              <button
+                key={`${candidate.text}-${index}`}
+                type='button'
+                onClick={() => handleCommitCandidate(index)}
+                className={`px-3 py-1 rounded-lg text-sm border transition-colors ${
+                  index === candidateIndex
+                    ? 'bg-primary-500/20 border-primary-500 text-primary-700 dark:text-primary-200'
+                    : 'dark:bg-slate-900/60 bg-white/80 dark:border-slate-700 border-slate-300 dark:text-slate-200 text-slate-700 hover:border-primary-500'
+                }`}
+                title={candidate.source ? `${candidate.source}` : 'candidate'}
+              >
+                <span className='mr-1 text-[10px] opacity-70'>{index + 1}</span>
+                {candidate.text}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Virtual Keyboard / 仮想キーボード */}

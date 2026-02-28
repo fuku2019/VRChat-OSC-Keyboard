@@ -1,23 +1,92 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useRef } from 'react';
 import { InputMode } from '../types';
 import { toKana, convertToKatakana } from '../utils/ime';
 import { CHATBOX } from '../constants';
+import type { ImeCandidate, ImeContext, ImeSegment, ImeState } from '../types/ime';
+
+const LOCAL_MAX_CANDIDATES = 20;
 
 interface UseIMEReturn {
   input: string; // Committed text / 確定したテキスト
-  buffer: string; // Typing buffer (pre-conversion) / 入力バッファ（変換前）
-  displayText: string; // Text to display (input with buffer inserted at correct position) / 表示用テキスト（バッファを正しい位置に挿入したinput）
-  bufferPosition: number | null; // Position where buffer is inserted / バッファが挿入される位置
+  buffer: string; // Romaji typing buffer / ローマ字入力バッファ
+  rawKana: string; // Kana preedit before conversion / 変換前のかな
+  segments: ImeSegment[];
+  candidates: ImeCandidate[];
+  candidateIndex: number;
+  isConverting: boolean;
+  displayText: string; // Text for textarea / テキストエリア表示用文字列
+  bufferPosition: number | null; // Position where preedit is inserted / 未確定文字列の挿入位置
   mode: InputMode;
   setMode: (mode: InputMode) => void;
   setInput: (text: string) => void;
-  overwriteInput: (text: string) => string; // For syncing with physical textarea / 物理的なテキストエリアと同期するため
+  overwriteInput: (text: string) => string; // For physical textarea sync / 物理テキストエリア同期用
   handleCharInput: (char: string, cursorPosition?: number) => void;
   handleBackspace: (cursorPosition?: number) => void;
   handleClear: () => void;
-  handleSpace: (cursorPosition?: number) => void;
+  handleSpace: (cursorPosition?: number, options?: { shift?: boolean }) => void;
+  handlePrevCandidate: () => void;
+  handleCommitCandidate: (index?: number) => void;
+  handleCancelConversion: () => void;
   commitBuffer: () => void;
 }
+
+const katakanaToHiragana = (text: string): string =>
+  text.replace(/[\u30a1-\u30f6]/g, (char) =>
+    String.fromCharCode(char.charCodeAt(0) - 0x60),
+  );
+
+const dedupeCandidates = (items: ImeCandidate[]): ImeCandidate[] => {
+  const seen = new Set<string>();
+  const result: ImeCandidate[] = [];
+  for (const item of items) {
+    const text = String(item?.text || '').trim();
+    if (!text || seen.has(text)) continue;
+    seen.add(text);
+    result.push({ ...item, text });
+    if (result.length >= LOCAL_MAX_CANDIDATES) break;
+  }
+  return result;
+};
+
+const extractPreviousWord = (text: string): string => {
+  const trimmed = String(text || '').trim();
+  if (!trimmed) return '';
+  const parts = trimmed.split(/\s+/);
+  return parts[parts.length - 1] || '';
+};
+
+const buildLocalFallbackCandidates = (kana: string): ImeCandidate[] => {
+  const normalizedKana = katakanaToHiragana(kana);
+  const fallback: ImeCandidate[] = [
+    {
+      text: normalizedKana,
+      reading: normalizedKana,
+      source: 'fallback',
+      dictSource: 'fallback',
+      score: 10,
+    },
+    {
+      text: convertToKatakana(normalizedKana),
+      reading: normalizedKana,
+      source: 'fallback',
+      dictSource: 'fallback',
+      score: 9,
+    },
+  ];
+  return dedupeCandidates(fallback);
+};
+
+const hasImeIpcApi = () => {
+  if (typeof window === 'undefined') return false;
+  const api = window.electronAPI;
+  return Boolean(
+    api?.imeConvert &&
+      api?.imeNextCandidate &&
+      api?.imePrevCandidate &&
+      api?.imeCommitCandidate &&
+      api?.imeCancelConversion,
+  );
+};
 
 export const useIME = (
   initialMode: InputMode = InputMode.HIRAGANA,
@@ -25,155 +94,375 @@ export const useIME = (
 ): UseIMEReturn => {
   const [input, setInput] = useState('');
   const [buffer, setBuffer] = useState('');
+  const [rawKana, setRawKana] = useState('');
+  const [segments, setSegments] = useState<ImeSegment[]>([]);
+  const [candidates, setCandidates] = useState<ImeCandidate[]>([]);
+  const [candidateIndex, setCandidateIndex] = useState(0);
+  const [isConverting, setIsConverting] = useState(false);
   const [bufferPosition, setBufferPosition] = useState<number | null>(null);
   const [mode, setMode] = useState<InputMode>(initialMode);
+  const ipcRequestIdRef = useRef(0);
 
-  // Calculate display text with buffer inserted at correct position / バッファを正しい位置に挿入した表示用テキストを計算
-  const displayText = useMemo(() => {
-    if (buffer.length === 0 || bufferPosition === null) {
-      return input + buffer; // Fallback: append buffer at end / フォールバック: バッファを末尾に追加
+  const preeditText = useMemo(() => {
+    if (isConverting) {
+      return candidates[candidateIndex]?.text || rawKana;
     }
+    return rawKana + buffer;
+  }, [isConverting, candidates, candidateIndex, rawKana, buffer]);
+
+  // Calculate display text with preedit inserted at the correct position.
+  // 未確定文字列を正しい位置に挿入した表示文字列を計算
+  const displayText = useMemo(() => {
+    if (!preeditText) return input;
+    if (bufferPosition === null) return input + preeditText;
+    const safePosition = Math.max(0, Math.min(bufferPosition, input.length));
     return (
-      input.slice(0, bufferPosition) + buffer + input.slice(bufferPosition)
+      input.slice(0, safePosition) + preeditText + input.slice(safePosition)
     );
-  }, [input, buffer, bufferPosition]);
+  }, [input, preeditText, bufferPosition]);
+
+  const clearConversionState = useCallback(() => {
+    setSegments([]);
+    setCandidates([]);
+    setCandidateIndex(0);
+    setIsConverting(false);
+  }, []);
+
+  const clearAllPendingState = useCallback(() => {
+    setBuffer('');
+    setRawKana('');
+    clearConversionState();
+    setBufferPosition(null);
+  }, [clearConversionState]);
+
+  const applyImeState = useCallback((state?: ImeState) => {
+    if (!state) return;
+    setRawKana(state.rawKana || '');
+    setSegments(Array.isArray(state.segments) ? state.segments : []);
+    setCandidates(Array.isArray(state.candidates) ? state.candidates : []);
+    setCandidateIndex(
+      Number.isInteger(state.candidateIndex) ? state.candidateIndex : 0,
+    );
+    setIsConverting(Boolean(state.isConverting));
+  }, []);
+
+  const insertCommittedText = useCallback(
+    (text: string) => {
+      if (!text) return;
+      setInput((prev) => {
+        if (bufferPosition === null) return prev + text;
+        const safePosition = Math.max(0, Math.min(bufferPosition, prev.length));
+        return (
+          prev.slice(0, safePosition) + text + prev.slice(safePosition)
+        );
+      });
+      clearAllPendingState();
+    },
+    [bufferPosition, clearAllPendingState],
+  );
 
   const commitBuffer = useCallback(() => {
-    if (buffer.length > 0) {
-      if (bufferPosition !== null && bufferPosition <= input.length) {
-        // Ensure position is within valid range / 位置が有効な範囲内であることを確認
-        const safePosition = Math.max(
-          0,
-          Math.min(bufferPosition, input.length),
-        );
-        // Insert buffer at the stored position / 保存された位置にバッファを挿入
-        setInput(
-          input.slice(0, safePosition) + buffer + input.slice(safePosition),
-        );
-      } else {
-        setInput((prev) => prev + buffer);
-      }
-      setBuffer('');
-      setBufferPosition(null);
+    if (!preeditText) return;
+    if (isConverting && hasImeIpcApi()) {
+      void window.electronAPI?.imeCommitCandidate?.(candidateIndex, {
+        previousWord: extractPreviousWord(input),
+        currentInput: input,
+      });
     }
-  }, [buffer, bufferPosition, input]);
+    insertCommittedText(preeditText);
+  }, [preeditText, isConverting, candidateIndex, input, insertCommittedText]);
 
-  // Called when typing directly into the textarea (Physical Keyboard / Native IME) / テキストエリアに直接入力するときに呼び出される（物理キーボード / ネイティブIME）
+  // Called when typing directly into textarea (physical keyboard / native IME)
+  // テキストエリアへ直接入力時（物理キーボード / ネイティブIME）
   const overwriteInput = useCallback(
     (text: string): string => {
-      const currentValue = input + buffer;
-
-      // If already at max and trying to add more characters, block completely (no slice)
-      // 既に最大長に達していて文字を追加しようとしている場合は完全にブロック（sliceしない）
+      const currentValue = displayText;
       if (
         currentValue.length >= maxLength &&
         text.length > currentValue.length
       ) {
-        return currentValue; // Reject input entirely / 入力を完全に拒否
+        return currentValue;
       }
 
-      // Truncate to maxLength if exceeded (for paste operations etc.)
-      // maxLengthを超えた場合は切り捨て（ペースト操作などの場合）
       const truncated =
         text.length > maxLength ? text.slice(0, maxLength) : text;
       setInput(truncated);
-      setBuffer(''); // Clear local buffer as native IME handles composition / ネイティブIMEが構成を処理するため、ローカルバッファをクリアする
-      setBufferPosition(null);
+      clearAllPendingState();
       return truncated;
     },
-    [input, buffer, maxLength],
+    [displayText, maxLength, clearAllPendingState],
   );
 
-  // Called by Virtual Keyboard buttons / バーチャルキーボードのボタンから呼び出される
+  const startLocalConversion = useCallback(
+    (kana: string) => {
+      if (!kana) {
+        clearConversionState();
+        return;
+      }
+      const localCandidates = buildLocalFallbackCandidates(kana);
+      setRawKana(kana);
+      setCandidates(localCandidates);
+      setCandidateIndex(0);
+      setSegments([
+        {
+          raw: kana,
+          candidates: localCandidates,
+          selectedIndex: 0,
+        },
+      ]);
+      setIsConverting(true);
+    },
+    [clearConversionState],
+  );
+
+  const requestConversion = useCallback(
+    (kana: string, context: ImeContext = {}) => {
+      if (!kana) {
+        clearConversionState();
+        return;
+      }
+
+      if (hasImeIpcApi()) {
+        const requestId = ++ipcRequestIdRef.current;
+        void window.electronAPI
+          ?.imeConvert?.(kana, context)
+          .then((response) => {
+            if (requestId !== ipcRequestIdRef.current) return;
+            if (response?.success && response.state) {
+              applyImeState(response.state);
+            } else {
+              startLocalConversion(kana);
+            }
+          })
+          .catch(() => {
+            if (requestId !== ipcRequestIdRef.current) return;
+            startLocalConversion(kana);
+          });
+        return;
+      }
+
+      startLocalConversion(kana);
+    },
+    [applyImeState, clearConversionState, startLocalConversion],
+  );
+
+  const handleCommitCandidate = useCallback(
+    (index?: number) => {
+      if (!isConverting) {
+        commitBuffer();
+        return;
+      }
+
+      const safeIndex =
+        Number.isInteger(index) &&
+        index !== undefined &&
+        index >= 0 &&
+        index < candidates.length
+          ? index
+          : candidateIndex;
+      const committed = candidates[safeIndex]?.text || rawKana || preeditText;
+      const previousWord = extractPreviousWord(input);
+
+      if (hasImeIpcApi()) {
+        void window.electronAPI?.imeCommitCandidate?.(safeIndex, {
+          previousWord,
+          currentInput: input,
+        });
+      }
+
+      insertCommittedText(committed);
+    },
+    [
+      isConverting,
+      commitBuffer,
+      candidates,
+      candidateIndex,
+      rawKana,
+      preeditText,
+      input,
+      insertCommittedText,
+    ],
+  );
+
+  const handleCancelConversion = useCallback(() => {
+    if (!isConverting) return;
+
+    if (hasImeIpcApi()) {
+      const requestId = ++ipcRequestIdRef.current;
+      void window.electronAPI
+        ?.imeCancelConversion?.()
+        .then((response) => {
+          if (requestId !== ipcRequestIdRef.current) return;
+          if (response?.success && response.state) {
+            // Keep kana preedit after cancel for continued editing.
+            // キャンセル後はかな未確定文字を残す
+            setRawKana((prev) => prev || response.state?.rawKana || '');
+          }
+        })
+        .catch(() => {});
+    }
+
+    clearConversionState();
+  }, [isConverting, clearConversionState]);
+
+  const handlePrevCandidate = useCallback(() => {
+    if (!isConverting) return;
+
+    if (hasImeIpcApi()) {
+      const requestId = ++ipcRequestIdRef.current;
+      void window.electronAPI
+        ?.imePrevCandidate?.()
+        .then((response) => {
+          if (requestId !== ipcRequestIdRef.current) return;
+          if (response?.success) {
+            applyImeState(response.state);
+          }
+        })
+        .catch(() => {});
+      return;
+    }
+
+    if (candidates.length === 0) return;
+    const next = (candidateIndex - 1 + candidates.length) % candidates.length;
+    setCandidateIndex(next);
+    setSegments((prev) =>
+      prev.length === 0
+        ? prev
+        : [{ ...prev[0], selectedIndex: next }],
+    );
+  }, [isConverting, applyImeState, candidates, candidateIndex]);
+
+  // Called by virtual keyboard buttons / 仮想キーボードボタンから呼び出し
   const handleCharInput = useCallback(
     (char: string, cursorPosition?: number) => {
-      // Check if adding this char would exceed maxLength / この文字を追加するとmaxLengthを超えるかチェック
-      const currentLength = input.length + buffer.length;
-      if (currentLength >= maxLength) return; // Block input if at limit / 制限に達したら入力をブロック
+      if (!char) return;
 
       const displayCursorPos =
         cursorPosition !== undefined ? cursorPosition : displayText.length;
 
       const insertDirectChar = (text: string) => {
-        const baseText = displayText;
-        const pos = Math.max(0, Math.min(displayCursorPos, baseText.length));
-        const nextText = baseText.slice(0, pos) + text + baseText.slice(pos);
+        if (displayText.length + text.length > maxLength) return;
+        const pos = Math.max(0, Math.min(displayCursorPos, displayText.length));
+        const nextText =
+          displayText.slice(0, pos) + text + displayText.slice(pos);
         setInput(nextText);
-        setBuffer('');
-        setBufferPosition(null);
+        clearAllPendingState();
       };
 
-      // Calculate effective cursor position in input (excluding buffer) / input内の有効なカーソル位置を計算（バッファを除く）
-      const effectiveCursorPos =
-        cursorPosition !== undefined
-          ? bufferPosition !== null && cursorPosition > bufferPosition
-            ? Math.max(0, cursorPosition - buffer.length)
-            : cursorPosition
-          : input.length;
+      if (isConverting && /^[1-9]$/.test(char)) {
+        handleCommitCandidate(Number(char) - 1);
+        return;
+      }
 
       if (mode === InputMode.ENGLISH) {
         insertDirectChar(char);
         return;
       }
 
-      // Japanese Logic / 日本語ロジック
+      if (isConverting) {
+        // Keep typing flow smooth: when user continues romaji input,
+        // stop candidate mode and continue building kana.
+        // ローマ字入力の継続時は候補状態を解除してかな構築を続ける
+        if (/^[a-z-]$/.test(char)) {
+          clearConversionState();
+        } else {
+          handleCommitCandidate();
+          return;
+        }
+      }
 
-      // Check if input is Uppercase (Shift+Key behavior in JP mode) / 入力が大文字かどうかを確認する（JPモードでのShift+Keyの動作）
-      // This allows typing Uppercase English letters while in Hiragana/Katakana mode / これにより、ひらがな/カタカナモード中に大文字の英字を入力できる
       if (/^[A-Z]$/.test(char)) {
         insertDirectChar(char);
         return;
       }
 
-      // Only process lowercase alphabet chars and hyphen for IME conversion / IME変換のために小文字のアルファベットとハイフンのみを処理する
-      // Numbers and symbols should go through directly / 数字と記号はそのまま通す
       if (!/^[a-z-]$/.test(char)) {
         insertDirectChar(char);
         return;
       }
 
-      // If buffer is empty, set buffer position to current cursor position / バッファが空の場合はバッファ位置を現在のカーソル位置に設定
-      if (buffer.length === 0) {
+      const preeditLength = rawKana.length + buffer.length;
+      const effectiveCursorPos =
+        cursorPosition !== undefined
+          ? bufferPosition !== null && cursorPosition > bufferPosition
+            ? Math.max(0, cursorPosition - preeditLength)
+            : cursorPosition
+          : input.length;
+
+      if (rawKana.length === 0 && buffer.length === 0) {
         setBufferPosition(Math.min(effectiveCursorPos, input.length));
       }
 
-      const lowerChar = char.toLowerCase();
-      const res = toKana(lowerChar, buffer);
+      const res = toKana(char.toLowerCase(), buffer);
+      let nextRawKana = rawKana;
 
       if (res.output) {
-        let out = res.output;
-        if (mode === InputMode.KATAKANA) {
-          out = convertToKatakana(out);
+        const out =
+          mode === InputMode.KATAKANA
+            ? convertToKatakana(res.output)
+            : res.output;
+        if (
+          input.length + rawKana.length + out.length + res.newBuffer.length >
+          maxLength
+        ) {
+          return;
         }
-        // Insert converted kana at buffer position / 変換されたかなをバッファ位置に挿入
-        const rawPos =
-          bufferPosition !== null
-            ? bufferPosition
-            : Math.min(effectiveCursorPos, input.length);
-        // Ensure position is within valid range / 位置が有効な範囲内であることを確認
-        const pos = Math.max(0, Math.min(rawPos, input.length));
-        setInput(input.slice(0, pos) + out + input.slice(pos));
-        // Update buffer position for next character / 次の文字のためにバッファ位置を更新
-        if (res.newBuffer.length > 0) {
-          setBufferPosition(pos + out.length);
-        } else {
-          setBufferPosition(null);
-        }
+        nextRawKana = rawKana + out;
+        setRawKana(nextRawKana);
       }
       setBuffer(res.newBuffer);
+
+      // Auto-show candidates once kana syllables are formed.
+      // かなが形成されたタイミングで候補を自動表示
+      if (nextRawKana.length > 0 && res.newBuffer.length === 0) {
+        requestConversion(nextRawKana, { previousText: input });
+      }
     },
-    [buffer, mode, input, maxLength, bufferPosition, displayText],
+    [
+      mode,
+      input,
+      rawKana,
+      buffer,
+      bufferPosition,
+      displayText,
+      isConverting,
+      maxLength,
+      clearAllPendingState,
+      clearConversionState,
+      handleCommitCandidate,
+      requestConversion,
+    ],
   );
 
   const handleBackspace = useCallback(
     (cursorPosition?: number) => {
+      if (isConverting) {
+        handleCancelConversion();
+      }
+
       if (buffer.length > 0) {
         setBuffer((prev) => prev.slice(0, -1));
-        if (buffer.length === 1) {
+        if (buffer.length === 1 && rawKana.length === 0) {
           setBufferPosition(null);
         }
-      } else if (cursorPosition !== undefined && cursorPosition > 0) {
-        // Delete character at cursor position - 1 / カーソル位置-1の文字を削除
+        return;
+      }
+
+      if (rawKana.length > 0) {
+        const nextRawKana = rawKana.slice(0, -1);
+        setRawKana(nextRawKana);
+        if (nextRawKana.length === 0) {
+          setBufferPosition(null);
+        }
+        if (nextRawKana.length > 0 && mode !== InputMode.ENGLISH) {
+          requestConversion(nextRawKana, { previousText: input });
+        } else {
+          clearConversionState();
+        }
+        return;
+      }
+
+      if (cursorPosition !== undefined && cursorPosition > 0) {
         const pos = Math.min(cursorPosition - 1, input.length - 1);
         if (pos >= 0) {
           setInput(input.slice(0, pos) + input.slice(pos + 1));
@@ -182,73 +471,110 @@ export const useIME = (
         setInput((prev) => prev.slice(0, -1));
       }
     },
-    [buffer, input],
+    [
+      isConverting,
+      handleCancelConversion,
+      buffer,
+      rawKana,
+      input,
+      mode,
+      requestConversion,
+      clearConversionState,
+    ],
   );
 
   const handleClear = useCallback(() => {
-    setBuffer('');
+    if (isConverting) {
+      handleCancelConversion();
+      return;
+    }
+    clearAllPendingState();
     setInput('');
-    setBufferPosition(null);
-  }, []);
+  }, [isConverting, handleCancelConversion, clearAllPendingState]);
 
   const handleSpace = useCallback(
-    (cursorPosition?: number) => {
-      // Check if adding space would exceed maxLength / スペース追加がmaxLengthを超えるかチェック
-      const currentLength = input.length + buffer.length;
-      if (currentLength >= maxLength) {
-        // Just commit buffer without adding space / スペースを追加せずにバッファのみ確定
-        commitBuffer();
+    (cursorPosition?: number, options?: { shift?: boolean }) => {
+      if (isConverting) {
+        if (options?.shift) {
+          handlePrevCandidate();
+          return;
+        }
+
+        if (hasImeIpcApi()) {
+          const requestId = ++ipcRequestIdRef.current;
+          void window.electronAPI
+            ?.imeNextCandidate?.()
+            .then((response) => {
+              if (requestId !== ipcRequestIdRef.current) return;
+              if (response?.success) {
+                applyImeState(response.state);
+              }
+            })
+            .catch(() => {});
+          return;
+        }
+
+        if (candidates.length === 0) return;
+        const next = (candidateIndex + 1) % candidates.length;
+        setCandidateIndex(next);
+        setSegments((prev) =>
+          prev.length === 0
+            ? prev
+            : [{ ...prev[0], selectedIndex: next }],
+        );
         return;
       }
 
-      // Calculate the position where space should be inserted after buffer commit / バッファ確定後にスペースを挿入する位置を計算
-      let spaceInsertPosition: number | undefined;
-      let inputAfterCommit = input;
-
-      if (buffer.length > 0) {
-        // Calculate what input will be after commit / 確定後の入力を計算
-        if (bufferPosition !== null && bufferPosition <= input.length) {
-          inputAfterCommit =
-            input.slice(0, bufferPosition) +
-            buffer +
-            input.slice(bufferPosition);
-          // Adjust cursor position to account for committed buffer / 確定されたバッファを考慮してカーソル位置を調整
-          if (cursorPosition !== undefined) {
-            spaceInsertPosition = cursorPosition; // Cursor is already at correct position in displayText / カーソルは既にdisplayText内の正しい位置にある
+      if (mode !== InputMode.ENGLISH) {
+        const kanaToConvert = rawKana + buffer;
+        if (kanaToConvert.length > 0) {
+          if (bufferPosition === null) {
+            const safe = Math.max(0, Math.min(cursorPosition ?? input.length, input.length));
+            setBufferPosition(safe);
           }
-        } else {
-          inputAfterCommit = input + buffer;
-          if (cursorPosition !== undefined) {
-            spaceInsertPosition = cursorPosition;
-          }
+          setRawKana(kanaToConvert);
+          setBuffer('');
+          requestConversion(kanaToConvert, { previousText: input });
+          return;
         }
-        // Commit buffer by updating input directly / inputを直接更新してバッファを確定
-        setInput(inputAfterCommit);
-        setBuffer('');
-        setBufferPosition(null);
       }
 
-      // Insert space at cursor position / カーソル位置にスペースを挿入
-      const targetInput = buffer.length > 0 ? inputAfterCommit : input;
+      if (displayText.length >= maxLength) return;
       const insertPos =
-        spaceInsertPosition !== undefined
-          ? spaceInsertPosition
-          : cursorPosition;
-
-      if (insertPos !== undefined && insertPos <= targetInput.length) {
-        setInput(
-          targetInput.slice(0, insertPos) + ' ' + targetInput.slice(insertPos),
-        );
-      } else {
-        setInput(targetInput + ' ');
-      }
+        cursorPosition !== undefined
+          ? Math.max(0, Math.min(cursorPosition, displayText.length))
+          : displayText.length;
+      const nextText =
+        displayText.slice(0, insertPos) + ' ' + displayText.slice(insertPos);
+      setInput(nextText);
+      clearAllPendingState();
     },
-    [buffer, bufferPosition, input, maxLength, commitBuffer],
+    [
+      isConverting,
+      mode,
+      rawKana,
+      buffer,
+      bufferPosition,
+      input,
+      displayText,
+      maxLength,
+      candidates,
+      candidateIndex,
+      applyImeState,
+      requestConversion,
+      clearAllPendingState,
+      handlePrevCandidate,
+    ],
   );
 
   return {
     input,
     buffer,
+    rawKana,
+    segments,
+    candidates,
+    candidateIndex,
+    isConverting,
     displayText,
     bufferPosition,
     mode,
@@ -259,6 +585,9 @@ export const useIME = (
     handleBackspace,
     handleClear,
     handleSpace,
+    handlePrevCandidate,
+    handleCommitCandidate,
+    handleCancelConversion,
     commitBuffer,
   };
 };

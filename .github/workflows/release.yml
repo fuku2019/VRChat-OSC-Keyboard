@@ -36,6 +36,32 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run dist
 
+      - name: Enforce installer size gate
+        shell: pwsh
+        run: |
+          $installer = Get-ChildItem -Path release -Filter "VRChat OSC Keyboard Setup *.exe" | Select-Object -First 1
+          if (-not $installer) {
+            Write-Error "Installer not found in release directory."
+            exit 1
+          }
+
+          $sizeBytes = $installer.Length
+          $sizeMB = [math]::Round($sizeBytes / 1MB, 2)
+          $warnBytes = 140MB
+          $failBytes = 150MB
+
+          Write-Host "Installer: $($installer.Name)"
+          Write-Host "Installer size: $sizeMB MB"
+
+          if ($sizeBytes -gt $warnBytes) {
+            Write-Warning "Installer size warning: over 140MB ($sizeMB MB)."
+          }
+
+          if ($sizeBytes -gt $failBytes) {
+            Write-Error "Installer size exceeds 150MB limit ($sizeMB MB)."
+            exit 1
+          }
+
       - name: Create Zip archive
         shell: pwsh
         run: |

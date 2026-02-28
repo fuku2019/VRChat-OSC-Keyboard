@@ -7,6 +7,7 @@ import { registerOscIpcHandlers } from './ipc/OscIpcHandlers.js';
 import { registerSystemIpcHandlers } from './ipc/SystemIpcHandlers.js';
 import { registerOverlayIpcHandlers } from './ipc/OverlayIpcHandlers.js';
 import { registerSteamVrIpcHandlers } from './ipc/SteamVrIpcHandlers.js';
+import { registerJapaneseImeIpcHandlers } from './ipc/JapaneseImeIpcHandlers.js';
 
 export { isSafeExternalUrl, compareVersions } from './ipc/SystemIpcHandlers.js';
 
@@ -18,4 +19,5 @@ export function registerIpcHandlers(APP_VERSION) {
   registerSystemIpcHandlers(APP_VERSION);
   registerOverlayIpcHandlers();
   registerSteamVrIpcHandlers();
+  registerJapaneseImeIpcHandlers();
 }
