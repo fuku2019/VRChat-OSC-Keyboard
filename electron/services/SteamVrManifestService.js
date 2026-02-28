@@ -41,10 +41,26 @@ function getVrPathRegCandidates() {
   const candidates = [];
   for (const root of steamRoots) {
     candidates.push(
-      path.join(root, 'steamapps', 'common', 'SteamVR', 'bin', 'win64', 'vrpathreg.exe'),
+      path.join(
+        root,
+        'steamapps',
+        'common',
+        'SteamVR',
+        'bin',
+        'win64',
+        'vrpathreg.exe',
+      ),
     );
     candidates.push(
-      path.join(root, 'steamapps', 'common', 'SteamVR', 'bin', 'win32', 'vrpathreg.exe'),
+      path.join(
+        root,
+        'steamapps',
+        'common',
+        'SteamVR',
+        'bin',
+        'win32',
+        'vrpathreg.exe',
+      ),
     );
   }
   return [...new Set(candidates)];
@@ -66,7 +82,11 @@ function getSteamConfigPath() {
       ? path.join(process.env.PROGRAMFILES, 'Steam', 'config')
       : null,
   ].filter(Boolean);
-  return candidates.find((candidate) => fs.existsSync(candidate)) || candidates[0] || null;
+  return (
+    candidates.find((candidate) => fs.existsSync(candidate)) ||
+    candidates[0] ||
+    null
+  );
 }
 
 function buildManifestContent() {
@@ -108,7 +128,11 @@ function ensureManifestFile() {
   fs.mkdirSync(dir, { recursive: true });
   const manifestPath = path.join(dir, MANIFEST_FILE_NAME);
   const content = buildManifestContent();
-  fs.writeFileSync(manifestPath, `${JSON.stringify(content, null, 2)}\n`, 'utf-8');
+  fs.writeFileSync(
+    manifestPath,
+    `${JSON.stringify(content, null, 2)}\n`,
+    'utf-8',
+  );
   return manifestPath;
 }
 
@@ -145,7 +169,11 @@ function ensureManifestPathInAppConfig(manifestPath) {
     ...appConfig,
     manifest_paths: [...currentPaths, manifestPath],
   };
-  fs.writeFileSync(appConfigPath, `${JSON.stringify(next, null, 3)}\n`, 'utf-8');
+  fs.writeFileSync(
+    appConfigPath,
+    `${JSON.stringify(next, null, 3)}\n`,
+    'utf-8',
+  );
   return { success: true, appConfigPath, updated: true };
 }
 
@@ -178,19 +206,30 @@ function removeManifestPathFromAppConfig(manifestPath) {
     ...appConfig,
     manifest_paths: nextPaths,
   };
-  fs.writeFileSync(appConfigPath, `${JSON.stringify(next, null, 3)}\n`, 'utf-8');
+  fs.writeFileSync(
+    appConfigPath,
+    `${JSON.stringify(next, null, 3)}\n`,
+    'utf-8',
+  );
   return { success: true, appConfigPath, updated: true };
 }
 
 export function ensureSteamVrManifestRegistered() {
   try {
     if (process.platform !== 'win32') {
-      return { success: false, error: 'SteamVR manifest registration is currently implemented for Windows only' };
+      return {
+        success: false,
+        error:
+          'SteamVR manifest registration is currently implemented for Windows only',
+      };
     }
 
     const vrpathreg = findVrPathReg();
     if (!vrpathreg) {
-      return { success: false, error: 'vrpathreg.exe not found (SteamVR may not be installed)' };
+      return {
+        success: false,
+        error: 'vrpathreg.exe not found (SteamVR may not be installed)',
+      };
     }
 
     const manifestPath = ensureManifestFile();
@@ -200,7 +239,7 @@ export function ensureSteamVrManifestRegistered() {
         windowsHide: true,
       });
     } catch {
-      // Ignore remove errors (first registration case)
+      // Ignore remove errors (first registration case) / 削除エラーを無視する（初回登録時）
     }
 
     execFileSync(vrpathreg, ['addmanifest', manifestPath], {
@@ -231,7 +270,11 @@ export function ensureSteamVrManifestRegistered() {
 export function ensureSteamVrManifestUnregistered() {
   try {
     if (process.platform !== 'win32') {
-      return { success: false, error: 'SteamVR manifest unregistration is currently implemented for Windows only' };
+      return {
+        success: false,
+        error:
+          'SteamVR manifest unregistration is currently implemented for Windows only',
+      };
     }
 
     const manifestPath = getManifestPath();
@@ -243,7 +286,7 @@ export function ensureSteamVrManifestUnregistered() {
           windowsHide: true,
         });
       } catch {
-        // Ignore errors when entry does not exist.
+        // Ignore errors when entry does not exist. / エントリが存在しない場合のエラーを無視する。
       }
     }
 

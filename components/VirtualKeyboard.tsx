@@ -57,6 +57,7 @@ const VirtualKeyboard: FC<VirtualKeyboardProps> = ({
     src: SOUND_SRC_MAP[keySoundVariant],
   });
 
+  // Handle key press event / キープレスイベントの処理
   const handleKeyPress = (key: KeyConfig) => {
     playKeyPressSound();
 
@@ -106,17 +107,20 @@ const VirtualKeyboard: FC<VirtualKeyboardProps> = ({
     }
   };
 
+  // Handle long press on Shift key for CapsLock / CapsLockのためのShiftキー長押しの処理
   const handleShiftLongPress = () => {
     playKeyPressSound();
     setCapsLock(!capsLock);
     setShift(false); // Reset temp shift logic / 一時的なシフトロジックをリセット
   };
 
+  // Handle candidate commit / 変換候補の確定処理
   const handleCandidateCommit = (index: number) => {
     playKeyPressSound();
     onCommitCandidate(index);
   };
 
+  // Handle previous candidate selection / 前の変換候補の選択処理
   const handlePrevCandidate = () => {
     playKeyPressSound();
     onPrevCandidate();

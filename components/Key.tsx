@@ -41,6 +41,7 @@ const Key: FC<KeyProps> = ({
     };
   }, []);
 
+  // Handle pointer down / ポインターが押された時の処理
   const handlePointerDown = (e: React.PointerEvent) => {
     // Only primary action (left click / touch / primary pen)
     const isPrimaryAction =
@@ -63,6 +64,7 @@ const Key: FC<KeyProps> = ({
     }
   };
 
+  // Handle pointer up / ポインターが離された時の処理
   const handlePointerUp = (e: React.PointerEvent) => {
     if (activePointerIdRef.current === null) return;
     if (e.pointerId !== activePointerIdRef.current) return;
@@ -83,6 +85,7 @@ const Key: FC<KeyProps> = ({
     }
   };
 
+  // Handle pointer cancel / ポインターがキャンセルされた時の処理
   const handlePointerCancel = (e: React.PointerEvent) => {
     if (
       activePointerIdRef.current !== null &&
@@ -97,6 +100,7 @@ const Key: FC<KeyProps> = ({
     activePointerIdRef.current = null;
   };
 
+  // Handle click / クリック処理
   const handleClick = (e: React.MouseEvent) => {
     if (suppressNextClickRef.current) {
       suppressNextClickRef.current = false;

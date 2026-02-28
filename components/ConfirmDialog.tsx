@@ -13,6 +13,7 @@ interface ConfirmDialogProps {
   isDanger?: boolean;
 }
 
+// Confirm dialog component / 確認ダイアログコンポーネント
 export const ConfirmDialog: FC<ConfirmDialogProps> = ({
   isOpen,
   onClose,

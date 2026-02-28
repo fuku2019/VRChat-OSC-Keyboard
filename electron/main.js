@@ -99,7 +99,7 @@ if (!gotTheLock) {
         );
       }
     } else {
-      // Keep OFF state strict by unregistering app and removing autolaunch entry.
+      // Keep OFF state strict by unregistering app and removing autolaunch entry / アプリを未登録にし、自動起動エントリを削除することで、OFF状態を厳密に保つ。
       const steamVrAutoLaunchSync = setSteamVrAutoLaunch(
         STEAMVR_APP_KEY,
         false,
@@ -127,10 +127,10 @@ if (!gotTheLock) {
           'SteamVR is not running. Skipping VR overlay initialization.',
         );
       } else {
-        // Init Splash Overlay (Head-locked) first
+        // Init Splash Overlay (Head-locked) first / 最初にスプラッシュオーバーレイ（ヘッドロック）を初期化する
         initSplash();
 
-        // Init Main Overlay (Hidden by default)
+        // Init Main Overlay (Hidden by default) / メインオーバーレイを初期化する（デフォルトでは非表示）
         overlayHandles = initOverlay();
         if (overlayHandles !== null) {
           initVrOverlayService();

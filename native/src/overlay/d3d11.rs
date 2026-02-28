@@ -257,15 +257,13 @@ impl D3D11Context {
             .as_ref()
             .ok_or_else(|| napi::Error::from_reason("Vertex shader is not initialized"))?;
         let ps = if self.swap_rb_required {
-            self.pixel_shader_swizzle
-                .as_ref()
-                .ok_or_else(|| napi::Error::from_reason("Swizzle pixel shader is not initialized"))?
+            self.pixel_shader_swizzle.as_ref().ok_or_else(|| {
+                napi::Error::from_reason("Swizzle pixel shader is not initialized")
+            })?
         } else {
-            self.pixel_shader_passthrough
-                .as_ref()
-                .ok_or_else(|| {
-                    napi::Error::from_reason("Passthrough pixel shader is not initialized")
-                })?
+            self.pixel_shader_passthrough.as_ref().ok_or_else(|| {
+                napi::Error::from_reason("Passthrough pixel shader is not initialized")
+            })?
         };
         let sampler = self
             .sampler_state
@@ -282,14 +280,17 @@ impl D3D11Context {
         };
 
         unsafe {
-            self.context.OMSetRenderTargets(Some(&[Some(rtv.clone())]), None);
+            self.context
+                .OMSetRenderTargets(Some(&[Some(rtv.clone())]), None);
             self.context.RSSetViewports(Some(&[viewport]));
             self.context
                 .IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
             self.context.VSSetShader(vs, None);
             self.context.PSSetShader(ps, None);
-            self.context.PSSetShaderResources(0, Some(&[Some(srv.clone())]));
-            self.context.PSSetSamplers(0, Some(&[Some(sampler.clone())]));
+            self.context
+                .PSSetShaderResources(0, Some(&[Some(srv.clone())]));
+            self.context
+                .PSSetSamplers(0, Some(&[Some(sampler.clone())]));
             self.context.Draw(3, 0);
 
             // Unbind SRV to avoid binding hazards on subsequent frames.
@@ -519,7 +520,7 @@ impl D3D11Context {
                     "Probe input mapped pointer is null",
                 ));
             }
-            // BGRA bytes for pure red.
+            // BGRA bytes for pure red / 純粋な赤のためのBGRAバイト
             *dst.add(0) = 0;
             *dst.add(1) = 0;
             *dst.add(2) = 255;
@@ -577,8 +578,6 @@ impl D3D11Context {
     }
 }
 
-
-
 // Initialize D3D11 device and context / D3D11デバイスとコンテキストを初期化
 pub fn init() -> napi::Result<D3D11Context> {
     unsafe {
@@ -631,6 +630,6 @@ impl Drop for D3D11Context {
         self.pixel_shader_swizzle = None;
         self.sampler_state = None;
         // device and context are dropped last by Rust's struct drop order
-        // device と context は Rust の構造体ドロップ順序で最後に解放される
+        // デバイスとコンテキストは、Rustの構造体のドロップ順序により最後にドロップされる
     }
 }

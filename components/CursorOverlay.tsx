@@ -98,7 +98,8 @@ const CursorOverlay = () => {
         hoveredByControllerRef.current.delete(controllerId);
       }
     };
-    
+
+    // Handle cursor movement / カーソル移動の処理
     const handleCursorMove = ({ u, v, controllerId }: { u: number; v: number; controllerId?: number }) => {
       // OpenVR UV: (0,0) is bottom-left, screen (0,0) is top-left
       // Flip V for screen coordinates
@@ -133,6 +134,7 @@ const CursorOverlay = () => {
         window.electronAPI.onCursorMove(handleCursorMove);
     }
 
+    // Handle cursor hiding / カーソル非表示の処理
     const handleCursorHide = ({ controllerId }: { controllerId?: number }) => {
       const id = Number.isFinite(controllerId) ? Number(controllerId) : 0;
       if (hideTimeouts[id]) {
@@ -154,6 +156,7 @@ const CursorOverlay = () => {
       window.electronAPI.onCursorHide(handleCursorHide);
     }
 
+    // Handle trigger (button) state / トリガー（ボタン）状態の処理
     const handleTriggerState = ({
       controllerId,
       pressed,
@@ -179,7 +182,7 @@ const CursorOverlay = () => {
     if (window.electronAPI?.onTriggerState) {
       window.electronAPI.onTriggerState(handleTriggerState);
     }
-    
+
     const sendMetrics = () => {
         const metrics = {
             width: window.innerWidth,
@@ -192,7 +195,7 @@ const CursorOverlay = () => {
             window.electronAPI.sendWindowSize(metrics.width, metrics.height);
         }
     };
-    
+
     const setupDprListener = () => {
         if (dprQuery) {
             dprQuery.removeEventListener('change', handleDprChange);
@@ -200,21 +203,21 @@ const CursorOverlay = () => {
         dprQuery = window.matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`);
         dprQuery.addEventListener('change', handleDprChange);
     };
-    
+
     const handleDprChange = () => {
         sendMetrics();
         setupDprListener();
     };
-    
+
     // Send initial metrics
     sendMetrics();
     setupDprListener();
-    
+
     // Handle resize
     const handleResize = () => {
         sendMetrics();
     };
-    
+
     window.addEventListener('resize', handleResize);
 
     return () => {

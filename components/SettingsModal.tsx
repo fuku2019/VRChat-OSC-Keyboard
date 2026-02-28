@@ -304,10 +304,14 @@ const SettingsModal: FC<SettingsModalProps> = ({
     saveConfigImmediately((c) => (c[key] === value ? c : { ...c, [key]: value }));
   };
 
+  // Handle language change / 言語変更の処理
   const handleLanguageChange = (lang: Language) => updateConfig('language', lang);
+  // Handle theme change / テーマ変更の処理
   const handleThemeChange = (theme: 'light' | 'dark' | 'pure-black') => updateConfig('theme', theme);
+  // Handle interval change / 更新間隔変更の処理
   const handleIntervalChange = (interval: UpdateCheckInterval) => updateConfig('updateCheckInterval', interval);
 
+  // Handle accent color change / アクセントカラー変更の処理
   const handleAccentColorChange = (color: string) => {
     if (color === 'cyan' || color === 'purple') {
       updateConfig('accentColor', color);
@@ -324,6 +328,7 @@ const SettingsModal: FC<SettingsModalProps> = ({
     handleAccentColorChange(lastCustomAccentColor);
   };
 
+  // Handle OSC port commit / OSCポート変更の確定処理
   const handleOscPortCommit = () => {
     const trimmedValue = oscPortInput.trim();
     const portNum = parseInt(trimmedValue, 10);
@@ -347,6 +352,7 @@ const SettingsModal: FC<SettingsModalProps> = ({
     }
   };
 
+  // Check for updates manually / 手動でアップデートを確認する
   const handleCheckNow = async () => {
     if (!window.electronAPI) {
       setCheckStatus(t.updateError);
@@ -511,6 +517,7 @@ const SettingsModal: FC<SettingsModalProps> = ({
     return entries.join(', ');
   };
 
+  // Reset configuration to default / 設定を初期値にリセットする
   const handleResetConfig = () => {
     localStorage.clear();
 

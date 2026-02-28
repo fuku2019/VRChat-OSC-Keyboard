@@ -32,7 +32,7 @@ impl OverlayManager {
             }
         }
 
-        // u64 -> i64 cast (Napi compatibility)
+        // u64 -> i64 cast (Napi compatibility) / u64 から i64 へのキャスト（Napi との互換性のため）
         OverlayHandle::from_u64(handle).to_i64()
     }
 

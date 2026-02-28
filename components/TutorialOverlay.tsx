@@ -10,6 +10,7 @@ interface TutorialOverlayProps {
   language: Language;
 }
 
+// Tutorial overlay component / チュートリアルオーバーレイコンポーネント
 const TutorialOverlay: FC<TutorialOverlayProps> = ({
   isOpen,
   onClose,
