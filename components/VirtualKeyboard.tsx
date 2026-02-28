@@ -27,8 +27,8 @@ interface VirtualKeyboardProps {
 }
 
 const SOUND_SRC_MAP: Record<KeySoundVariant, string> = {
-  soft: 'sounds/key-soft.wav',
-  mechanical: 'sounds/key-mechanical.wav',
+  soft: '/sounds/key-soft.mp3',
+  mechanical: '/sounds/key-mechanical.mp3',
 };
 
 const VirtualKeyboard: FC<VirtualKeyboardProps> = ({
