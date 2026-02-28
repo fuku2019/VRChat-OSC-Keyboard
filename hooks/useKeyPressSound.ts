@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 
-const DEFAULT_SOUND_SRC = '/sounds/key-soft.mp3';
+const SOUND_BASE_URL = `${import.meta.env.BASE_URL}sounds/`;
+const DEFAULT_SOUND_SRC = `${SOUND_BASE_URL}sounds/key-soft.mp3`;
 const AUDIO_POOL_SIZE = 6;
 const DEFAULT_VOLUME = 0.22;
 
