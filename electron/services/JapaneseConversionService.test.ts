@@ -16,6 +16,15 @@ describe('JapaneseConversionService', () => {
     );
   });
 
+  it('keeps hiragana as first candidate and allows explicit conversion by next', () => {
+    const service = new JapaneseConversionService(new MicroDictionaryProvider());
+    const state = service.convert('てすと');
+    expect(state.candidates[0].text).toBe('てすと');
+
+    const next = service.nextCandidate();
+    expect(next.candidates[next.candidateIndex].text).toBe('テスト');
+  });
+
   it('cycles candidate index forward and backward', () => {
     const service = new JapaneseConversionService(new MicroDictionaryProvider());
     service.convert('かな');
