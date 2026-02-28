@@ -1,6 +1,7 @@
 import { useState, FC, memo } from 'react';
 import { KEYBOARD_LAYOUT, TRANSLATIONS, KEYBOARD_GRID } from '../constants';
 import { KeyConfig, InputMode, Language } from '../types';
+import type { ImeCandidate } from '../types/ime';
 import Key from './Key';
 import packageJson from '../package.json';
 
@@ -15,7 +16,10 @@ interface VirtualKeyboardProps {
   onPrevCandidate: () => void;
   mode: InputMode;
   onToggleMode: () => void;
-  buffer: string;
+  candidates: ImeCandidate[];
+  candidateIndex: number;
+  isConverting: boolean;
+  onCommitCandidate: (index: number) => void;
   language: Language;
 }
 
@@ -28,7 +32,10 @@ const VirtualKeyboard: FC<VirtualKeyboardProps> = ({
   onPrevCandidate,
   mode,
   onToggleMode,
-  buffer,
+  candidates,
+  candidateIndex,
+  isConverting,
+  onCommitCandidate,
   language,
 }) => {
   const [shift, setShift] = useState(false);
@@ -89,12 +96,27 @@ const VirtualKeyboard: FC<VirtualKeyboardProps> = ({
 
   return (
     <div className='flex flex-col w-full max-w-5xl mx-auto p-2 dark:bg-slate-900/90 bg-slate-100/90 rounded-2xl shadow-2xl border dark:border-slate-700 border-slate-300 select-none backdrop-blur-sm transition-colors duration-300'>
-      <div className='h-8 mb-2 px-4 flex items-center justify-between dark:text-primary-300 text-primary-700 font-mono text-lg overflow-hidden'>
-        <div className='overflow-hidden'>
-          {buffer && (
-            <span className='border-b-2 border-primary-500 animate-pulse dark:bg-primary-900/30 bg-primary-100 px-1 rounded'>
-              {buffer}
-            </span>
+      <div className='min-h-8 mb-2 px-2 md:px-4 flex items-center gap-2 dark:text-primary-300 text-primary-700 overflow-hidden'>
+        <div className='flex-1 min-w-0 overflow-x-auto'>
+          {isConverting && candidates.length > 0 && (
+            <div className='inline-flex items-center gap-2 py-0.5 pr-2'>
+              {candidates.slice(0, 5).map((candidate, index) => (
+                <button
+                  key={`${candidate.text}-${index}`}
+                  type='button'
+                  onClick={() => onCommitCandidate(index)}
+                  className={`px-3 py-1 rounded-lg text-sm border transition-colors whitespace-nowrap ${
+                    index === candidateIndex
+                      ? 'bg-primary-500/20 border-primary-500 text-primary-700 dark:text-primary-200'
+                      : 'dark:bg-slate-900/60 bg-white/80 dark:border-slate-700 border-slate-300 dark:text-slate-200 text-slate-700 hover:border-primary-500'
+                  }`}
+                  title={candidate.source ? `${candidate.source}` : 'candidate'}
+                >
+                  <span className='mr-1 text-[10px] opacity-70'>{index + 1}</span>
+                  {candidate.text}
+                </button>
+              ))}
+            </div>
           )}
         </div>
         <button
