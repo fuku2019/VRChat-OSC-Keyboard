@@ -24,6 +24,7 @@
     "test": "vitest",
     "test:run": "vitest run",
     "build:native": "napi build --platform --release --manifest-path ./native/Cargo.toml && node scripts/sync-native.cjs",
+    "ime:build-dict": "node scripts/ime/build-mozc-shards.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -76,7 +77,9 @@
     "files": [
       "dist/**/*",
       "electron/**/*",
+      "electron/assets/ime/mozc/**/*",
       "package.json",
+      "THIRD_PARTY_MOZC_DICTIONARY_LICENSES.txt",
       "native/index.node",
       "native/openvr_api.dll",
       "img/**/*",

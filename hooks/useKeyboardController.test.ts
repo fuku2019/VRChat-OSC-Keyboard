@@ -14,6 +14,7 @@ describe('useKeyboardController', () => {
     input: '',
     buffer: '',
     displayText: '',
+    isConverting: false,
     mode: InputMode.HIRAGANA,
     setMode: vi.fn(),
     setInput: vi.fn(),
@@ -22,6 +23,9 @@ describe('useKeyboardController', () => {
     handleBackspace: vi.fn(),
     handleClear: vi.fn(),
     handleSpace: vi.fn(),
+    handlePrevCandidate: vi.fn(),
+    handleCommitCandidate: vi.fn(),
+    handleCancelConversion: vi.fn(),
     commitBuffer: vi.fn(),
     handlePrimaryAction: vi.fn(),
     handleInputEffect: vi.fn(),
@@ -261,6 +265,51 @@ describe('useKeyboardController', () => {
       });
 
       expect(handlePrimaryAction).toHaveBeenCalledTimes(1);
+    });
+
+    it('commits candidate instead of sending when converting', () => {
+      const handlePrimaryAction = vi.fn();
+      const handleCommitCandidate = vi.fn();
+      const props = createMockProps({
+        isConverting: true,
+        handlePrimaryAction,
+        handleCommitCandidate,
+      });
+      const { result } = renderHook(() => useKeyboardController(props));
+
+      act(() => {
+        result.current.createVirtualKeyHandlers().onSend();
+      });
+
+      expect(handleCommitCandidate).toHaveBeenCalledTimes(1);
+      expect(handlePrimaryAction).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('conversion cancel priority / 変換キャンセル優先', () => {
+    it('routes Escape to cancel conversion when converting', () => {
+      const handleCancelConversion = vi.fn();
+      const handleClear = vi.fn();
+      const props = createMockProps({
+        isConverting: true,
+        handleCancelConversion,
+        handleClear,
+      });
+      const { result } = renderHook(() => useKeyboardController(props));
+
+      const event = {
+        key: 'Escape',
+        shiftKey: false,
+        preventDefault: vi.fn(),
+        nativeEvent: { isComposing: false },
+      } as unknown as React.KeyboardEvent<HTMLTextAreaElement>;
+
+      act(() => {
+        result.current.handleKeyDown(event);
+      });
+
+      expect(handleCancelConversion).toHaveBeenCalledTimes(1);
+      expect(handleClear).not.toHaveBeenCalled();
     });
   });
 });

@@ -31,6 +31,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Get current WebSocket bridge port / 現在のWebSocketブリッジポートを取得
   getBridgePort: () => ipcRenderer.invoke('get-bridge-port'),
 
+  // Japanese IME candidate conversion / 日本語IME候補変換
+  imeConvert: (kana, context) => ipcRenderer.invoke('jp-ime:convert', kana, context),
+  imeNextCandidate: () => ipcRenderer.invoke('jp-ime:next-candidate'),
+  imePrevCandidate: () => ipcRenderer.invoke('jp-ime:prev-candidate'),
+  imeCommitCandidate: (candidateIndex, context) =>
+    ipcRenderer.invoke('jp-ime:commit', candidateIndex, context),
+  imeCancelConversion: () => ipcRenderer.invoke('jp-ime:cancel'),
+
   // Send window size to main process / メインプロセスにウィンドウサイズを送信
   sendWindowSize: (width, height) => ipcRenderer.send('window-size', { width, height }),
   // Send renderer metrics to main process / レンダラーメトリクスをメインプロセスに送信

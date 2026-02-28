@@ -31,6 +31,7 @@ Directly send messages to the Chatbox via OSC using physical or virtual keyboard
 
 - **Flexible Input:** Supports both the built-in virtual keyboard (Kana/English) and physical keyboards.
 - **Seamless Japanese Input:** Leverage your preferred IME for Kanji conversion when using a physical keyboard. (Works for other languages too!)
+- **Offline Kana-Kanji Conversion:** Virtual keyboard conversion uses bundled data derived from Mozc dictionary_oss.
 - **Polished UI:** Features smooth animations and custom themes.
 - **Clipboard Integration:** Automatically copies typed text to your clipboard.
 - **Dedicated VR Overlay:** Control the keyboard directly within SteamVR.
@@ -121,6 +122,13 @@ The following environment is required.
 npm install
 # Build native module (Rust)
 npm run build:native
+# Build Mozc dictionary shards (only when updating dictionary assets)
+npm run ime:build-dict
 # Run build
 npm run dist
 ```
+
+## License Note
+- This project bundles data derived from Mozc dictionary_oss.
+- Dictionary shards are regenerated from the full `dictionary00-09` vocabulary set using first-character shard keys.
+- See `THIRD_PARTY_MOZC_DICTIONARY_LICENSES.txt` for details.

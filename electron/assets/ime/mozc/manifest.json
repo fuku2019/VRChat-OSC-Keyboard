@@ -1,0 +1,9 @@
+{
+  "source": "mozc_dictionary_oss",
+  "mozcCommit": "e6658e1a4079ec82a98075014d68578ded110f73",
+  "generatedAt": "2026-02-28T17:31:29.790Z",
+  "shardCount": 239,
+  "entryCount": 1096566,
+  "compression": "gzip",
+  "formatVersion": 1
+}

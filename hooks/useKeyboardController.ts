@@ -11,6 +11,7 @@ interface UseKeyboardControllerProps {
   input: string;
   buffer: string;
   displayText: string;
+  isConverting: boolean;
   mode: InputMode;
   setMode: (mode: InputMode) => void;
   setInput: (val: string) => void;
@@ -18,7 +19,10 @@ interface UseKeyboardControllerProps {
   handleCharInput: (char: string, cursorPos?: number) => void;
   handleBackspace: (cursorPos?: number) => void;
   handleClear: () => void;
-  handleSpace: (cursorPos?: number) => void;
+  handleSpace: (cursorPos?: number, options?: { shift?: boolean }) => void;
+  handlePrevCandidate: () => void;
+  handleCommitCandidate: (index?: number) => void;
+  handleCancelConversion: () => void;
   commitBuffer: () => void;
   handlePrimaryAction: () => void;
   handleInputEffect: (text: string) => void;
@@ -28,6 +32,7 @@ export const useKeyboardController = ({
   input,
   buffer,
   displayText,
+  isConverting,
   mode,
   setMode,
   setInput,
@@ -36,6 +41,9 @@ export const useKeyboardController = ({
   handleBackspace,
   handleClear,
   handleSpace,
+  handlePrevCandidate,
+  handleCommitCandidate,
+  handleCancelConversion,
   commitBuffer,
   handlePrimaryAction,
   handleInputEffect,
@@ -91,6 +99,11 @@ export const useKeyboardController = ({
     if (e.nativeEvent.isComposing) return;
 
     if (e.key === 'Enter') {
+      if (isConverting) {
+        e.preventDefault();
+        handleCommitCandidate();
+        return;
+      }
       if (!e.shiftKey) {
         e.preventDefault();
         handlePrimaryAction();
@@ -99,6 +112,10 @@ export const useKeyboardController = ({
       e.preventDefault();
       toggleMode();
     } else if (e.key === 'Escape') {
+      if (isConverting) {
+        handleCancelConversion();
+        return;
+      }
       handleClear();
     }
   };
@@ -162,11 +179,15 @@ export const useKeyboardController = ({
         handleBackspace(lastCursorPosition.current ?? undefined),
       ),
     onClear: () => handleVirtualKey(handleClear),
-    onSend: () => handleVirtualKey(handlePrimaryAction),
-    onSpace: () =>
+    onSend: () =>
       handleVirtualKey(() =>
-        handleSpace(lastCursorPosition.current ?? undefined),
+        isConverting ? handleCommitCandidate() : handlePrimaryAction(),
       ),
+    onSpace: (options?: { shift?: boolean }) =>
+      handleVirtualKey(() =>
+        handleSpace(lastCursorPosition.current ?? undefined, options),
+      ),
+    onPrevCandidate: () => handleVirtualKey(handlePrevCandidate),
     onToggleMode: () => handleVirtualKey(toggleMode),
   });
 
