@@ -1,6 +1,8 @@
 import fs from 'fs';
 import path from 'path';
 import zlib from 'zlib';
+import crypto from 'crypto';
+import { execFileSync } from 'child_process';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -16,6 +18,7 @@ const REQUIRED_FILES = Array.from({ length: 10 }, (_, index) =>
   `dictionary${String(index).padStart(2, '0')}.txt`,
 );
 const SAMPLE_READINGS = ['にほん', 'とうきょう', 'わたし', 'ありがとう'];
+const GIT_SHA_PATTERN = /^[0-9a-f]{40}$/i;
 
 function toHiragana(text = '') {
   return String(text).replace(/[\u30a1-\u30f6]/g, (char) =>
@@ -27,31 +30,81 @@ function isNumericToken(token = '') {
   return /^-?\d+$/.test(token);
 }
 
+function toSafeInteger(token) {
+  if (!isNumericToken(token)) return null;
+  return Number.parseInt(token, 10);
+}
+
+function compareCodePointStrings(left = '', right = '') {
+  if (left === right) return 0;
+  const leftChars = Array.from(left);
+  const rightChars = Array.from(right);
+  const minLength = Math.min(leftChars.length, rightChars.length);
+  for (let index = 0; index < minLength; index += 1) {
+    const leftCode = leftChars[index].codePointAt(0);
+    const rightCode = rightChars[index].codePointAt(0);
+    if (leftCode !== rightCode) return leftCode - rightCode;
+  }
+  return leftChars.length - rightChars.length;
+}
+
+function compareShardEntries(left, right) {
+  const byReading = compareCodePointStrings(left.r, right.r);
+  if (byReading !== 0) return byReading;
+  const bySurface = compareCodePointStrings(left.s, right.s);
+  if (bySurface !== 0) return bySurface;
+  const byCost = left.c - right.c;
+  if (byCost !== 0) return byCost;
+  return left.p - right.p;
+}
+
 function parseLine(line) {
   const trimmed = line.trim();
-  if (!trimmed || trimmed.startsWith('#')) return null;
+  if (!trimmed || trimmed.startsWith('#')) {
+    return { entry: null, malformed: false };
+  }
+
   const cols = trimmed.split('\t');
-  if (cols.length < 2) return null;
+  if (cols.length < 2) {
+    return { entry: null, malformed: true };
+  }
 
   const reading = toHiragana(cols[0] || '').trim();
-  if (!reading) return null;
+  if (!reading) {
+    return { entry: null, malformed: true };
+  }
 
   let surface = '';
   if (cols.length >= 2 && !isNumericToken(cols[1])) {
     surface = cols[1];
   } else {
-    surface = cols[cols.length - 1];
+    for (let index = cols.length - 1; index >= 0; index -= 1) {
+      if (!isNumericToken(cols[index])) {
+        surface = cols[index];
+        break;
+      }
+    }
   }
   surface = String(surface || '').trim();
-  if (!surface) return null;
+  if (!surface) {
+    return { entry: null, malformed: true };
+  }
 
   const costCandidates = cols
-    .map((col) => Number.parseInt(col, 10))
+    .map((col) => toSafeInteger(col))
+    .filter((value) => value !== null);
+  if (costCandidates.some((value) => !Number.isFinite(value))) {
+    return { entry: null, malformed: true };
+  }
+  const numericValues = costCandidates
     .filter((n) => Number.isFinite(n));
-  const cost = costCandidates.length > 0 ? costCandidates[costCandidates.length - 1] : 5000;
-  const posId = costCandidates.length > 1 ? costCandidates[0] : 0;
+  const cost = numericValues.length > 0 ? numericValues[numericValues.length - 1] : 5000;
+  const posId = numericValues.length > 0 ? numericValues[0] : 0;
 
-  return { reading, surface, cost, posId };
+  return {
+    entry: { reading, surface, cost, posId },
+    malformed: false,
+  };
 }
 
 function toShardKey(reading) {
@@ -71,6 +124,46 @@ function ensureCleanDir(dir) {
   fs.mkdirSync(dir, { recursive: true });
 }
 
+function normalizeCommitSha(commit) {
+  if (typeof commit !== 'string') return '';
+  const trimmed = commit.trim();
+  if (!GIT_SHA_PATTERN.test(trimmed)) return '';
+  return trimmed.toLowerCase();
+}
+
+function resolveCommitFromGit(inputDirectory) {
+  try {
+    const resolved = execFileSync(
+      'git',
+      ['-C', inputDirectory, 'rev-parse', 'HEAD'],
+      { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'pipe'] },
+    ).trim();
+    return normalizeCommitSha(resolved);
+  } catch {
+    return '';
+  }
+}
+
+function resolveMozcCommit() {
+  const envCommit = process.env.MOZC_COMMIT;
+  if (typeof envCommit === 'string' && envCommit.trim()) {
+    const normalized = normalizeCommitSha(envCommit);
+    if (!normalized) {
+      throw new Error(
+        'MOZC_COMMIT must be a 40-character hexadecimal git commit SHA',
+      );
+    }
+    return normalized;
+  }
+
+  const commitFromGit = resolveCommitFromGit(inputDir);
+  if (commitFromGit) return commitFromGit;
+
+  throw new Error(
+    `Unable to resolve Mozc commit SHA from ${inputDir}. Set MOZC_COMMIT to a valid 40-character SHA.`,
+  );
+}
+
 function collectEntries() {
   if (!fs.existsSync(inputDir)) {
     throw new Error(`Input directory not found: ${inputDir}`);
@@ -88,6 +181,7 @@ function collectEntries() {
 
   const merged = new Map();
   const readingSet = new Set();
+  let skippedMalformedLines = 0;
   const sampleReadingHits = Object.fromEntries(
     SAMPLE_READINGS.map((reading) => [reading, 0]),
   );
@@ -97,15 +191,19 @@ function collectEntries() {
     const lines = raw.split(/\r?\n/);
     for (const line of lines) {
       const parsed = parseLine(line);
-      if (!parsed) continue;
-      const key = `${parsed.reading}\t${parsed.surface}`;
-      const current = merged.get(key);
-      if (!current || parsed.cost < current.cost) {
-        merged.set(key, parsed);
+      if (!parsed.entry) {
+        if (parsed.malformed) skippedMalformedLines += 1;
+        continue;
       }
-      readingSet.add(parsed.reading);
-      if (Object.prototype.hasOwnProperty.call(sampleReadingHits, parsed.reading)) {
-        sampleReadingHits[parsed.reading] += 1;
+      const parsedEntry = parsed.entry;
+      const key = `${parsedEntry.reading}\t${parsedEntry.surface}`;
+      const current = merged.get(key);
+      if (!current || parsedEntry.cost < current.cost) {
+        merged.set(key, parsedEntry);
+      }
+      readingSet.add(parsedEntry.reading);
+      if (Object.prototype.hasOwnProperty.call(sampleReadingHits, parsedEntry.reading)) {
+        sampleReadingHits[parsedEntry.reading] += 1;
       }
     }
   }
@@ -116,11 +214,12 @@ function collectEntries() {
       uniqueReadings: readingSet.size,
       sampleReadingHits,
       sourceFileCount: files.length,
+      skippedMalformedLines,
     },
   };
 }
 
-function writeShards(entries) {
+function writeShards(entries, mozcCommit) {
   ensureCleanDir(shardsDir);
   const grouped = new Map();
 
@@ -137,28 +236,36 @@ function writeShards(entries) {
 
   let shardCount = 0;
   let entryCount = 0;
+  const manifestShards = [];
 
-  for (const [key, list] of grouped.entries()) {
-    list.sort((a, b) => {
-      if (a.r !== b.r) return a.r.localeCompare(b.r, 'ja');
-      if (a.s !== b.s) return a.s.localeCompare(b.s, 'ja');
-      return a.c - b.c;
-    });
+  const sortedKeys = Array.from(grouped.keys()).sort(compareCodePointStrings);
+  for (const key of sortedKeys) {
+    const list = grouped.get(key);
+    list.sort(compareShardEntries);
     entryCount += list.length;
     const json = JSON.stringify(list);
     const gz = zlib.gzipSync(Buffer.from(json, 'utf-8'), { level: zlib.constants.Z_BEST_COMPRESSION });
-    fs.writeFileSync(path.join(shardsDir, toShardFilename(key)), gz);
+    const file = toShardFilename(key);
+    fs.writeFileSync(path.join(shardsDir, file), gz);
+    const sha256 = crypto.createHash('sha256').update(gz).digest('hex');
+    manifestShards.push({
+      key,
+      file,
+      entryCount: list.length,
+      sha256,
+    });
     shardCount += 1;
   }
 
   const manifest = {
     source: 'mozc_dictionary_oss',
-    mozcCommit: process.env.MOZC_COMMIT || 'master',
+    mozcCommit,
     generatedAt: new Date().toISOString(),
     shardCount,
     entryCount,
     compression: 'gzip',
-    formatVersion: 1,
+    formatVersion: 2,
+    shards: manifestShards,
   };
   fs.mkdirSync(outputRoot, { recursive: true });
   fs.writeFileSync(
@@ -171,12 +278,17 @@ function writeShards(entries) {
 }
 
 function main() {
+  const mozcCommit = resolveMozcCommit();
   const { entries, stats } = collectEntries();
-  const manifest = writeShards(entries);
+  const manifest = writeShards(entries, mozcCommit);
   console.log('[ime:build-dict] done');
   console.log(`[ime:build-dict] inputDir=${inputDir}`);
+  console.log(`[ime:build-dict] mozcCommit=${manifest.mozcCommit}`);
   console.log(
     `[ime:build-dict] sourceFiles=${stats.sourceFileCount} uniqueReadings=${stats.uniqueReadings}`,
+  );
+  console.log(
+    `[ime:build-dict] skippedMalformedLines=${stats.skippedMalformedLines}`,
   );
   console.log(
     `[ime:build-dict] entries=${manifest.entryCount} shards=${manifest.shardCount}`,

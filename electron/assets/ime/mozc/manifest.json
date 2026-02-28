@@ -1,9 +1,1445 @@
 {
   "source": "mozc_dictionary_oss",
   "mozcCommit": "e6658e1a4079ec82a98075014d68578ded110f73",
-  "generatedAt": "2026-02-28T17:31:29.790Z",
+  "generatedAt": "2026-02-28T20:51:43.658Z",
   "shardCount": 239,
-  "entryCount": 1096566,
+  "entryCount": 1096548,
   "compression": "gzip",
-  "formatVersion": 1
+  "formatVersion": 2,
+  "shards": [
+    {
+      "key": "!",
+      "file": "21.json.gz",
+      "entryCount": 1,
+      "sha256": "7734d53604640e11c6c09f91f6d30ac737898f378b862d220658c85d3c51efed"
+    },
+    {
+      "key": "$",
+      "file": "24.json.gz",
+      "entryCount": 1,
+      "sha256": "d41fa931ed782aeccca2c4da588ca7ab9302679f887ea60345458a64681b9c22"
+    },
+    {
+      "key": "&",
+      "file": "26.json.gz",
+      "entryCount": 1,
+      "sha256": "74bba35ff97fad845df651c5e1fdac194ce7496eae28fef8a79f913fd15bfb7e"
+    },
+    {
+      "key": "(",
+      "file": "28.json.gz",
+      "entryCount": 1,
+      "sha256": "53a1e7a4aab45503a104d8836e1d34f182866c84554f1713e2a1b35b7502711f"
+    },
+    {
+      "key": ")",
+      "file": "29.json.gz",
+      "entryCount": 1,
+      "sha256": "d40c8afa72c285c00674c77b0353127b23029f68b0771925f7ae30b3cce12b9a"
+    },
+    {
+      "key": "*",
+      "file": "2a.json.gz",
+      "entryCount": 1,
+      "sha256": "14565b979d9f844d9c870cfe47701e877deafccb7c451fa084023a643739c8df"
+    },
+    {
+      "key": "+",
+      "file": "2b.json.gz",
+      "entryCount": 1,
+      "sha256": "b1b2be12aaa4e02b1eb64d7232fe5a3d3a833bef11c1040297fc5047f975880f"
+    },
+    {
+      "key": ",",
+      "file": "2c.json.gz",
+      "entryCount": 1,
+      "sha256": "c515f78cbb9dcb338b1d91abb9eaccc6d3711e8c44ed9d51846574d13fa939aa"
+    },
+    {
+      "key": "-",
+      "file": "2d.json.gz",
+      "entryCount": 2,
+      "sha256": "16905a6606ebab1a25672c06082547ea6bff2fc97cfdf02e9367850575aaf76c"
+    },
+    {
+      "key": ".",
+      "file": "2e.json.gz",
+      "entryCount": 1,
+      "sha256": "50df71959c32e6179d6705ad248ee776089e54ada405bee4b685c4c3438e27c3"
+    },
+    {
+      "key": "/",
+      "file": "2f.json.gz",
+      "entryCount": 1,
+      "sha256": "631400ea1e771545be67eedbf94debc0bf477d844d6d01662551626247e73693"
+    },
+    {
+      "key": "0",
+      "file": "30.json.gz",
+      "entryCount": 18,
+      "sha256": "b301067d54ba74229327baacd469dd10eef8d49f752313978f11e8184ed11280"
+    },
+    {
+      "key": "1",
+      "file": "31.json.gz",
+      "entryCount": 896,
+      "sha256": "ee6f6d5923f05121068374ca4c8505ee3a9a5cf787937fae70fe55bd2291fcbd"
+    },
+    {
+      "key": "2",
+      "file": "32.json.gz",
+      "entryCount": 691,
+      "sha256": "298ea8d9d76248fc3da91e093298c56ddf39ab3164393f165d2556d208c856ba"
+    },
+    {
+      "key": "3",
+      "file": "33.json.gz",
+      "entryCount": 508,
+      "sha256": "6d18313846e2f2219d7fb8db926979108c0acd6ba9230eb87b7df1848e12bbd4"
+    },
+    {
+      "key": "4",
+      "file": "34.json.gz",
+      "entryCount": 320,
+      "sha256": "64c12d995a36c5174f64d63eee2f2293d5599c3e4755203eb877d37c8fe79982"
+    },
+    {
+      "key": "5",
+      "file": "35.json.gz",
+      "entryCount": 305,
+      "sha256": "293c26979b788d6cb717b0f8c8b492dd92aead3c2d2b26e6799eeed351946ca7"
+    },
+    {
+      "key": "6",
+      "file": "36.json.gz",
+      "entryCount": 227,
+      "sha256": "156834a2701c4f826d780b9d9a7bc3ee42363a0cab791b6befbce49532b16b25"
+    },
+    {
+      "key": "7",
+      "file": "37.json.gz",
+      "entryCount": 216,
+      "sha256": "311c74641f5697f4c39270f8f9a7574b8be75d548020e8f34f2bc92172c4b072"
+    },
+    {
+      "key": "8",
+      "file": "38.json.gz",
+      "entryCount": 157,
+      "sha256": "1dbf78cffc18742b0b070d48f715b2cc9cda62fd7ad19b2003b7052ca6c6a35d"
+    },
+    {
+      "key": "9",
+      "file": "39.json.gz",
+      "entryCount": 113,
+      "sha256": "f46310030d5d79f70c43ff3f8fd6d4b6961ac27c9b0a80c44fea0df34a48e7fe"
+    },
+    {
+      "key": ":",
+      "file": "3a.json.gz",
+      "entryCount": 1,
+      "sha256": "ee4fc2d03a89e1c1f20e8d7ccdedc69bdd9cedbb4b0b3409a2fa2de67a43f1e1"
+    },
+    {
+      "key": ";",
+      "file": "3b.json.gz",
+      "entryCount": 1,
+      "sha256": "867c22bbbaad0f4903ecfea1ce645e299af7bf1003bc81db6453e80b1e7b22ec"
+    },
+    {
+      "key": "<",
+      "file": "3c.json.gz",
+      "entryCount": 1,
+      "sha256": "b41ec27d3476e7335be19a14253a9c6f0ef3c8bb6f65679849693f8677b77111"
+    },
+    {
+      "key": "=",
+      "file": "3d.json.gz",
+      "entryCount": 1,
+      "sha256": "0b7b65c7588aea6cb2b12729bc770f5bc3ef50315addcaf5b686e2973cdb95ca"
+    },
+    {
+      "key": ">",
+      "file": "3e.json.gz",
+      "entryCount": 1,
+      "sha256": "8930b51bd147914385559533f7b1827c696c6b38c6bff3a0385e768d6c9e07c2"
+    },
+    {
+      "key": "?",
+      "file": "3f.json.gz",
+      "entryCount": 1,
+      "sha256": "573d382a9a0d953df0d027db7d3c44bd0e51ef7d6979cc466b1c9d8128f3f5ae"
+    },
+    {
+      "key": "@",
+      "file": "40.json.gz",
+      "entryCount": 1,
+      "sha256": "9b35cdef1f0d3be59a21686e59904e98350a728baf1bd47d248312cff937182e"
+    },
+    {
+      "key": "C",
+      "file": "43.json.gz",
+      "entryCount": 3,
+      "sha256": "4ed32d56d07995396fca1f6ae963fa2bb7ceaed89a637a63fa49a9a2bbb44fa7"
+    },
+    {
+      "key": "F",
+      "file": "46.json.gz",
+      "entryCount": 3,
+      "sha256": "f5a469474d37b59f5658562903428fa1766ecb7765dc0e81279be2dfc7880a43"
+    },
+    {
+      "key": "M",
+      "file": "4d.json.gz",
+      "entryCount": 1,
+      "sha256": "b79496da40aa6852509afde3cfdee783e4a415ffdfc232e34a414b4871c88d6a"
+    },
+    {
+      "key": "P",
+      "file": "50.json.gz",
+      "entryCount": 1,
+      "sha256": "94e145e051b6d36cc60918d0b8366c93cd43426b554cfdbb3e3ca9ae96c6c7ae"
+    },
+    {
+      "key": "Q",
+      "file": "51.json.gz",
+      "entryCount": 1,
+      "sha256": "ae6a335234c248035df2a57cc51233dc33dd68b7a2d0a5eb4dea6c21f1334eac"
+    },
+    {
+      "key": "W",
+      "file": "57.json.gz",
+      "entryCount": 1,
+      "sha256": "b385475001ceda929e92087fe940d7c5394ede120e7c8d8013b30c5cc01059b9"
+    },
+    {
+      "key": "[",
+      "file": "5b.json.gz",
+      "entryCount": 1,
+      "sha256": "3853e9de01fd4b382424cdce76702cb55654efb1acae2b0e2ba4f0d04b353e22"
+    },
+    {
+      "key": "\\",
+      "file": "5c.json.gz",
+      "entryCount": 1,
+      "sha256": "6d447e4c7997a06d71befd604511f4f03a39e7f203ae2b69c3f7431b62ccaa7f"
+    },
+    {
+      "key": "]",
+      "file": "5d.json.gz",
+      "entryCount": 1,
+      "sha256": "2d6c76bced34455ed2bb7e6fa4ed9f05ee594af4ea57f75e569257723eb5b216"
+    },
+    {
+      "key": "^",
+      "file": "5e.json.gz",
+      "entryCount": 1,
+      "sha256": "f5d654f04fe2466c36df5883765501e9853a3fb0044e5b919e670b8b544d9547"
+    },
+    {
+      "key": "_",
+      "file": "5f.json.gz",
+      "entryCount": 1,
+      "sha256": "daa58b483b0434afe15cd922a9c64c7ae7c8570a890800f5fbddacf886984e95"
+    },
+    {
+      "key": "`",
+      "file": "60.json.gz",
+      "entryCount": 1,
+      "sha256": "217c2af18aae63aaff5f0d0668a6e7232cb135f83e8241d76a3ed48583649c65"
+    },
+    {
+      "key": "j",
+      "file": "6a.json.gz",
+      "entryCount": 9,
+      "sha256": "f903b588d9816ccf1be9cec940d22d2c2be941e11853a05f308dabc10ba34a9c"
+    },
+    {
+      "key": "w",
+      "file": "77.json.gz",
+      "entryCount": 1,
+      "sha256": "385f1814e3d4398c5d40f82246366d82d8b9b9e8c7991c4b38e3fe9ec18b7c87"
+    },
+    {
+      "key": "{",
+      "file": "7b.json.gz",
+      "entryCount": 1,
+      "sha256": "304004059f9e68160e29adf69d0f95f9f0cbbec5dd9f9b8764d8d17fa75ff456"
+    },
+    {
+      "key": "|",
+      "file": "7c.json.gz",
+      "entryCount": 1,
+      "sha256": "cb29f351293aca592ae2637cb0138d83a8ce0b733486554d3500d2b82ad3d5f2"
+    },
+    {
+      "key": "}",
+      "file": "7d.json.gz",
+      "entryCount": 1,
+      "sha256": "bed9d9cba6d78b760924b58de904609240c4bc3d16416b688865fcbe1d0bd860"
+    },
+    {
+      "key": "£",
+      "file": "a3.json.gz",
+      "entryCount": 1,
+      "sha256": "262492886f5eb428ab0f7d69fa5224f0c89c344a8dba8d307d2bf661e0681981"
+    },
+    {
+      "key": "¥",
+      "file": "a5.json.gz",
+      "entryCount": 1,
+      "sha256": "7e7fcbb7457e6c13eb19e5d9acad1d0c53d8a5abbdff0a8ca1ea7bd3df3ec911"
+    },
+    {
+      "key": "×",
+      "file": "d7.json.gz",
+      "entryCount": 1,
+      "sha256": "b4394e8799ecddaef13e38255e6193197b77ec43417514963b27973de7fab5ca"
+    },
+    {
+      "key": "÷",
+      "file": "f7.json.gz",
+      "entryCount": 1,
+      "sha256": "7d27982d9217d50ccef0aa51cfe9a97432dbb37dc26ffda2cb645613a3f6897f"
+    },
+    {
+      "key": "́",
+      "file": "301.json.gz",
+      "entryCount": 1,
+      "sha256": "3852e029cd589204baaaffe4ff268a96d33e3f5a5dfcecbb7dd0e006ddf89303"
+    },
+    {
+      "key": "̄",
+      "file": "304.json.gz",
+      "entryCount": 1,
+      "sha256": "5d32382b0037f4ef75a3521590d51b7518fdf150906aa9ba64f88eb1646639ac"
+    },
+    {
+      "key": "̈",
+      "file": "308.json.gz",
+      "entryCount": 1,
+      "sha256": "56d2acf0bb9fb8b8b7d62b6afb9faadf606e583d93f36368bee056f8cff5d690"
+    },
+    {
+      "key": "Α",
+      "file": "391.json.gz",
+      "entryCount": 1,
+      "sha256": "c9674e05c07d79c54b99d52083ee8e16aa115668fd1e4a48528ac4621ee17e59"
+    },
+    {
+      "key": "Β",
+      "file": "392.json.gz",
+      "entryCount": 1,
+      "sha256": "87bb0f149e76fe2875d42778edb8aceef2362d55ffca77bede94fe5f21e673ec"
+    },
+    {
+      "key": "Γ",
+      "file": "393.json.gz",
+      "entryCount": 1,
+      "sha256": "d925e828d52980430c88c3b82019c921f65bddeaeee10357dcf617832c829eee"
+    },
+    {
+      "key": "Δ",
+      "file": "394.json.gz",
+      "entryCount": 1,
+      "sha256": "a9be58b33833107f54f215ab70b50fc3785891236ad33f090b2fbda15ac5877b"
+    },
+    {
+      "key": "Ε",
+      "file": "395.json.gz",
+      "entryCount": 1,
+      "sha256": "51baf741e2ee366e47d2bedb9969844a7b8ed6f46b02bdbcb52cab1b18be7038"
+    },
+    {
+      "key": "Ζ",
+      "file": "396.json.gz",
+      "entryCount": 1,
+      "sha256": "7cd7212a3ef165e4d94392362a0a4bfd185e6d753152d8823a404d793cfc8188"
+    },
+    {
+      "key": "Η",
+      "file": "397.json.gz",
+      "entryCount": 1,
+      "sha256": "77d42ac4b3bb9d57bc354f78bdac94bc797fd8620b68b1471e576abcab66cee7"
+    },
+    {
+      "key": "Θ",
+      "file": "398.json.gz",
+      "entryCount": 1,
+      "sha256": "8f37fb21d47eb230565665a48f570024dfdc2f9273e2463cae32091219327e3d"
+    },
+    {
+      "key": "Ι",
+      "file": "399.json.gz",
+      "entryCount": 1,
+      "sha256": "f8249215dccd47c46b324e2d8961f8a002295b0e897d8ead0baed6d13510e35e"
+    },
+    {
+      "key": "Κ",
+      "file": "39a.json.gz",
+      "entryCount": 1,
+      "sha256": "2c1ffda8a885763792ecc001ce108b01a8cc5c541cc91b1403cedb41ccf67da2"
+    },
+    {
+      "key": "Λ",
+      "file": "39b.json.gz",
+      "entryCount": 1,
+      "sha256": "45362722edce721738b1972bb4e7689f1c2215e3ebb7ed55622520650f1577a2"
+    },
+    {
+      "key": "Μ",
+      "file": "39c.json.gz",
+      "entryCount": 1,
+      "sha256": "78264be8b47b976f5fa61a765ba755e359f0980be315f319d3b29968583dd05d"
+    },
+    {
+      "key": "Ν",
+      "file": "39d.json.gz",
+      "entryCount": 1,
+      "sha256": "a17e8e3e01983eda1003bcce394cd6b305733e1c24233ad5319c652b3660e2d6"
+    },
+    {
+      "key": "Ξ",
+      "file": "39e.json.gz",
+      "entryCount": 1,
+      "sha256": "95e4104524eca094df083647b163086c09a7b339054f10918f7505ed08c861f1"
+    },
+    {
+      "key": "Ο",
+      "file": "39f.json.gz",
+      "entryCount": 1,
+      "sha256": "81fca03b66674732181c828882215b0713e7bcc32c02111e0112b06b3fbca98c"
+    },
+    {
+      "key": "Π",
+      "file": "3a0.json.gz",
+      "entryCount": 1,
+      "sha256": "eca9fdff2db3abcc81f22f6413fb9331ec8de2793c980a282e8190e7f81e2329"
+    },
+    {
+      "key": "Ρ",
+      "file": "3a1.json.gz",
+      "entryCount": 1,
+      "sha256": "f9aeac4a14f04bec60590c7ef81b6dc84ef0f828c4d754c4df5a010eb9d8a076"
+    },
+    {
+      "key": "Σ",
+      "file": "3a3.json.gz",
+      "entryCount": 1,
+      "sha256": "b05907696ca3e58f5b63c9ae0492745282c698bcee6ffcbca942de4a2bc6c9b0"
+    },
+    {
+      "key": "Τ",
+      "file": "3a4.json.gz",
+      "entryCount": 1,
+      "sha256": "11c5dbeacd126866efed74f9da8c915d7be3cfe4027a903195f6b18ce1f0ad94"
+    },
+    {
+      "key": "Υ",
+      "file": "3a5.json.gz",
+      "entryCount": 1,
+      "sha256": "c030ad716f65d52ad438d6c6eebea4d8742fee456a195311ab51731b59c070be"
+    },
+    {
+      "key": "Φ",
+      "file": "3a6.json.gz",
+      "entryCount": 1,
+      "sha256": "ae0ca7a78688ab63115d51debf49426451dc161dc26c0fe98e674b5387385f4a"
+    },
+    {
+      "key": "Χ",
+      "file": "3a7.json.gz",
+      "entryCount": 1,
+      "sha256": "29a923b30ece4c867afb2befc630733a4bb71f21a059a269e445b6443a2aa601"
+    },
+    {
+      "key": "Ψ",
+      "file": "3a8.json.gz",
+      "entryCount": 1,
+      "sha256": "b5eae8c7d328a7050b16837874048fb2d12059d400e009e839669e885226f7b4"
+    },
+    {
+      "key": "Ω",
+      "file": "3a9.json.gz",
+      "entryCount": 1,
+      "sha256": "a424aa7374cd27842bdf1ccf3467e4f130c9d2542b7a6fb05887d90b8475a686"
+    },
+    {
+      "key": "α",
+      "file": "3b1.json.gz",
+      "entryCount": 1,
+      "sha256": "5a04951dd0ec754b062218d4534bc6e389147b83477d5eee578679c58ae4fb0b"
+    },
+    {
+      "key": "β",
+      "file": "3b2.json.gz",
+      "entryCount": 1,
+      "sha256": "0d81d4785bd127ec3b958db632211fc34c2a4bf756fe75075462e4fa7ff70324"
+    },
+    {
+      "key": "γ",
+      "file": "3b3.json.gz",
+      "entryCount": 1,
+      "sha256": "328ccd956ab9ec84e036888c18fa8724aee6fe565b419043fbb4c9de929356e8"
+    },
+    {
+      "key": "δ",
+      "file": "3b4.json.gz",
+      "entryCount": 1,
+      "sha256": "0fffb2c6440eb051404c1e0fe48eab4171137d1eb613774955d0bbad23c9e197"
+    },
+    {
+      "key": "ε",
+      "file": "3b5.json.gz",
+      "entryCount": 1,
+      "sha256": "61440a194accbeb7af638878727a6c4e19feea1f920d9e934ced3e27fc609ce6"
+    },
+    {
+      "key": "ζ",
+      "file": "3b6.json.gz",
+      "entryCount": 1,
+      "sha256": "9d1a068c4ba44d28e710178fedb84c102e50cf3a7d366c7f7d1b15245b0cd774"
+    },
+    {
+      "key": "η",
+      "file": "3b7.json.gz",
+      "entryCount": 1,
+      "sha256": "a1965174291ac5e91670d6f12c3b0d749f829a8362ad170b24c652b1dc86da54"
+    },
+    {
+      "key": "θ",
+      "file": "3b8.json.gz",
+      "entryCount": 1,
+      "sha256": "c1f3edcc7f8e4d5e32a7ad80b536741f96bd4bde816c24fcada7a7ead9839be2"
+    },
+    {
+      "key": "ι",
+      "file": "3b9.json.gz",
+      "entryCount": 1,
+      "sha256": "9b7952a99d5d850258c5d34f6aef1deea094bbea1f7c22ac6f4d0e49a750ce64"
+    },
+    {
+      "key": "κ",
+      "file": "3ba.json.gz",
+      "entryCount": 1,
+      "sha256": "2bb1a69a287683e4fd3b081c84941fc424c54bb719a753093a9468b608970b54"
+    },
+    {
+      "key": "λ",
+      "file": "3bb.json.gz",
+      "entryCount": 1,
+      "sha256": "2173cb1c3200af9961e3846c8e81efbb7f3b8fc5748a15ebd901e40f6ba73f50"
+    },
+    {
+      "key": "μ",
+      "file": "3bc.json.gz",
+      "entryCount": 1,
+      "sha256": "2c06748d63deabe7be9a06bf51d3d1ff4dce9d669fc5c8b9f07cb027e336f2a5"
+    },
+    {
+      "key": "ν",
+      "file": "3bd.json.gz",
+      "entryCount": 1,
+      "sha256": "97b5a4ca8f91607591fe81fd08a5db094fa34867da3880ca5b7aee08b7d87b7a"
+    },
+    {
+      "key": "ξ",
+      "file": "3be.json.gz",
+      "entryCount": 1,
+      "sha256": "d66c71ebd1e55116b31d6cfab0ab54d3155bfdbd871de2dec9ff2b128385d32b"
+    },
+    {
+      "key": "ο",
+      "file": "3bf.json.gz",
+      "entryCount": 1,
+      "sha256": "6508dd1738efeadb537990a27a6ac7ed8f2d4d51c8d952eb2c082a32c7c032df"
+    },
+    {
+      "key": "ρ",
+      "file": "3c1.json.gz",
+      "entryCount": 1,
+      "sha256": "7df3f3c827aaebc7ca83108d2a0bb392f4a41c4f7aa48317be136532c5a559a7"
+    },
+    {
+      "key": "σ",
+      "file": "3c3.json.gz",
+      "entryCount": 1,
+      "sha256": "7e8e3ea981ce0fa39013bdacb1ff77e2a2c64eaf5dd1ac163922e54948e3a579"
+    },
+    {
+      "key": "τ",
+      "file": "3c4.json.gz",
+      "entryCount": 1,
+      "sha256": "936d89a6c088a656da74d85f45124643b1a76e1f65f82d13837eac258fda2ce3"
+    },
+    {
+      "key": "υ",
+      "file": "3c5.json.gz",
+      "entryCount": 1,
+      "sha256": "e1d1927cf63330aeb2f957f359c6072c70c71b1477d3043067d9a1e02b675a2e"
+    },
+    {
+      "key": "φ",
+      "file": "3c6.json.gz",
+      "entryCount": 1,
+      "sha256": "ba97671f3d971ec333215e68b2aa25c847dcdb09450a77b59d4a748046c892bd"
+    },
+    {
+      "key": "χ",
+      "file": "3c7.json.gz",
+      "entryCount": 1,
+      "sha256": "d08b13feaa695e2cdc5e82df613a8eab13dad5b24495e7e3233da48fbb99dc3f"
+    },
+    {
+      "key": "ψ",
+      "file": "3c8.json.gz",
+      "entryCount": 1,
+      "sha256": "7aaa09400950a7fe850165ede9d1ac54e9f6e00d5f265c89403de83b4bf521f0"
+    },
+    {
+      "key": "ω",
+      "file": "3c9.json.gz",
+      "entryCount": 1,
+      "sha256": "efac2d55ad7bce376c886e434694d9f10dfba3c0ecff284286c6003b5ec8bc0e"
+    },
+    {
+      "key": "‐",
+      "file": "2010.json.gz",
+      "entryCount": 1,
+      "sha256": "c39998ba33f53522313180604b3f83bb3382fb583ab8fb011ce0b22243546fc7"
+    },
+    {
+      "key": "‖",
+      "file": "2016.json.gz",
+      "entryCount": 1,
+      "sha256": "f95a71c3b836640c5f0a7205cb57037780d0fd0898f7451f08ebaf4b4adf21e7"
+    },
+    {
+      "key": "‘",
+      "file": "2018.json.gz",
+      "entryCount": 1,
+      "sha256": "3190e7c5c610e2f8e3e6f7eb105b48ef8d565106a9bc60866540b0407629803e"
+    },
+    {
+      "key": "’",
+      "file": "2019.json.gz",
+      "entryCount": 1,
+      "sha256": "3b604e1ec13fdab2097c6f0659eeddf88306b2865181948ed363e0b6eefb8138"
+    },
+    {
+      "key": "“",
+      "file": "201c.json.gz",
+      "entryCount": 1,
+      "sha256": "99440491407f00b7cd77b0fddcd3b60d48689a6e113ab0f6d2f6bd3119bbfe66"
+    },
+    {
+      "key": "”",
+      "file": "201d.json.gz",
+      "entryCount": 1,
+      "sha256": "6e035ea8c8131aadcf0b6fda4364300f90365a7a18e46f366a4d4639a01a6cea"
+    },
+    {
+      "key": "‥",
+      "file": "2025.json.gz",
+      "entryCount": 1,
+      "sha256": "9804f07758505b25383e7906bb5a54b91ec431a7996e58836d0be83e541a2cc5"
+    },
+    {
+      "key": "…",
+      "file": "2026.json.gz",
+      "entryCount": 1,
+      "sha256": "7e919c0041e54964c71a90e6d2939a5c578864c3fec536f465bd7e3da4b83ca2"
+    },
+    {
+      "key": "′",
+      "file": "2032.json.gz",
+      "entryCount": 1,
+      "sha256": "36d4171bc4f12e2a2214525b78faf2def03bdba75efcd5cf68648473ffde4ce1"
+    },
+    {
+      "key": "※",
+      "file": "203b.json.gz",
+      "entryCount": 1,
+      "sha256": "ff4e1f0e891b86b0ec00f99a5d0b81ad6f57bd54515ca2cd5888fe2954c33633"
+    },
+    {
+      "key": "←",
+      "file": "2190.json.gz",
+      "entryCount": 1,
+      "sha256": "9ced9c38a21e5524e9d6082ef4d90a266b573840ce165e2188a08cf929bfd691"
+    },
+    {
+      "key": "↑",
+      "file": "2191.json.gz",
+      "entryCount": 1,
+      "sha256": "896929476e429eb7d3b38313711b7455c2b4fcfd72335e63e76c7bcd6a6d7b9f"
+    },
+    {
+      "key": "→",
+      "file": "2192.json.gz",
+      "entryCount": 1,
+      "sha256": "9e8ba5c06403ec4577ba07076ebb490cf9ff58136b342b7008e735897529f438"
+    },
+    {
+      "key": "↓",
+      "file": "2193.json.gz",
+      "entryCount": 1,
+      "sha256": "6d382ac1f598815d7e5dc09979fda446510b0ac59ba172682f45bc1996aa9160"
+    },
+    {
+      "key": "−",
+      "file": "2212.json.gz",
+      "entryCount": 2,
+      "sha256": "25e6e307dc51f597063a176380ed2a51a4a0354749885a0988d27f19101730ee"
+    },
+    {
+      "key": "─",
+      "file": "2500.json.gz",
+      "entryCount": 2,
+      "sha256": "07b870dee7a306a0814920179c98c06f71c6ec417854c15ceeb6c79324e82c0b"
+    },
+    {
+      "key": "■",
+      "file": "25a0.json.gz",
+      "entryCount": 1,
+      "sha256": "06f7422df450a60eb442000c019dacb38b3f5d3a9c352db69e85ae8978c20f99"
+    },
+    {
+      "key": "□",
+      "file": "25a1.json.gz",
+      "entryCount": 1,
+      "sha256": "c6b7ddb31d8998c3b622f1735d6cd2c6f0799e0cfd6be9291c6d183bdae74417"
+    },
+    {
+      "key": "▲",
+      "file": "25b2.json.gz",
+      "entryCount": 1,
+      "sha256": "3ce9bb0d5cb28077a948be1b10a459d616ee6321779afeabd9c9d2cf9ec9af8c"
+    },
+    {
+      "key": "△",
+      "file": "25b3.json.gz",
+      "entryCount": 1,
+      "sha256": "664e79a4c359d12891672994713470f3eb84c1295fdcc567f6ef1db85bd6281e"
+    },
+    {
+      "key": "▼",
+      "file": "25bc.json.gz",
+      "entryCount": 1,
+      "sha256": "f155059ea6dbd039017d9cce281c671cf7cdce6054ed57deef1021c92d5b7233"
+    },
+    {
+      "key": "▽",
+      "file": "25bd.json.gz",
+      "entryCount": 1,
+      "sha256": "13e1d17c8645e86c15dcfa556af10331404f34407e5749d7d5e03bb609d9a326"
+    },
+    {
+      "key": "◆",
+      "file": "25c6.json.gz",
+      "entryCount": 1,
+      "sha256": "7a4eb4a2e16885c82193cc1117fbbe6481ed73c3859c596a3d88c7227690a4db"
+    },
+    {
+      "key": "◇",
+      "file": "25c7.json.gz",
+      "entryCount": 1,
+      "sha256": "825a4b1327a787e4aa1a0a884485fead4665b50c491282ce634342f775e14245"
+    },
+    {
+      "key": "○",
+      "file": "25cb.json.gz",
+      "entryCount": 1,
+      "sha256": "dc9ae59d6a87dbcb0cc512f38d73228a7be712e7088cbe8901cf3b064451c759"
+    },
+    {
+      "key": "◎",
+      "file": "25ce.json.gz",
+      "entryCount": 1,
+      "sha256": "2231792ce32eb1aee2984c173e920723963a770c83e2bdf0feae195ec599e34d"
+    },
+    {
+      "key": "●",
+      "file": "25cf.json.gz",
+      "entryCount": 1,
+      "sha256": "48298681280d3adc226b0cf4d60a7dad631013bcc7ce0a49ea36eed2b4b0638b"
+    },
+    {
+      "key": "★",
+      "file": "2605.json.gz",
+      "entryCount": 1,
+      "sha256": "60c4986cd3587a57ea53de5dff0aadad918596c84bd59f4cd3917d74411c8a34"
+    },
+    {
+      "key": "☆",
+      "file": "2606.json.gz",
+      "entryCount": 1,
+      "sha256": "d7a35a499bf6a7962d92b1ab805acf542fb5a5f5a69b8c6b8395c47942d09195"
+    },
+    {
+      "key": "、",
+      "file": "3001.json.gz",
+      "entryCount": 1,
+      "sha256": "4ff036ef05d1799ae1f97a8c59add0e8209ccad9f67c9980fed28d1928eec079"
+    },
+    {
+      "key": "。",
+      "file": "3002.json.gz",
+      "entryCount": 1,
+      "sha256": "c5ec76bc953f8112acb7732f461ea990053b02a5696e33c06c175094797ae226"
+    },
+    {
+      "key": "〃",
+      "file": "3003.json.gz",
+      "entryCount": 1,
+      "sha256": "83198b0760fe821845c2882ad01496a385819c47fc1f102c9cbc081f1bfdd6db"
+    },
+    {
+      "key": "〆",
+      "file": "3006.json.gz",
+      "entryCount": 1,
+      "sha256": "1e63176c25bfb282c079e6427161c32e228ffb893ff8ea44a34e2f11f9481625"
+    },
+    {
+      "key": "〇",
+      "file": "3007.json.gz",
+      "entryCount": 1,
+      "sha256": "1d8a7549621c54ab10fe1dfca79778d11f87bdd4c3a7c0e641e2fc18025fe9c2"
+    },
+    {
+      "key": "〈",
+      "file": "3008.json.gz",
+      "entryCount": 1,
+      "sha256": "a379f51d48a00988bd4a329f842b2ef204a2ae549bfa40a2145e00743b79443f"
+    },
+    {
+      "key": "〉",
+      "file": "3009.json.gz",
+      "entryCount": 1,
+      "sha256": "b4a11a0f9f330ca17b5fa2d6fc2bfc91a0c60082868a9d32bb98daf26be5c9f1"
+    },
+    {
+      "key": "《",
+      "file": "300a.json.gz",
+      "entryCount": 1,
+      "sha256": "37a4658412a899ebae465e4aee2079ce9451f9c20b6e259348f06a49dcea35cd"
+    },
+    {
+      "key": "》",
+      "file": "300b.json.gz",
+      "entryCount": 1,
+      "sha256": "6bbf8151aae02fa9342d92a796c9268b14b611b496c97eaf954e02978efe6f3e"
+    },
+    {
+      "key": "「",
+      "file": "300c.json.gz",
+      "entryCount": 1,
+      "sha256": "f840e2f3f5a22b46c4810b58a07d53d6b8bfcca01fae739229b51832863ba650"
+    },
+    {
+      "key": "」",
+      "file": "300d.json.gz",
+      "entryCount": 1,
+      "sha256": "fb03a088d531cdc7a382ceed3740ef280417bd15933b7cee6d351b2269c4c179"
+    },
+    {
+      "key": "『",
+      "file": "300e.json.gz",
+      "entryCount": 1,
+      "sha256": "c1198a697718e080e295f764384060d0da45ba4c23c3290ea3d8e185d359d23d"
+    },
+    {
+      "key": "』",
+      "file": "300f.json.gz",
+      "entryCount": 1,
+      "sha256": "680dc38378d477636fc5ce66c546f3e2fc9b1742d15c8e27e7e57a350420e380"
+    },
+    {
+      "key": "【",
+      "file": "3010.json.gz",
+      "entryCount": 1,
+      "sha256": "db8c2513167f1c54b4dceac75fb6f4b9a874cb64160094790a2aedb0c8084dd3"
+    },
+    {
+      "key": "】",
+      "file": "3011.json.gz",
+      "entryCount": 1,
+      "sha256": "6d12e8beb43ecf5178a1350a701d3dcddbd2577c754410281bccd728ce06da3e"
+    },
+    {
+      "key": "〒",
+      "file": "3012.json.gz",
+      "entryCount": 1,
+      "sha256": "99d2cba73f7e99746868920ee803115cd6e876f9e5f9b49ded55fd5a8ef7d8e0"
+    },
+    {
+      "key": "〓",
+      "file": "3013.json.gz",
+      "entryCount": 1,
+      "sha256": "3d8f175e2d1a9e8515fdd65bcb570d313eccd1174fcba0baaeb0ad2e8a5e5e53"
+    },
+    {
+      "key": "〔",
+      "file": "3014.json.gz",
+      "entryCount": 1,
+      "sha256": "04baf719b37f63413c8cfde872028e0884aceb5f37bfdd8309e9fd20d0ee28d8"
+    },
+    {
+      "key": "〕",
+      "file": "3015.json.gz",
+      "entryCount": 1,
+      "sha256": "cc6e087b6fd0e97f16797ddce738133b69bf3028389d82e541fbe186a6efa72c"
+    },
+    {
+      "key": "ぁ",
+      "file": "3041.json.gz",
+      "entryCount": 2,
+      "sha256": "9a5badaf1333a976e68f91957ed0b20fa51c84358b7bf004912da96a56833ab8"
+    },
+    {
+      "key": "あ",
+      "file": "3042.json.gz",
+      "entryCount": 52451,
+      "sha256": "cf02b6ebece9294902a182f1f1d919305cfbc9173aa6e77d637ed54cd8b29bb0"
+    },
+    {
+      "key": "ぃ",
+      "file": "3043.json.gz",
+      "entryCount": 1,
+      "sha256": "37d1bb1412b06b24d22647aff620d8e622c74682d0bc37d6f89a54c4d60b7776"
+    },
+    {
+      "key": "い",
+      "file": "3044.json.gz",
+      "entryCount": 43344,
+      "sha256": "809631f261682abde9ca372cab58a39e543f7287fbe4682642da42d53d104b67"
+    },
+    {
+      "key": "ぅ",
+      "file": "3045.json.gz",
+      "entryCount": 1,
+      "sha256": "168d3ad287551c01adef2afac354a800eb3e6edf4e5187e03c1742993659abd7"
+    },
+    {
+      "key": "う",
+      "file": "3046.json.gz",
+      "entryCount": 25712,
+      "sha256": "1d77ce136b760f33ac2f14c070f20de6c2e98470a103ebece5d43ab102ee13d2"
+    },
+    {
+      "key": "ぇ",
+      "file": "3047.json.gz",
+      "entryCount": 1,
+      "sha256": "29c7da1d257c07b0d8c418aef5a99f5bbffa9a92323a5aba54cfd808df0bd409"
+    },
+    {
+      "key": "え",
+      "file": "3048.json.gz",
+      "entryCount": 16130,
+      "sha256": "ee942ef64718b977f36255a3980c14dacdfff5c3da74cebc6da846f5a6a5f383"
+    },
+    {
+      "key": "ぉ",
+      "file": "3049.json.gz",
+      "entryCount": 1,
+      "sha256": "f580942cb5e81ed4dfd2f93975a8b677a7671f5ac9b9bc4b99d6eda92a471617"
+    },
+    {
+      "key": "お",
+      "file": "304a.json.gz",
+      "entryCount": 47782,
+      "sha256": "a8b2c94d4801ecb033e3635e072705780cc655ba646676f4c218939e5f6df3b1"
+    },
+    {
+      "key": "か",
+      "file": "304b.json.gz",
+      "entryCount": 60397,
+      "sha256": "77c5855e0e67434501e62fb5aedd050dc0c4e45c0cfea2590bcb58bc027e9df1"
+    },
+    {
+      "key": "が",
+      "file": "304c.json.gz",
+      "entryCount": 6598,
+      "sha256": "760872e354002fa7839c4bbb2f0e52ebaa8932cbe32e03d9f4d57005642134a7"
+    },
+    {
+      "key": "き",
+      "file": "304d.json.gz",
+      "entryCount": 35863,
+      "sha256": "addbf93602767eaaf7791e9cd3467aaf755eb0712a66cd5cdee5ca479d0c5196"
+    },
+    {
+      "key": "ぎ",
+      "file": "304e.json.gz",
+      "entryCount": 4084,
+      "sha256": "f6610ab303053bae452090e66572ac7bbc3a3d97da2719e3e271a2f3e24cbd22"
+    },
+    {
+      "key": "く",
+      "file": "304f.json.gz",
+      "entryCount": 23017,
+      "sha256": "2769ed1099fdf0b5ec1f8bfceb34b2504822e91da17a9599a0826e95ab3baa92"
+    },
+    {
+      "key": "ぐ",
+      "file": "3050.json.gz",
+      "entryCount": 4825,
+      "sha256": "21ee8b8e8d006d1a10e5ce94871ca8544476db7d5409439f44c899376c92e9dc"
+    },
+    {
+      "key": "け",
+      "file": "3051.json.gz",
+      "entryCount": 10360,
+      "sha256": "0b679a395b79deb0e572b1583aa0b64f7b46ee859615c2d9fe881d2fe8d9e16f"
+    },
+    {
+      "key": "げ",
+      "file": "3052.json.gz",
+      "entryCount": 4370,
+      "sha256": "653a728c7df6db0d9b1ec600b9bc418b923e64ade66f5f63d3cd588bcccc55b0"
+    },
+    {
+      "key": "こ",
+      "file": "3053.json.gz",
+      "entryCount": 37359,
+      "sha256": "8b2d0c1f447e45c9de3ad6922dca64cd164f4fe17e7ff757b777b57ca9bf4a7b"
+    },
+    {
+      "key": "ご",
+      "file": "3054.json.gz",
+      "entryCount": 7718,
+      "sha256": "4e648112b086bab1dc31e294d52104f16d813b60f12f7325f24b2b0d32baf6d5"
+    },
+    {
+      "key": "さ",
+      "file": "3055.json.gz",
+      "entryCount": 32275,
+      "sha256": "14f96c31115d795323c428036782b15940e905dc99d89411e1577ad579728c48"
+    },
+    {
+      "key": "ざ",
+      "file": "3056.json.gz",
+      "entryCount": 2402,
+      "sha256": "9962137103b2c11d5eded0eb237ffcba1a2665d04d7e5021d7d5fbfa1e1cb171"
+    },
+    {
+      "key": "し",
+      "file": "3057.json.gz",
+      "entryCount": 53044,
+      "sha256": "11e7e573d311db72ca7a187fc9846154bb8ff4f1cd706fa2a06236ba8528bf12"
+    },
+    {
+      "key": "じ",
+      "file": "3058.json.gz",
+      "entryCount": 21239,
+      "sha256": "21b7b893c61717635669e18111e9ce4253031cbd4dd0e03167581c7aac0ac395"
+    },
+    {
+      "key": "す",
+      "file": "3059.json.gz",
+      "entryCount": 25929,
+      "sha256": "0d9f6f33ac75fe6231b2e58411ca25cb0b96e261ad4c6feeea7efe1c767afe9a"
+    },
+    {
+      "key": "ず",
+      "file": "305a.json.gz",
+      "entryCount": 1789,
+      "sha256": "8ce42da45c6e586c286d08eb557cacccf0bc986ed55f22df1890bfb2b46c1b2b"
+    },
+    {
+      "key": "せ",
+      "file": "305b.json.gz",
+      "entryCount": 17133,
+      "sha256": "4d0ef9703a7169d2df0fe7f89ded5d3ce4725764067561816f5612748f6c11bc"
+    },
+    {
+      "key": "ぜ",
+      "file": "305c.json.gz",
+      "entryCount": 4165,
+      "sha256": "fd2045ab6462994b5496ac11e8c5c92f3928d431625644cc38706007c1385479"
+    },
+    {
+      "key": "そ",
+      "file": "305d.json.gz",
+      "entryCount": 11629,
+      "sha256": "fbe85c7ead7e8878741121a6f6dc65815d60a6cc99aabea84b88bd951d98dd03"
+    },
+    {
+      "key": "ぞ",
+      "file": "305e.json.gz",
+      "entryCount": 1113,
+      "sha256": "ba7fbbaac614f8fc56492de9ddbed257312711c41415262b3f7cf6d10741b996"
+    },
+    {
+      "key": "た",
+      "file": "305f.json.gz",
+      "entryCount": 35532,
+      "sha256": "1890cd33e18604665032ef764fe9f8ae4ea4238120c4bf123921cda6d7856d42"
+    },
+    {
+      "key": "だ",
+      "file": "3060.json.gz",
+      "entryCount": 10872,
+      "sha256": "e1fffb3e0c5f18617810c6a77daa6e2be61929a651ca78b21c80382e65a12412"
+    },
+    {
+      "key": "ち",
+      "file": "3061.json.gz",
+      "entryCount": 18482,
+      "sha256": "a3e449d0b1ff7c5804550aacc9890d382b4d24d47c3709470d70d35bd759fccf"
+    },
+    {
+      "key": "ぢ",
+      "file": "3062.json.gz",
+      "entryCount": 49,
+      "sha256": "717d6cbd03273ab69e32ec0beb4956b6bef165f39f80d805b0a48e425bf87917"
+    },
+    {
+      "key": "っ",
+      "file": "3063.json.gz",
+      "entryCount": 64,
+      "sha256": "702fdbb8e6de422d07e511b2cce1be87e8adc2cf183ce038911e0023acee1402"
+    },
+    {
+      "key": "つ",
+      "file": "3064.json.gz",
+      "entryCount": 18491,
+      "sha256": "93ed51f00af7a6ffd863ae1b5d99ee2f681dd25a873a51dec03c7a9587fe54bd"
+    },
+    {
+      "key": "づ",
+      "file": "3065.json.gz",
+      "entryCount": 254,
+      "sha256": "d606e3a3d432835a20e9277ce492ace6c11791f0d67f8b8f9ff239d67f1a8f0a"
+    },
+    {
+      "key": "て",
+      "file": "3066.json.gz",
+      "entryCount": 12333,
+      "sha256": "3456aa28aa817910386985a564afcab63bd92e2acf4c60b36c4d3d5bfa01d642"
+    },
+    {
+      "key": "で",
+      "file": "3067.json.gz",
+      "entryCount": 7850,
+      "sha256": "078173abd2bb89cf2c5dfd78db7e18a4654f42a2985fad98ece2ccf695fbffb5"
+    },
+    {
+      "key": "と",
+      "file": "3068.json.gz",
+      "entryCount": 32527,
+      "sha256": "17529ce747fb6aa612da4b2d3b667bcd8c749da1adb3e15f65d19a6d7ac97406"
+    },
+    {
+      "key": "ど",
+      "file": "3069.json.gz",
+      "entryCount": 8832,
+      "sha256": "be3fb4359a87c59793af8169cd06846f056a032a0a5a6d4f15faccd3abd0cb1f"
+    },
+    {
+      "key": "な",
+      "file": "306a.json.gz",
+      "entryCount": 27245,
+      "sha256": "c513702dac08e3c35e350dd872aa905ad4c9d576bacabab9c8b6423e7b996acc"
+    },
+    {
+      "key": "に",
+      "file": "306b.json.gz",
+      "entryCount": 19066,
+      "sha256": "cb14aa3e6cd88ed70bfcf8b1e5b3e2c4a74fd5e64aa043eda7b12ccd91da8630"
+    },
+    {
+      "key": "ぬ",
+      "file": "306c.json.gz",
+      "entryCount": 3009,
+      "sha256": "04769017eb27c6722ba3084630f55017803afde3a4fa0b900dccaabc8dfa596d"
+    },
+    {
+      "key": "ね",
+      "file": "306d.json.gz",
+      "entryCount": 6573,
+      "sha256": "6661e3034d0504b6b9cafb6d67c8c7b118c659310deac4c1fba241db64be3ba0"
+    },
+    {
+      "key": "の",
+      "file": "306e.json.gz",
+      "entryCount": 10179,
+      "sha256": "7f81955d7df47dba33744dc0b3f0358a2c37f60e30c219ef77d6dc97a48b03fb"
+    },
+    {
+      "key": "は",
+      "file": "306f.json.gz",
+      "entryCount": 31414,
+      "sha256": "d5f69dcda8a65f53580aa14ff6f689840715ab0c0d3a2527aaa29f55f59ee5fc"
+    },
+    {
+      "key": "ば",
+      "file": "3070.json.gz",
+      "entryCount": 8882,
+      "sha256": "ce8604bdbdc7ffb24f90db6c42e1ffdf0ac3caf32a343669bc6bdf42b0f1eb10"
+    },
+    {
+      "key": "ぱ",
+      "file": "3071.json.gz",
+      "entryCount": 4914,
+      "sha256": "7b48d0924f4a68e9bb275d9aebadcc17a92482093bf3d8ddb02942126e523516"
+    },
+    {
+      "key": "ひ",
+      "file": "3072.json.gz",
+      "entryCount": 27677,
+      "sha256": "b85c222c8544bf382dd0db2b19e3cb8224847ac421b1debb943746558e82d227"
+    },
+    {
+      "key": "び",
+      "file": "3073.json.gz",
+      "entryCount": 4993,
+      "sha256": "17e8b0764a9b2b5fbf227c3e6d964d20682103da1a5bdc008dafb301b77dadb2"
+    },
+    {
+      "key": "ぴ",
+      "file": "3074.json.gz",
+      "entryCount": 2745,
+      "sha256": "e58e17819f9e7cbfc89dc3b0be067fe728557a4b920a3cf54c0623906587eb85"
+    },
+    {
+      "key": "ふ",
+      "file": "3075.json.gz",
+      "entryCount": 28256,
+      "sha256": "11869bb6d18ecaf35b13b845b681e52b647c0e1779acb58de13be096816d4a6b"
+    },
+    {
+      "key": "ぶ",
+      "file": "3076.json.gz",
+      "entryCount": 7746,
+      "sha256": "12ef3e52f4ee75c19a1c8d9073b627dc23d6e74c874bfe6cd43bbb38e7d3cdb4"
+    },
+    {
+      "key": "ぷ",
+      "file": "3077.json.gz",
+      "entryCount": 4374,
+      "sha256": "8dfbb1d6a66933f54299d8e96051ce987db157d88acb8d2c6594bcade10ff73f"
+    },
+    {
+      "key": "へ",
+      "file": "3078.json.gz",
+      "entryCount": 4317,
+      "sha256": "82bfce7264e1c5b621efb665bee70c5bc609f6c86b442bbf4d49885ab31b8ecf"
+    },
+    {
+      "key": "べ",
+      "file": "3079.json.gz",
+      "entryCount": 4030,
+      "sha256": "00524f1fcbd4eccdfeb762a23a61febeb5427d23c2d2e9bff14a9737a6c7d619"
+    },
+    {
+      "key": "ぺ",
+      "file": "307a.json.gz",
+      "entryCount": 1828,
+      "sha256": "f173c1c3e46ca2ceb93ada091ab9ac1179f9c6a47be097b9b762bd4488b1f2ac"
+    },
+    {
+      "key": "ほ",
+      "file": "307b.json.gz",
+      "entryCount": 15954,
+      "sha256": "ef4ac0cf47e925391c293ffdff8fcc155c7e10ab6fab7180a53999bfa96d1b81"
+    },
+    {
+      "key": "ぼ",
+      "file": "307c.json.gz",
+      "entryCount": 4101,
+      "sha256": "16f8197d4123354b3e97e96c65f06ca6628dbe79e56958381e8a7c59e2574e52"
+    },
+    {
+      "key": "ぽ",
+      "file": "307d.json.gz",
+      "entryCount": 2740,
+      "sha256": "b6c0ac3971f5ad7a73c44ea3dbf557e358fc8b15367ad4d06d74eb1557ea2c73"
+    },
+    {
+      "key": "ま",
+      "file": "307e.json.gz",
+      "entryCount": 29811,
+      "sha256": "4ec8f61b2077e4dcf12cd74450733157f940b18f1240e969cbde4a3dca10703e"
+    },
+    {
+      "key": "み",
+      "file": "307f.json.gz",
+      "entryCount": 26690,
+      "sha256": "39619ed7082cb720eef7c8b1a4baa4d9254779432b21ac510034a9d331e1b57f"
+    },
+    {
+      "key": "む",
+      "file": "3080.json.gz",
+      "entryCount": 7995,
+      "sha256": "b859d72ca0d21a58ca79fc7d21a7f8555733ba110e3e48620eb5403016c9d14c"
+    },
+    {
+      "key": "め",
+      "file": "3081.json.gz",
+      "entryCount": 9169,
+      "sha256": "c7b8abcd80320bd38dba7fe593b1cfe0dd740b087c89385ebfd76d53858899f9"
+    },
+    {
+      "key": "も",
+      "file": "3082.json.gz",
+      "entryCount": 15274,
+      "sha256": "19af1db523fba3e1f3b31f5f83f580cc4722439de061fc19262db099a59ed1e7"
+    },
+    {
+      "key": "や",
+      "file": "3084.json.gz",
+      "entryCount": 15577,
+      "sha256": "b4eebcda7bd99e79ca48655136c042473e24bc5af1b911a2479c68de3c5d70f7"
+    },
+    {
+      "key": "ゆ",
+      "file": "3086.json.gz",
+      "entryCount": 10395,
+      "sha256": "9676d7d2f71cb0b1a90bc51da75759586938b18cea072514654ee9c53d0ae1a5"
+    },
+    {
+      "key": "ょ",
+      "file": "3087.json.gz",
+      "entryCount": 1,
+      "sha256": "1145dd3cab6e8ba230ab113a7d120db57aa363a9b8e7c974eb27db64c13eeba2"
+    },
+    {
+      "key": "よ",
+      "file": "3088.json.gz",
+      "entryCount": 16644,
+      "sha256": "b904f0adffb36765b1f64c14932f63847427d1a0037f800a604050d77315c034"
+    },
+    {
+      "key": "ら",
+      "file": "3089.json.gz",
+      "entryCount": 6907,
+      "sha256": "31bc9b7dc0018026b3b9440ec714269163f6073f382bafc6161c9eee80d187c7"
+    },
+    {
+      "key": "り",
+      "file": "308a.json.gz",
+      "entryCount": 11408,
+      "sha256": "bfaad854417e4c6d85ebbe2ddecdb699e858fe483f1650ce3b963f0e78351947"
+    },
+    {
+      "key": "る",
+      "file": "308b.json.gz",
+      "entryCount": 2468,
+      "sha256": "f84fb78a6a1ef279f66d8c44703fe52fe055408f4b203c9feb929c9cbeb418c9"
+    },
+    {
+      "key": "れ",
+      "file": "308c.json.gz",
+      "entryCount": 6425,
+      "sha256": "4bc1687c9b0a9a3585ab63d210193a33856844f0788f1c25ae001594d5a4ce32"
+    },
+    {
+      "key": "ろ",
+      "file": "308d.json.gz",
+      "entryCount": 6379,
+      "sha256": "2c008b986ed96fa2b0fc360cb3fad53170ccb489f1d35c692842d9f680b89c70"
+    },
+    {
+      "key": "ゎ",
+      "file": "308e.json.gz",
+      "entryCount": 6,
+      "sha256": "6a39d76241ebb9a81007b3d7f17bae34e21e415ddcee47376e1e1b6b67f0ce20"
+    },
+    {
+      "key": "わ",
+      "file": "308f.json.gz",
+      "entryCount": 9576,
+      "sha256": "5da89d8bd37beac06d95c8f94373e9a54ae7a899674146d8980c957af89bff36"
+    },
+    {
+      "key": "ゐ",
+      "file": "3090.json.gz",
+      "entryCount": 9,
+      "sha256": "fe1361afe1782a9667b839044955fa3a99f43d40a5be2338720687588d85ea73"
+    },
+    {
+      "key": "ゑ",
+      "file": "3091.json.gz",
+      "entryCount": 38,
+      "sha256": "98b229d4538645d0b3ea7652a189ac8b1d8b756998e404347d9d2ea29a2b49cc"
+    },
+    {
+      "key": "を",
+      "file": "3092.json.gz",
+      "entryCount": 57,
+      "sha256": "59995b96e26615c8398ba27302525b47fc13b811c947a7eb04cb7f01e23bd9db"
+    },
+    {
+      "key": "ん",
+      "file": "3093.json.gz",
+      "entryCount": 113,
+      "sha256": "8ca1664908f007c2746b9c3c6e97f103d5e510b1af79cf2b6cf28aeabf32c777"
+    },
+    {
+      "key": "ゔ",
+      "file": "3094.json.gz",
+      "entryCount": 1929,
+      "sha256": "f168f439c0302c0102a1048eda77b791d51d258d62a3028889272a09ef3e2320"
+    },
+    {
+      "key": "ゖ",
+      "file": "3096.json.gz",
+      "entryCount": 1,
+      "sha256": "3614cb5e43981e3f4a63390ab65d80c68baa8367ed26f685edf87edf415448dc"
+    },
+    {
+      "key": "゙",
+      "file": "3099.json.gz",
+      "entryCount": 1,
+      "sha256": "3ea2dd7769b960139486778d289b513bef1fd4a9e0b8294f26d3e5b60589c9be"
+    },
+    {
+      "key": "゚",
+      "file": "309a.json.gz",
+      "entryCount": 1,
+      "sha256": "f8e65eb500a719977df1ba2f676ad4601c0121b01fb9b5960faa331be3a07b30"
+    },
+    {
+      "key": "ゝ",
+      "file": "309d.json.gz",
+      "entryCount": 1,
+      "sha256": "0b9bca9ca8994130ea324f6ede83b1a155f8deb659c174357a803ed7f68bc16c"
+    },
+    {
+      "key": "ゞ",
+      "file": "309e.json.gz",
+      "entryCount": 1,
+      "sha256": "041f4d2f2c550de8ec4e865d6965e139323e941b0c9a1585607b7da4a3677e9b"
+    },
+    {
+      "key": "・",
+      "file": "30fb.json.gz",
+      "entryCount": 1,
+      "sha256": "c4d3f7e65b1265a1daac141cff412c16ea631a48387a344b023c4ff2f7a50542"
+    },
+    {
+      "key": "ー",
+      "file": "30fc.json.gz",
+      "entryCount": 1,
+      "sha256": "c7e403cffb8863de81edfaf543fd4587083340a4615687e5c51d19ac3de135f8"
+    },
+    {
+      "key": "ヽ",
+      "file": "30fd.json.gz",
+      "entryCount": 1,
+      "sha256": "bb679211cdecb9298aa99d05b23e15de880ca770df92da20cbee65d7882cbe22"
+    },
+    {
+      "key": "ヾ",
+      "file": "30fe.json.gz",
+      "entryCount": 2,
+      "sha256": "590c1f4bf48b8034441dc831b9eef8532781590183f868f74cbf288c6935754d"
+    },
+    {
+      "key": "～",
+      "file": "ff5e.json.gz",
+      "entryCount": 1,
+      "sha256": "e40f93765235d4a23fd2f1f7d1969d272e3519cf5e11d18e8feacd3d919b54fd"
+    }
+  ]
 }
