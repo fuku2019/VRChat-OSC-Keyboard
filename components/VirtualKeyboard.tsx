@@ -96,16 +96,16 @@ const VirtualKeyboard: FC<VirtualKeyboardProps> = ({
 
   return (
     <div className='flex flex-col w-full max-w-5xl mx-auto p-2 dark:bg-slate-900/90 bg-slate-100/90 rounded-2xl shadow-2xl border dark:border-slate-700 border-slate-300 select-none backdrop-blur-sm transition-colors duration-300'>
-      <div className='min-h-8 mb-2 px-2 md:px-4 flex items-center gap-2 dark:text-primary-300 text-primary-700 overflow-hidden'>
-        <div className='flex-1 min-w-0 overflow-x-auto'>
+      <div className='h-10 mb-2 px-2 md:px-4 flex items-center gap-2 dark:text-primary-300 text-primary-700 overflow-hidden'>
+        <div className='flex-1 min-w-0 h-full overflow-x-auto overflow-y-hidden'>
           {isConverting && candidates.length > 0 && (
-            <div className='inline-flex items-center gap-2 py-0.5 pr-2'>
+            <div className='inline-flex h-full items-center gap-2 pr-2'>
               {candidates.slice(0, 5).map((candidate, index) => (
                 <button
                   key={`${candidate.text}-${index}`}
                   type='button'
                   onClick={() => onCommitCandidate(index)}
-                  className={`px-3 py-1 rounded-lg text-sm border transition-colors whitespace-nowrap ${
+                  className={`h-7 px-3 rounded-lg text-sm border transition-colors whitespace-nowrap ${
                     index === candidateIndex
                       ? 'bg-primary-500/20 border-primary-500 text-primary-700 dark:text-primary-200'
                       : 'dark:bg-slate-900/60 bg-white/80 dark:border-slate-700 border-slate-300 dark:text-slate-200 text-slate-700 hover:border-primary-500'
@@ -122,7 +122,7 @@ const VirtualKeyboard: FC<VirtualKeyboardProps> = ({
         <button
           type='button'
           onClick={onPrevCandidate}
-          className='text-xs px-2 py-1 rounded border dark:border-slate-600 border-slate-400 dark:text-slate-200 text-slate-700 dark:bg-slate-800/70 bg-white/70 hover:border-primary-500 transition-colors'
+          className='h-7 text-xs px-2 rounded border dark:border-slate-600 border-slate-400 dark:text-slate-200 text-slate-700 dark:bg-slate-800/70 bg-white/70 hover:border-primary-500 transition-colors'
           title='Previous candidate (Shift+Space)'
         >
           Prev
