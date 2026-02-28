@@ -152,6 +152,24 @@ export class JapaneseConversionService {
     );
   }
 
+  withHiraganaCandidateFirst(raw, candidates = []) {
+    const normalizedRaw = toHiragana(raw || '');
+    if (!normalizedRaw) return dedupeCandidates(candidates, this.maxCandidates);
+    return dedupeCandidates(
+      [
+        {
+          text: normalizedRaw,
+          reading: normalizedRaw,
+          source: 'fallback',
+          dictSource: 'fallback',
+          score: 100,
+        },
+        ...(candidates || []),
+      ],
+      this.maxCandidates,
+    );
+  }
+
   shouldCollapseToWholeFallback(segments) {
     if (!Array.isArray(segments) || segments.length <= 1) return false;
     const allSingleChar = segments.every((segment) => (segment.raw || '').length === 1);
@@ -166,20 +184,31 @@ export class JapaneseConversionService {
   }
 
   getCandidatesForSegment(raw, context = {}) {
+    const normalizedRaw = toHiragana(raw || '');
     let candidates = [];
     try {
-      candidates = this.provider.getCandidates(raw, context);
+      candidates = this.provider.getCandidates(normalizedRaw, context);
     } catch {
       candidates = [];
     }
 
     if (!candidates || candidates.length === 0) {
-      candidates = this.fallbackProvider.getCandidates(raw, context);
+      candidates = this.fallbackProvider.getCandidates(normalizedRaw, context);
     }
 
-    return candidates && candidates.length > 0
-      ? candidates
-      : [{ text: raw, reading: raw, source: 'fallback', dictSource: 'fallback', score: 0 }];
+    if (!candidates || candidates.length === 0) {
+      candidates = [
+        {
+          text: normalizedRaw,
+          reading: normalizedRaw,
+          source: 'fallback',
+          dictSource: 'fallback',
+          score: 0,
+        },
+      ];
+    }
+
+    return this.withHiraganaCandidateFirst(normalizedRaw, candidates);
   }
 
   convert(kana, context = {}) {

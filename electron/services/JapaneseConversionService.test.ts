@@ -10,7 +10,10 @@ describe('JapaneseConversionService', () => {
     expect(state.isConverting).toBe(true);
     expect(state.rawKana).toBe('てすと');
     expect(state.candidates.length).toBeGreaterThan(0);
-    expect(state.candidates[0].text).toBe('テスト');
+    expect(state.candidates[0].text).toBe('てすと');
+    expect(state.candidates.some((candidate) => candidate.text === 'テスト')).toBe(
+      true,
+    );
   });
 
   it('cycles candidate index forward and backward', () => {
