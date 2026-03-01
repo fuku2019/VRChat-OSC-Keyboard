@@ -65,14 +65,15 @@ export const useKeyboardController = ({
     const savedPosition = lastCursorPosition.current;
     const oldLength = displayText.length; // Save text length before action / アクション前のテキスト長を保存
     action();
-    setTimeout(() => {
+    // Use requestAnimationFrame for reliable cursor positioning after React render / Reactレンダリング後の確実なカーソル位置設定のためrAFを使用
+    requestAnimationFrame(() => {
       if (textareaRef.current) {
         textareaRef.current.focus();
         if (savedPosition !== null) {
           // Calculate cursor position based on text length change / テキスト長の変化に基づいてカーソル位置を計算
           const newLength = textareaRef.current.value.length;
           const newPos = Math.min(
-            savedPosition + (newLength - oldLength),
+            Math.max(0, savedPosition + (newLength - oldLength)),
             newLength,
           );
           textareaRef.current.selectionStart = newPos;
@@ -89,7 +90,7 @@ export const useKeyboardController = ({
         const currentText = textareaRef.current.value;
         handleInputEffect(currentText);
       }
-    }, 0);
+    });
   };
 
   // Handle physical keyboard key down / 物理キーボードのキーダウンを処理
