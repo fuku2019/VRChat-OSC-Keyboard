@@ -333,7 +333,7 @@ export const useIME = (
         return;
       }
 
-      const preeditLength = rawKana.length + buffer.length;
+      const preeditLength = preeditText.length; // Use actual display length / 実際の表示文字数を使用
       const effectiveCursorPos =
         cursorPosition !== undefined
           ? bufferPosition !== null && cursorPosition > bufferPosition
