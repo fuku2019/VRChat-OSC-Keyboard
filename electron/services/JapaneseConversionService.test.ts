@@ -25,16 +25,13 @@ describe('JapaneseConversionService', () => {
     expect(next.candidates[next.candidateIndex].text).toBe('テスト');
   });
 
-  it('cycles candidate index forward and backward', () => {
+  it('cycles candidate index forward', () => {
     const service = new JapaneseConversionService(new MicroDictionaryProvider());
     service.convert('かな');
     const initial = service.buildState().candidateIndex;
 
     const next = service.nextCandidate();
     expect(next.candidateIndex).toBe((initial + 1) % next.candidates.length);
-
-    const prev = service.prevCandidate();
-    expect(prev.candidateIndex).toBe(initial);
   });
 
   it('commits selected candidate and resets conversion state', () => {
@@ -71,7 +68,6 @@ describe('JapaneseConversionService', () => {
     const service = new JapaneseConversionService(new MicroDictionaryProvider());
 
     expect(service.nextCandidate().isConverting).toBe(false);
-    expect(service.prevCandidate().isConverting).toBe(false);
     expect(service.commit().committed).toBe('');
   });
 

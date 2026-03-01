@@ -23,7 +23,6 @@ describe('useKeyboardController', () => {
     handleBackspace: vi.fn(),
     handleClear: vi.fn(),
     handleSpace: vi.fn(),
-    handlePrevCandidate: vi.fn(),
     handleCommitCandidate: vi.fn(),
     handleCancelConversion: vi.fn(),
     commitBuffer: vi.fn(),

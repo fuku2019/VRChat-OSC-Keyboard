@@ -14,8 +14,7 @@ interface VirtualKeyboardProps {
   onBackspace: () => void;
   onClear: () => void;
   onSend: () => void;
-  onSpace: (options?: { shift?: boolean }) => void;
-  onPrevCandidate: () => void;
+  onSpace: () => void;
   mode: InputMode;
   onToggleMode: () => void;
   candidates: ImeCandidate[];
@@ -38,7 +37,6 @@ const VirtualKeyboard: FC<VirtualKeyboardProps> = ({
   onClear,
   onSend,
   onSpace,
-  onPrevCandidate,
   mode,
   onToggleMode,
   candidates,
@@ -80,7 +78,7 @@ const VirtualKeyboard: FC<VirtualKeyboardProps> = ({
         onSend();
         return;
       case 'space':
-        onSpace({ shift: shift || capsLock });
+        onSpace();
         if (shift && !capsLock) {
           setShift(false);
         }
@@ -120,12 +118,6 @@ const VirtualKeyboard: FC<VirtualKeyboardProps> = ({
     onCommitCandidate(index);
   };
 
-  // Handle previous candidate selection / 前の変換候補の選択処理
-  const handlePrevCandidate = () => {
-    playKeyPressSound();
-    onPrevCandidate();
-  };
-
   return (
     <div className='flex flex-col w-full max-w-5xl mx-auto p-2 dark:bg-slate-900/90 bg-slate-100/90 rounded-2xl shadow-2xl border dark:border-slate-700 border-slate-300 select-none backdrop-blur-sm transition-colors duration-300'>
       <div className='h-10 mb-2 px-2 md:px-4 flex items-center gap-2 dark:text-primary-300 text-primary-700 overflow-hidden'>
@@ -151,14 +143,6 @@ const VirtualKeyboard: FC<VirtualKeyboardProps> = ({
             </div>
           )}
         </div>
-        <button
-          type='button'
-          onClick={handlePrevCandidate}
-          className='h-7 text-xs px-2 rounded border dark:border-slate-600 border-slate-400 dark:text-slate-200 text-slate-700 dark:bg-slate-800/70 bg-white/70 hover:border-primary-500 transition-colors'
-          title='Previous candidate (Shift+Space)'
-        >
-          Prev
-        </button>
       </div>
 
       <div

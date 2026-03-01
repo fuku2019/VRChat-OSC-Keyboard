@@ -19,8 +19,7 @@ interface UseKeyboardControllerProps {
   handleCharInput: (char: string, cursorPos?: number) => void;
   handleBackspace: (cursorPos?: number) => void;
   handleClear: () => void;
-  handleSpace: (cursorPos?: number, options?: { shift?: boolean }) => void;
-  handlePrevCandidate: () => void;
+  handleSpace: (cursorPos?: number) => void;
   handleCommitCandidate: (index?: number) => void;
   handleCancelConversion: () => void;
   commitBuffer: () => void;
@@ -41,7 +40,6 @@ export const useKeyboardController = ({
   handleBackspace,
   handleClear,
   handleSpace,
-  handlePrevCandidate,
   handleCommitCandidate,
   handleCancelConversion,
   commitBuffer,
@@ -183,11 +181,10 @@ export const useKeyboardController = ({
       handleVirtualKey(() =>
         isConverting ? handleCommitCandidate() : handlePrimaryAction(),
       ),
-    onSpace: (options?: { shift?: boolean }) =>
+    onSpace: () =>
       handleVirtualKey(() =>
-        handleSpace(lastCursorPosition.current ?? undefined, options),
+        handleSpace(lastCursorPosition.current ?? undefined),
       ),
-    onPrevCandidate: () => handleVirtualKey(handlePrevCandidate),
     onToggleMode: () => handleVirtualKey(toggleMode),
   });
 

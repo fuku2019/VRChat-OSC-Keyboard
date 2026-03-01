@@ -5,7 +5,6 @@ const { handlers, mockService } = vi.hoisted(() => ({
   mockService: {
     convert: vi.fn(),
     nextCandidate: vi.fn(),
-    prevCandidate: vi.fn(),
     commit: vi.fn(),
     cancel: vi.fn(),
   },
@@ -42,7 +41,6 @@ describe('JapaneseImeIpcHandlers', () => {
         'jp-ime:commit',
         'jp-ime:convert',
         'jp-ime:next-candidate',
-        'jp-ime:prev-candidate',
       ].sort(),
     );
   });
@@ -60,7 +58,6 @@ describe('JapaneseImeIpcHandlers', () => {
 
     mockService.convert.mockReturnValue(state);
     mockService.nextCandidate.mockReturnValue(state);
-    mockService.prevCandidate.mockReturnValue(state);
     mockService.commit.mockReturnValue({ committed: '仮名', state });
     mockService.cancel.mockReturnValue(state);
 
@@ -74,10 +71,6 @@ describe('JapaneseImeIpcHandlers', () => {
       state,
     });
     expect(handlers['jp-ime:next-candidate']({})).toEqual({
-      success: true,
-      state,
-    });
-    expect(handlers['jp-ime:prev-candidate']({})).toEqual({
       success: true,
       state,
     });

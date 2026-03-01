@@ -23,8 +23,7 @@ interface UseIMEReturn {
   handleCharInput: (char: string, cursorPosition?: number) => void;
   handleBackspace: (cursorPosition?: number) => void;
   handleClear: () => void;
-  handleSpace: (cursorPosition?: number, options?: { shift?: boolean }) => void;
-  handlePrevCandidate: () => void;
+  handleSpace: (cursorPosition?: number) => void;
   handleCommitCandidate: (index?: number) => void;
   handleCancelConversion: () => void;
   commitBuffer: () => void;
@@ -82,7 +81,6 @@ const hasImeIpcApi = () => {
   return Boolean(
     api?.imeConvert &&
       api?.imeNextCandidate &&
-      api?.imePrevCandidate &&
       api?.imeCommitCandidate &&
       api?.imeCancelConversion,
   );
@@ -305,33 +303,6 @@ export const useIME = (
     clearConversionState();
   }, [isConverting, clearConversionState]);
 
-  const handlePrevCandidate = useCallback(() => {
-    if (!isConverting) return;
-
-    if (hasImeIpcApi()) {
-      const requestId = ++ipcRequestIdRef.current;
-      void window.electronAPI
-        ?.imePrevCandidate?.()
-        .then((response) => {
-          if (requestId !== ipcRequestIdRef.current) return;
-          if (response?.success) {
-            applyImeState(response.state);
-          }
-        })
-        .catch(() => {});
-      return;
-    }
-
-    if (candidates.length === 0) return;
-    const next = (candidateIndex - 1 + candidates.length) % candidates.length;
-    setCandidateIndex(next);
-    setSegments((prev) =>
-      prev.length === 0
-        ? prev
-        : [{ ...prev[0], selectedIndex: next }],
-    );
-  }, [isConverting, applyImeState, candidates, candidateIndex]);
-
   // Called by virtual keyboard buttons / 仮想キーボードボタンから呼び出し
   const handleCharInput = useCallback(
     (char: string, cursorPosition?: number) => {
@@ -493,13 +464,8 @@ export const useIME = (
   }, [isConverting, handleCancelConversion, clearAllPendingState]);
 
   const handleSpace = useCallback(
-    (cursorPosition?: number, options?: { shift?: boolean }) => {
+    (cursorPosition?: number) => {
       if (isConverting) {
-        if (options?.shift) {
-          handlePrevCandidate();
-          return;
-        }
-
         if (hasImeIpcApi()) {
           const requestId = ++ipcRequestIdRef.current;
           void window.electronAPI
@@ -563,7 +529,6 @@ export const useIME = (
       applyImeState,
       requestConversion,
       clearAllPendingState,
-      handlePrevCandidate,
     ],
   );
 
@@ -585,7 +550,6 @@ export const useIME = (
     handleBackspace,
     handleClear,
     handleSpace,
-    handlePrevCandidate,
     handleCommitCandidate,
     handleCancelConversion,
     commitBuffer,

@@ -294,10 +294,6 @@ export class JapaneseConversionService {
     return this.shiftCandidateSelection(1);
   }
 
-  prevCandidate() {
-    return this.shiftCandidateSelection(-1);
-  }
-
   setCandidateIndex(index) {
     if (!this.isConverting || !Number.isInteger(index)) {
       return this.buildState();
