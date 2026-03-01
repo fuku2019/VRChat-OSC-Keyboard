@@ -64,6 +64,30 @@ describe('useIME', () => {
     });
   });
 
+  describe('katakana mode / カタカナモード', () => {
+    it('keeps katakana preedit without starting conversion', () => {
+      const { result } = renderHook(() => useIME(InputMode.KATAKANA));
+      act(() => result.current.handleCharInput('k'));
+      act(() => result.current.handleCharInput('a'));
+
+      expect(result.current.rawKana).toBe('カ');
+      expect(result.current.isConverting).toBe(false);
+      expect(result.current.candidates).toEqual([]);
+      expect(result.current.displayText).toBe('カ');
+    });
+
+    it('commits katakana as-is on commitBuffer', () => {
+      const { result } = renderHook(() => useIME(InputMode.KATAKANA));
+      act(() => result.current.handleCharInput('k'));
+      act(() => result.current.handleCharInput('a'));
+      act(() => result.current.commitBuffer());
+
+      expect(result.current.input).toBe('カ');
+      expect(result.current.rawKana).toBe('');
+      expect(result.current.displayText).toBe('カ');
+    });
+  });
+
   describe('conversion state / 変換状態', () => {
     it('starts conversion without pressing space', () => {
       const { result } = renderHook(() => useIME(InputMode.HIRAGANA));
