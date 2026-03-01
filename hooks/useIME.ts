@@ -364,9 +364,13 @@ export const useIME = (
       }
       setBuffer(res.newBuffer);
 
-      // Auto-show candidates once kana syllables are formed.
-      // かなが形成されたタイミングで候補を自動表示
-      if (nextRawKana.length > 0 && res.newBuffer.length === 0) {
+      // Auto-show candidates once kana syllables are formed in hiragana mode.
+      // ひらがなモードでかなが形成されたタイミングのみ候補を自動表示
+      if (
+        mode === InputMode.HIRAGANA &&
+        nextRawKana.length > 0 &&
+        res.newBuffer.length === 0
+      ) {
         requestConversion(nextRawKana, { previousText: input });
       }
     },
@@ -406,7 +410,7 @@ export const useIME = (
         if (nextRawKana.length === 0) {
           setBufferPosition(null);
         }
-        if (nextRawKana.length > 0 && mode !== InputMode.ENGLISH) {
+        if (nextRawKana.length > 0 && mode === InputMode.HIRAGANA) {
           requestConversion(nextRawKana, { previousText: input });
         } else {
           clearConversionState();
@@ -472,7 +476,7 @@ export const useIME = (
         return;
       }
 
-      if (mode !== InputMode.ENGLISH) {
+      if (mode === InputMode.HIRAGANA) {
         const kanaToConvert = rawKana + buffer;
         if (kanaToConvert.length > 0) {
           if (bufferPosition === null) {
