@@ -97,7 +97,7 @@ describe('useIME', () => {
       expect(result.current.candidates.length).toBeGreaterThan(0);
     });
 
-    it('cycles candidates with space and prev', () => {
+    it('cycles candidates with space', () => {
       const { result } = renderHook(() => useIME(InputMode.HIRAGANA));
       act(() => result.current.handleCharInput('t'));
       act(() => result.current.handleCharInput('e'));
@@ -111,9 +111,6 @@ describe('useIME', () => {
       expect(result.current.candidateIndex).toBe(
         (initial + 1) % result.current.candidates.length,
       );
-
-      act(() => result.current.handlePrevCandidate());
-      expect(result.current.candidateIndex).toBe(initial);
     });
 
     it('commits selected candidate with enter path', () => {
@@ -162,22 +159,6 @@ describe('useIME', () => {
       expect(result.current.input).toBe('');
     });
 
-    it('uses shift+space as prev candidate while converting', () => {
-      const { result } = renderHook(() => useIME(InputMode.HIRAGANA));
-      act(() => result.current.handleCharInput('t'));
-      act(() => result.current.handleCharInput('e'));
-      act(() => result.current.handleCharInput('s'));
-      act(() => result.current.handleCharInput('u'));
-      act(() => result.current.handleCharInput('t'));
-      act(() => result.current.handleCharInput('o'));
-      const initial = result.current.candidateIndex;
-
-      act(() => result.current.handleSpace(undefined, { shift: true }));
-      expect(result.current.candidateIndex).toBe(
-        (initial - 1 + result.current.candidates.length) %
-          result.current.candidates.length,
-      );
-    });
   });
 
   describe('clear behavior / クリア動作', () => {

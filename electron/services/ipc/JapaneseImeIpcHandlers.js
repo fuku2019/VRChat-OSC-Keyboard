@@ -24,15 +24,6 @@ export function registerJapaneseImeIpcHandlers() {
     }
   });
 
-  ipcMain.handle('jp-ime:prev-candidate', () => {
-    try {
-      const state = getService().prevCandidate();
-      return { success: true, state };
-    } catch (error) {
-      return { success: false, error: error.message };
-    }
-  });
-
   ipcMain.handle('jp-ime:commit', (event, candidateIndex, context = {}) => {
     try {
       const { committed, state } = getService().commit(candidateIndex, context);

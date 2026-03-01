@@ -43,7 +43,6 @@ interface ElectronAPI {
   sendTypingStatus: (isTyping: boolean) => Promise<{ success: boolean; error?: string }>;
   imeConvert: (kana: string, context?: ImeContext) => Promise<ImeResponse>;
   imeNextCandidate: () => Promise<ImeResponse>;
-  imePrevCandidate: () => Promise<ImeResponse>;
   imeCommitCandidate: (
     candidateIndex?: number,
     context?: { previousWord?: string; currentInput?: string },

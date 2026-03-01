@@ -35,7 +35,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   imeConvert: (kana, context) =>
     ipcRenderer.invoke('jp-ime:convert', kana, context),
   imeNextCandidate: () => ipcRenderer.invoke('jp-ime:next-candidate'),
-  imePrevCandidate: () => ipcRenderer.invoke('jp-ime:prev-candidate'),
   imeCommitCandidate: (candidateIndex, context) =>
     ipcRenderer.invoke('jp-ime:commit', candidateIndex, context),
   imeCancelConversion: () => ipcRenderer.invoke('jp-ime:cancel'),
