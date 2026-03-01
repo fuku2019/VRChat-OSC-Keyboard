@@ -1,3 +1,4 @@
+// SQLite-backed learning store for IME candidate ranking / IME候補ランキング用SQLiteベース学習ストア
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
@@ -7,9 +8,10 @@ import { toHiragana } from './textUtils.js';
 
 const require = createRequire(import.meta.url);
 
+// Default learning score weights / デフォルト学習スコアウェイト
 const DEFAULT_WEIGHTS = {
-  candidate: 6,
-  bigram: 10,
+  candidate: 6, // Weight for candidate selection frequency / 候補選択頻度のウェイト
+  bigram: 10, // Weight for bigram (context) frequency / バイグラム（コンテキスト）頻度のウェイト
 };
 
 function resolveDefaultDbPath() {
@@ -24,11 +26,17 @@ function resolveDefaultDbPath() {
   return path.join(os.tmpdir(), 'vrchat-osc-keyboard-ime-learning.sqlite');
 }
 
+// Tracks user selection history to boost frequently chosen candidates.
+// Uses SQLite WAL mode for concurrent read/write performance.
+// ユーザーの選択履歴を追跡し、よく選ばれる候補をブーストする。
+// SQLite WALモードで並行読み書き性能を確保。
 export class LearningStore {
   constructor(options = {}) {
     this.dbPath = options.dbPath || resolveDefaultDbPath();
     this.weights = {
-      candidate: Number.isFinite(options.w1) ? options.w1 : DEFAULT_WEIGHTS.candidate,
+      candidate: Number.isFinite(options.w1)
+        ? options.w1
+        : DEFAULT_WEIGHTS.candidate,
       bigram: Number.isFinite(options.w2) ? options.w2 : DEFAULT_WEIGHTS.bigram,
     };
     this.ensureDirectory();
@@ -37,6 +45,7 @@ export class LearningStore {
     this.prepareStatements();
   }
 
+  // Ensure the database directory exists / データベースディレクトリの存在を確認
   ensureDirectory() {
     const dir = path.dirname(this.dbPath);
     if (!fs.existsSync(dir)) {
@@ -44,6 +53,7 @@ export class LearningStore {
     }
   }
 
+  // Create database tables if they don't exist / テーブルが存在しない場合作成
   initialize() {
     this.db.exec(`
       PRAGMA journal_mode = WAL;
@@ -65,6 +75,7 @@ export class LearningStore {
     `);
   }
 
+  // Prepare reusable SQL statements for performance / パフォーマンスのため再利用可能なSQL文を準備
   prepareStatements() {
     this.upsertCandidateStmt = this.db.prepare(`
       INSERT INTO candidate_stats (reading, surface, count, updated_at)
@@ -86,6 +97,7 @@ export class LearningStore {
     `);
   }
 
+  // Record a committed candidate selection for learning / 学習のため確定した候補選択を記録
   recordCommit(reading, surface, previousWord = '') {
     if (!reading || !surface) return;
     const now = Date.now();
@@ -96,6 +108,7 @@ export class LearningStore {
     }
   }
 
+  // Get how many times a candidate was selected for a reading / 読みに対する候補選択回数を取得
   getCandidateCount(reading, surface) {
     if (!reading || !surface) return 0;
     const normalizedReading = toHiragana(reading);
@@ -103,12 +116,14 @@ export class LearningStore {
     return Number(row?.count || 0);
   }
 
+  // Get how many times a surface followed a previous word / 表層形が前の単語に続いた回数を取得
   getBigramCount(previousWord, surface) {
     if (!previousWord || !surface) return 0;
     const row = this.selectBigramCountStmt.get(previousWord, surface);
     return Number(row?.count || 0);
   }
 
+  // Calculate composite score: dictionary base + learning boost + context boost / 複合スコアを計算: 辞書ベース + 学習ブースト + コンテキストブースト
   score(dictScore, reading, surface, previousWord = '') {
     const candidateCount = this.getCandidateCount(reading, surface);
     const bigramCount = this.getBigramCount(previousWord, surface);

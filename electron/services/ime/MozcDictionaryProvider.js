@@ -1,3 +1,4 @@
+// Mozc OSS dictionary provider for kanji conversion / Mozc OSS辞書プロバイダー（漢字変換用）
 import fs from 'fs';
 import path from 'path';
 import zlib from 'zlib';
@@ -9,20 +10,23 @@ import { dedupeCandidates, extractLastWord, toHiragana } from './textUtils.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 let hasLoggedMozcManifestLoad = false;
-const SUPPORTED_FORMAT_VERSIONS = new Set([1, 2]);
-const SHA256_PATTERN = /^[0-9a-f]{64}$/i;
+const SUPPORTED_FORMAT_VERSIONS = new Set([1, 2]); // Manifest format versions / マニフェスト形式バージョン
+const SHA256_PATTERN = /^[0-9a-f]{64}$/i; // SHA-256 hash pattern / SHA-256ハッシュパターン
 
+// Resolve the root directory for Mozc dictionary assets / Mozc辞書アセットのルートディレクトリを解決
 function resolveAssetsRoot(customRoot) {
   if (customRoot) return customRoot;
   return path.join(__dirname, '../../assets/ime/mozc');
 }
 
+// Derive shard key from reading (first hiragana character) / 読みからシャードキーを導出（最初のひらがな文字）
 function toShardKey(reading) {
   const normalized = toHiragana(reading);
   if (!normalized) return '_';
   return normalized.slice(0, 1);
 }
 
+// Convert shard key to hex-encoded filename / シャードキーを16進エンコードファイル名に変換
 function toShardFilename(shardKey) {
   const safe = Array.from(shardKey || '_')
     .map((char) => char.codePointAt(0).toString(16))
@@ -57,6 +61,7 @@ function normalizeHash(hashValue) {
   return SHA256_PATTERN.test(trimmed) ? trimmed.toLowerCase() : '';
 }
 
+// Create empty shard data structure / 空のシャードデータ構造を作成
 function createEmptyShardData() {
   return {
     entries: [],
@@ -64,22 +69,27 @@ function createEmptyShardData() {
   };
 }
 
+// Provides IME candidates from Mozc OSS dictionary shards.
+// Loads gzipped JSON shards on demand with LRU caching and SHA-256 integrity checks.
+// Mozc OSSの辞書シャードからIME候補を提供する。
+// gzip圧縮JSONシャードをオンデマンドでロードし、LRUキャッシュとSHA-256整合性チェックを行う。
 export class MozcDictionaryProvider {
   constructor(options = {}) {
     this.maxCandidates = options.maxCandidates || 20;
-    this.maxCacheEntries = options.maxCacheEntries || 32;
+    this.maxCacheEntries = options.maxCacheEntries || 32; // LRU cache limit / LRUキャッシュ上限
     this.assetsRoot = resolveAssetsRoot(options.assetsRoot);
     this.manifestPath = path.join(this.assetsRoot, 'manifest.json');
     this.shardsRoot = path.join(this.assetsRoot, 'shards');
     this.learningStore = options.learningStore || new LearningStore();
-    this.shardCache = new Map();
-    this.invalidShardKeys = new Set();
-    this.loggedShardErrors = new Set();
-    this.manifestShardMap = new Map();
+    this.shardCache = new Map(); // LRU shard cache / LRUシャードキャッシュ
+    this.invalidShardKeys = new Set(); // Permanently failed shards / 恒久的に失敗したシャード
+    this.loggedShardErrors = new Set(); // Deduplicate error logs / エラーログの重複排除
+    this.manifestShardMap = new Map(); // v2 manifest shard metadata / v2マニフェストシャードメタデータ
     this.manifestVersion = 1;
     this.loadManifest();
   }
 
+  // List .json.gz shard files in the shards directory / shardsディレクトリ内の.json.gzシャードファイルを一覧
   getShardFilesOnDisk() {
     if (!fs.existsSync(this.shardsRoot)) {
       throw new Error(`Mozc shards directory not found: ${this.shardsRoot}`);
@@ -89,6 +99,7 @@ export class MozcDictionaryProvider {
       .filter((fileName) => fileName.endsWith('.json.gz'));
   }
 
+  // Validate manifest structure and cross-check with shard files on disk / マニフェスト構造を検証し、ディスク上のシャードファイルとクロスチェック
   validateManifest(manifest, shardFilesOnDisk) {
     if (!manifest || typeof manifest !== 'object' || Array.isArray(manifest)) {
       throw new Error('Mozc manifest must be a JSON object');
@@ -113,10 +124,14 @@ export class MozcDictionaryProvider {
       );
     }
     if (!isNonNegativeInteger(manifest.shardCount)) {
-      throw new Error('Mozc manifest "shardCount" must be a non-negative integer');
+      throw new Error(
+        'Mozc manifest "shardCount" must be a non-negative integer',
+      );
     }
     if (!isNonNegativeInteger(manifest.entryCount)) {
-      throw new Error('Mozc manifest "entryCount" must be a non-negative integer');
+      throw new Error(
+        'Mozc manifest "entryCount" must be a non-negative integer',
+      );
     }
     if (manifest.shardCount !== shardFilesOnDisk.length) {
       throw new Error(
@@ -196,7 +211,9 @@ export class MozcDictionaryProvider {
 
     for (const shardFile of shardFilesOnDisk) {
       if (!listedFiles.has(shardFile)) {
-        throw new Error(`Mozc manifest is missing shard metadata for ${shardFile}`);
+        throw new Error(
+          `Mozc manifest is missing shard metadata for ${shardFile}`,
+        );
       }
     }
 
@@ -209,6 +226,7 @@ export class MozcDictionaryProvider {
     return { formatVersion: 2, shardMap };
   }
 
+  // Load and validate manifest.json from assets root / アセットルートからmanifest.jsonをロード・検証
   loadManifest() {
     if (!fs.existsSync(this.manifestPath)) {
       throw new Error(`Mozc manifest not found: ${this.manifestPath}`);
@@ -234,6 +252,7 @@ export class MozcDictionaryProvider {
     }
   }
 
+  // Check if dictionary has entries for a given reading / 指定した読みの辞書エントリが存在するか確認
   hasReading(reading) {
     const normalized = toHiragana(reading);
     if (!normalized) return false;
@@ -241,6 +260,7 @@ export class MozcDictionaryProvider {
     return shardData.byReading.has(normalized);
   }
 
+  // Check if any dictionary reading starts with the given prefix / 辞書の読みが指定の接頭辞で始まるか確認
   hasReadingPrefix(prefix) {
     const normalized = toHiragana(prefix);
     if (!normalized) return false;
@@ -251,6 +271,7 @@ export class MozcDictionaryProvider {
     return false;
   }
 
+  // Move cache entry to most-recent position (LRU touch) / キャッシュエントリを最新位置に移動（LRUタッチ）
   touchCacheEntry(key) {
     const cached = this.shardCache.get(key);
     this.shardCache.delete(key);
@@ -258,11 +279,13 @@ export class MozcDictionaryProvider {
     return cached;
   }
 
+  // Get manifest metadata for a shard key (v2 only) / シャードキーのマニフェストメタデータを取得（v2のみ）
   getManifestShardMeta(shardKey) {
     if (this.manifestVersion !== 2) return null;
     return this.manifestShardMap.get(shardKey) || null;
   }
 
+  // Resolve file path and expected hash for a shard key / シャードキーのファイルパスと期待ハッシュを解決
   resolveShardLoadTarget(shardKey) {
     const manifestMeta = this.getManifestShardMeta(shardKey);
     if (manifestMeta) {
@@ -276,14 +299,23 @@ export class MozcDictionaryProvider {
     const encodedPath = path.join(this.shardsRoot, toShardFilename(shardKey));
     const legacyPath = path.join(this.shardsRoot, `${shardKey}.json.gz`);
     if (fs.existsSync(encodedPath)) {
-      return { shardPath: encodedPath, expectedHash: '', expectedEntryCount: null };
+      return {
+        shardPath: encodedPath,
+        expectedHash: '',
+        expectedEntryCount: null,
+      };
     }
     if (fs.existsSync(legacyPath)) {
-      return { shardPath: legacyPath, expectedHash: '', expectedEntryCount: null };
+      return {
+        shardPath: legacyPath,
+        expectedHash: '',
+        expectedEntryCount: null,
+      };
     }
     return { shardPath: '', expectedHash: '', expectedEntryCount: null };
   }
 
+  // Compute SHA-256 hash of a buffer / バッファのSHA-256ハッシュを計算
   computeSha256(buffer) {
     return crypto.createHash('sha256').update(buffer).digest('hex');
   }
@@ -294,6 +326,7 @@ export class MozcDictionaryProvider {
     return empty;
   }
 
+  // Parse and index raw shard entries into structured data / 生のシャードエントリを構造化データに解析・インデックス化
   buildShardData(rawEntries, shardKey) {
     if (!Array.isArray(rawEntries)) {
       throw new Error(`Mozc shard must be an array: key=${shardKey}`);
@@ -304,7 +337,9 @@ export class MozcDictionaryProvider {
     for (let index = 0; index < rawEntries.length; index += 1) {
       const entry = rawEntries[index];
       if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
-        throw new Error(`Mozc shard entry must be object: key=${shardKey} index=${index}`);
+        throw new Error(
+          `Mozc shard entry must be object: key=${shardKey} index=${index}`,
+        );
       }
       if (!isNonEmptyString(entry.r) || !isNonEmptyString(entry.s)) {
         throw new Error(
@@ -328,16 +363,20 @@ export class MozcDictionaryProvider {
     return { entries, byReading };
   }
 
+  // Permanently disable a corrupted shard and log warning / 破損シャードを恒久的に無効化し警告をログ出力
   disableShard(shardKey, error) {
     this.invalidShardKeys.add(shardKey);
     const empty = this.cacheEmptyShard(shardKey);
     if (!this.loggedShardErrors.has(shardKey)) {
-      console.warn(`[IME] Mozc shard disabled key=${shardKey}: ${error.message}`);
+      console.warn(
+        `[IME] Mozc shard disabled key=${shardKey}: ${error.message}`,
+      );
       this.loggedShardErrors.add(shardKey);
     }
     return empty;
   }
 
+  // Load a shard from disk or cache, with integrity verification / ディスクまたはキャッシュからシャードをロード（整合性検証付き）
   loadShard(readingOrKey) {
     const normalized = toHiragana(readingOrKey || '');
     const shardKey = toShardKey(normalized);
@@ -382,6 +421,7 @@ export class MozcDictionaryProvider {
     }
   }
 
+  // Add shard data to LRU cache, evicting oldest if over limit / シャードデータをLRUキャッシュに追加（上限超過時は最古を削除）
   setCache(key, shardData) {
     this.shardCache.set(key, shardData);
     while (this.shardCache.size > this.maxCacheEntries) {
@@ -390,6 +430,7 @@ export class MozcDictionaryProvider {
     }
   }
 
+  // Get ranked conversion candidates for a reading, with learning score / 読みのランク付き変換候補を取得（学習スコア付き）
   getCandidates(reading, context = {}) {
     const normalized = toHiragana(reading);
     if (!normalized) return [];
