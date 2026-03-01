@@ -74,3 +74,34 @@ export const convertToKatakana = (text: string): string => {
 
   return result;
 };
+
+// Convert katakana to hiragana / カタカナをひらがなに変換
+export const katakanaToHiragana = (text: string): string =>
+  text.replace(/[\u30a1-\u30f6]/g, (char) =>
+    String.fromCharCode(char.charCodeAt(0) - 0x60),
+  );
+
+// Deduplicate IME candidates by text / IME候補をテキストで重複排除
+export const dedupeCandidates = <T extends { text?: string }>(
+  items: T[],
+  max: number = 20,
+): T[] => {
+  const seen = new Set<string>();
+  const result: T[] = [];
+  for (const item of items) {
+    const text = String(item?.text || '').trim();
+    if (!text || seen.has(text)) continue;
+    seen.add(text);
+    result.push({ ...item, text } as T);
+    if (result.length >= max) break;
+  }
+  return result;
+};
+
+// Extract the last word from text / テキストから最後の単語を抽出
+export const extractPreviousWord = (text: string): string => {
+  const trimmed = String(text || '').trim();
+  if (!trimmed) return '';
+  const parts = trimmed.split(/\s+/);
+  return parts[parts.length - 1] || '';
+};

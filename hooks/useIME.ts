@@ -1,6 +1,12 @@
 import { useState, useCallback, useMemo, useRef } from 'react';
 import { InputMode } from '../types';
-import { toKana, convertToKatakana } from '../utils/ime';
+import {
+  toKana,
+  convertToKatakana,
+  katakanaToHiragana,
+  dedupeCandidates,
+  extractPreviousWord,
+} from '../utils/ime';
 import { CHATBOX } from '../constants';
 import type { ImeCandidate, ImeContext, ImeSegment, ImeState } from '../types/ime';
 
@@ -28,31 +34,6 @@ interface UseIMEReturn {
   handleCancelConversion: () => void;
   commitBuffer: () => void;
 }
-
-const katakanaToHiragana = (text: string): string =>
-  text.replace(/[\u30a1-\u30f6]/g, (char) =>
-    String.fromCharCode(char.charCodeAt(0) - 0x60),
-  );
-
-const dedupeCandidates = (items: ImeCandidate[]): ImeCandidate[] => {
-  const seen = new Set<string>();
-  const result: ImeCandidate[] = [];
-  for (const item of items) {
-    const text = String(item?.text || '').trim();
-    if (!text || seen.has(text)) continue;
-    seen.add(text);
-    result.push({ ...item, text });
-    if (result.length >= LOCAL_MAX_CANDIDATES) break;
-  }
-  return result;
-};
-
-const extractPreviousWord = (text: string): string => {
-  const trimmed = String(text || '').trim();
-  if (!trimmed) return '';
-  const parts = trimmed.split(/\s+/);
-  return parts[parts.length - 1] || '';
-};
 
 const buildLocalFallbackCandidates = (kana: string): ImeCandidate[] => {
   const normalizedKana = katakanaToHiragana(kana);
