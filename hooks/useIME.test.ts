@@ -145,7 +145,8 @@ describe('useIME', () => {
       act(() => result.current.handleCharInput('u'));
       act(() => result.current.handleCharInput('t'));
       act(() => result.current.handleCharInput('o'));
-      const selected = result.current.candidates[result.current.candidateIndex].text;
+      const selected =
+        result.current.candidates[result.current.candidateIndex].text;
 
       act(() => result.current.handleCommitCandidate());
       expect(result.current.input).toBe(selected);
@@ -182,7 +183,6 @@ describe('useIME', () => {
       expect(result.current.rawKana).toBe('てすと');
       expect(result.current.input).toBe('');
     });
-
   });
 
   describe('clear behavior / クリア動作', () => {
@@ -219,6 +219,51 @@ describe('useIME', () => {
       act(() => result.current.handleCharInput('c'));
       act(() => result.current.handleCharInput('d'));
       expect(result.current.input).toBe('abc');
+    });
+  });
+
+  describe('preedit duplication prevention / preedit二重化防止', () => {
+    it('does not duplicate preedit when inserting symbol during katakana preedit', () => {
+      const { result } = renderHook(() => useIME(InputMode.KATAKANA));
+      act(() => result.current.handleCharInput('k'));
+      act(() => result.current.handleCharInput('a'));
+      expect(result.current.rawKana).toBe('カ');
+      expect(result.current.displayText).toBe('カ');
+
+      // Insert a symbol while preedit is active / preedit中に記号を挿入
+      act(() => result.current.handleCharInput('0'));
+      expect(result.current.input).toBe('カ0');
+      expect(result.current.rawKana).toBe('');
+      expect(result.current.displayText).toBe('カ0');
+    });
+  });
+
+  describe('backspace during conversion / 変換中のBackspace', () => {
+    it('only cancels conversion without deleting characters on backspace', () => {
+      const { result } = renderHook(() => useIME(InputMode.HIRAGANA));
+      act(() => result.current.setInput('abc'));
+      act(() => result.current.handleCharInput('k'));
+      act(() => result.current.handleCharInput('a'));
+      expect(result.current.isConverting).toBe(true);
+
+      // Backspace should only cancel conversion / Backspaceは変換キャンセルのみ
+      act(() => result.current.handleBackspace());
+      expect(result.current.isConverting).toBe(false);
+      expect(result.current.input).toBe('abc');
+      expect(result.current.rawKana).toBe('か');
+    });
+  });
+
+  describe('space with romaji buffer / ローマ字バッファ時のスペース', () => {
+    it('flushes romaji buffer before conversion on space', () => {
+      const { result } = renderHook(() => useIME(InputMode.HIRAGANA));
+      act(() => result.current.handleCharInput('k'));
+      expect(result.current.buffer).toBe('k');
+
+      // Space should flush buffer and start conversion / スペースはバッファをフラッシュして変換開始すべき
+      act(() => result.current.handleSpace());
+      expect(result.current.buffer).toBe('');
+      expect(result.current.isConverting).toBe(true);
     });
   });
 });

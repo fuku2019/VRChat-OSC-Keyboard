@@ -294,9 +294,13 @@ export const useIME = (
 
       const insertDirectChar = (text: string) => {
         if (displayText.length + text.length > maxLength) return;
-        const pos = Math.max(0, Math.min(displayCursorPos, displayText.length));
+        // Commit preedit first, then insert into input / preeditを先に確定してからinputに挿入
+        const baseInput = bufferPosition !== null && preeditText
+          ? input.slice(0, Math.min(bufferPosition, input.length)) + preeditText + input.slice(Math.min(bufferPosition, input.length))
+          : input + preeditText;
+        const pos = Math.max(0, Math.min(displayCursorPos, baseInput.length));
         const nextText =
-          displayText.slice(0, pos) + text + displayText.slice(pos);
+          baseInput.slice(0, pos) + text + baseInput.slice(pos);
         setInput(nextText);
         clearAllPendingState();
       };
@@ -394,6 +398,7 @@ export const useIME = (
     (cursorPosition?: number) => {
       if (isConverting) {
         handleCancelConversion();
+        return; // Only cancel conversion, don't delete further / 変換キャンセルのみ行い、追加の削除はしない
       }
 
       if (buffer.length > 0) {
@@ -477,7 +482,19 @@ export const useIME = (
       }
 
       if (mode === InputMode.HIRAGANA) {
-        const kanaToConvert = rawKana + buffer;
+        // Flush remaining romaji buffer to kana before conversion / 変換前に残留ローマ字バッファをかなにフラッシュ
+        let kanaToConvert = rawKana;
+        let remaining = buffer;
+        if (remaining.length > 0) {
+          const res = toKana(remaining, '');
+          if (res.output) {
+            kanaToConvert += res.output;
+          }
+          // If buffer still has unresolvable chars, append as-is / 解決不可の文字はそのまま追加
+          if (res.newBuffer) {
+            kanaToConvert += res.newBuffer;
+          }
+        }
         if (kanaToConvert.length > 0) {
           if (bufferPosition === null) {
             const safe = Math.max(0, Math.min(cursorPosition ?? input.length, input.length));
@@ -490,13 +507,14 @@ export const useIME = (
         }
       }
 
-      if (displayText.length >= maxLength) return;
+      // Insert space into input (not displayText) to avoid preedit duplication / preedit二重化を防ぐためinputに挿入
+      if (input.length >= maxLength) return;
       const insertPos =
         cursorPosition !== undefined
-          ? Math.max(0, Math.min(cursorPosition, displayText.length))
-          : displayText.length;
+          ? Math.max(0, Math.min(cursorPosition, input.length))
+          : input.length;
       const nextText =
-        displayText.slice(0, insertPos) + ' ' + displayText.slice(insertPos);
+        input.slice(0, insertPos) + ' ' + input.slice(insertPos);
       setInput(nextText);
       clearAllPendingState();
     },
