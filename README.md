@@ -137,3 +137,7 @@ npm run dist
 - Mozc dictionary_oss 由来データを同梱しています。
 - 辞書shardは `dictionary00-09` 由来のフル語彙を先頭1文字キー分割で再生成しています。
 - 詳細は `THIRD_PARTY_MOZC_DICTIONARY_LICENSES.txt` を参照してください。
+
+***
+
+![GitHub Stats](https://github-readme-stats.vercel.app/api?username=fuku2019&theme=tokyonight&show_icons=true&hide_border=true&count_private=true)
