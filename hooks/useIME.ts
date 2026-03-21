@@ -53,7 +53,7 @@ const buildLocalFallbackCandidates = (kana: string): ImeCandidate[] => {
       score: 9,
     },
   ];
-  return dedupeCandidates(fallback);
+  return dedupeCandidates(fallback, LOCAL_MAX_CANDIDATES);
 };
 
 const hasImeIpcApi = () => {
@@ -384,6 +384,7 @@ export const useIME = (
       rawKana,
       buffer,
       bufferPosition,
+      preeditText,
       displayText,
       isConverting,
       maxLength,
@@ -415,11 +416,7 @@ export const useIME = (
         if (nextRawKana.length === 0) {
           setBufferPosition(null);
         }
-        if (nextRawKana.length > 0 && mode === InputMode.HIRAGANA) {
-          requestConversion(nextRawKana, { previousText: input });
-        } else {
-          clearConversionState();
-        }
+        clearConversionState();
         return;
       }
 
@@ -438,8 +435,6 @@ export const useIME = (
       buffer,
       rawKana,
       input,
-      mode,
-      requestConversion,
       clearConversionState,
     ],
   );
@@ -525,7 +520,6 @@ export const useIME = (
       buffer,
       bufferPosition,
       input,
-      displayText,
       maxLength,
       candidates,
       candidateIndex,

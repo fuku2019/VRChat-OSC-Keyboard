@@ -344,7 +344,9 @@ export class JapaneseConversionService {
     }
     const activeSegment = this.getActiveSegment();
     if (!activeSegment) return this.buildState();
-    activeSegment.selectedIndex = index;
+    // Clamp to segment candidate count to prevent out-of-range / セグメント候補数でクランプして範囲外を防止
+    const segCandidateCount = activeSegment.candidates?.length || 0;
+    activeSegment.selectedIndex = normalizeSelectedIndex(index, segCandidateCount);
     this.rebuildCandidates();
     return this.buildState();
   }
