@@ -9,12 +9,13 @@ VRモードでも **物理・仮想キーボード** で快適なチャットが
 
 <div align="center">
 
-  [![made_with](https://img.shields.io/badge/MADE_WITH%E2%99%A1-A2A2FF?logo=google)](https://antigravity.google)
-  [![dev](https://img.shields.io/badge/-@fuku_2019_vrc-e8439?label=&logo=X&logoColor=ffffff&color=6399AE&labelColor=00C2CB)](https://x.com/fuku_2019_vrc)
-
-
   [![platform-windows](https://img.shields.io/badge/windows-platform?label=platform&labelColor=333333&color=357EC7)](https://windows.com)
   ![new_view_count](https://gitviews.com/repo/fuku2019/VRChat-OSC-Keyboard.svg?label-color=333333&style=flat)
+
+  [![antiGravity](https://img.shields.io/badge/Google_Antigravity-274f92?label=&logo=googlegemini&logoColor=white&labelColor=4285f4)](https://antigravity.google)
+  [![dev](https://img.shields.io/badge/-@fuku_2019_vrc-e8439?label=&logo=X&logoColor=ffffff&color=6399AE&labelColor=00C2CB)](https://x.com/fuku_2019_vrc)
+
+  [![latest_release](https://img.shields.io/badge/Latest_Release_Page-black?logo=github&logoColor=white)](https://github.com/fuku2019/VRChat-OSC-Keyboard/releases/latest)
 
   <!-- ![view_count](https://gitviews.com/repo/fuku2019/VRC-OSC-Keyboard.svg?label-color=333333&style=flat) -->
 
