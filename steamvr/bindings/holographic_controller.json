@@ -7,7 +7,7 @@
     "/actions/vrkb2": {
       "sources": [
         {
-          "path": "/user/hand/right/input/menu",
+          "path": "/user/hand/right/input/joystick",
           "mode": "button",
           "inputs": {
             "click": {
