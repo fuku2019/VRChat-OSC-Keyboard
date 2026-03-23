@@ -7,7 +7,7 @@
     "/actions/vrkb2": {
       "sources": [
         {
-          "path": "/user/hand/right/input/a",
+          "path": "/user/hand/right/input/thumbstick",
           "mode": "button",
           "inputs": {
             "click": {
@@ -35,20 +35,28 @@
         },
         {
           "path": "/user/hand/right/input/grip",
-          "mode": "button",
+          "mode": "grab",
           "inputs": {
-            "click": {
+            "grab": {
               "output": "/actions/vrkb2/in/grip_click"
             }
+          },
+          "parameters": {
+            "grab_activate_threshold": "0.20",
+            "grab_deactivate_threshold": "0.15"
           }
         },
         {
           "path": "/user/hand/left/input/grip",
-          "mode": "button",
+          "mode": "grab",
           "inputs": {
-            "click": {
+            "grab": {
               "output": "/actions/vrkb2/in/grip_click"
             }
+          },
+          "parameters": {
+            "grab_activate_threshold": "0.20",
+            "grab_deactivate_threshold": "0.15"
           }
         }
       ]
