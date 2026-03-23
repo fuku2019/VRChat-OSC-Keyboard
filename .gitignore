@@ -18,6 +18,8 @@ dist-ssr/
 release/
 out/
 native/index.node
+native/index.d.ts
+native/index.js
 native/vr-overlay-native.win32-x64-msvc.node
 
 # Local Environment
