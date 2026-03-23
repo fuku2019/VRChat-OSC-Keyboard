@@ -205,20 +205,22 @@ impl D3D11Context {
                 return Err(napi::Error::from_reason("Mapped texture pointer is null"));
             }
             let dst_pitch = mapped.RowPitch as usize;
-            if dst_pitch < src_row_pitch {
-                self.context.Unmap(resource, 0);
-                return Err(napi::Error::from_reason(
-                    "Mapped row pitch is smaller than source row size",
-                ));
-            }
 
             let copy_row_bytes = (width as usize)
                 .checked_mul(4)
                 .ok_or_else(|| napi::Error::from_reason("Row byte size overflow"))?;
 
+            // Validate mapped pitch can hold actual pixel data / マップされたピッチが実ピクセルデータを格納できるか検証
+            if dst_pitch < copy_row_bytes {
+                self.context.Unmap(resource, 0);
+                return Err(napi::Error::from_reason(
+                    "Mapped row pitch is smaller than pixel row size",
+                ));
+            }
+
             if src_row_pitch == dst_pitch {
-                // Bulk copy when pitches match / ピッチが一致する場合は一括コピー
-                std::ptr::copy_nonoverlapping(src, dst, copy_row_bytes * height as usize);
+                // Bulk copy when pitches match (including padding) / ピッチが一致する場合はパディング含め一括コピー
+                std::ptr::copy_nonoverlapping(src, dst, src_row_pitch * height as usize);
             } else {
                 // Row-by-row copy when pitches differ / ピッチが異なる場合は行ごとコピー
                 for y in 0..height {
