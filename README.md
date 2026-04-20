@@ -1,4 +1,7 @@
-# ☆ VRChat-OSC-Keyboard ✩
+### *SEASON 0 // GIVES YOU FEATHER*
+![season0](https://raw.githubusercontent.com/Nrtm22/unofficial-vrchat-osc-keyboard-site/refs/heads/main/raw_images/1776701221570%7E2.png)
+# VRChat-OSC-Keyboard
+
 🕊️ VRChatのチャットをもっと自由に！！<br>
 VRモードでも **物理・仮想キーボード** で快適なチャットができるツール 😎
 
