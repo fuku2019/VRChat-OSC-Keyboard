@@ -299,6 +299,10 @@ impl D3D11Context {
             // Unbind RTV to prevent stale references / RTV をアンバインドして古参照を防止
             self.context.PSSetShaderResources(0, Some(&[None]));
             self.context.OMSetRenderTargets(None, None);
+
+            // Force GPU to execute queued commands immediately
+            // キューに溜まったコマンドの即時実行をGPUに強制してレイテンシを減少させる
+            self.context.Flush();
         }
 
         Ok(())

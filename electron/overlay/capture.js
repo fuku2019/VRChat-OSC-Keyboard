@@ -230,17 +230,18 @@ export function startCapture(webContents, fps = 60) {
     return;
   }
 
+  let nextCaptureTime = Date.now();
+
   async function tick() {
     if (!state.captureWebContents || state.captureWebContents.isDestroyed()) {
       stopCapture();
       return;
     }
     if (state.captureInProgress) {
-      scheduleNext(intervalMs);
+      scheduleNext(1);
       return;
     }
     state.captureInProgress = true;
-    const startedAt = Date.now();
     try {
       // Capture the page / ページをキャプチャ
       const image = await state.captureWebContents.capturePage();
@@ -259,8 +260,12 @@ export function startCapture(webContents, fps = 60) {
     } finally {
       state.captureInProgress = false;
       if (state.captureWebContents) {
-        const elapsed = Date.now() - startedAt;
-        scheduleNext(Math.max(0, intervalMs - elapsed));
+        const now = Date.now();
+        while (nextCaptureTime <= now) {
+          nextCaptureTime += intervalMs;
+        }
+        const delayMs = Math.max(1, nextCaptureTime - now);
+        scheduleNext(delayMs);
       }
     }
   }

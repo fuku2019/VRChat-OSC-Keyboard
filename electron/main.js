@@ -56,6 +56,13 @@ setAppTitle(APP_TITLE);
 // Register IPC handlers / IPCハンドラを登録
 registerIpcHandlers(APP_VERSION);
 
+// Disable Chromium background throttling for consistent VR Overlay FPS
+// VRオーバーレイのFPSを安定させるため、Chromiumのバックグラウンド最適化および隠蔽保護を無効化
+app.commandLine.appendSwitch('disable-background-timer-throttling');
+app.commandLine.appendSwitch('disable-backgrounding-occluded-windows');
+app.commandLine.appendSwitch('disable-renderer-backgrounding');
+app.commandLine.appendSwitch('disable-features', 'CalculateNativeWinOcclusion');
+
 // Single instance lock / 単一インスタンスロック
 const gotTheLock = app.requestSingleInstanceLock();
 
@@ -147,8 +154,8 @@ if (!gotTheLock) {
       if (mainWindow) {
         // Wait for window to be ready, then start capture / ウィンドウ準備完了を待ってからキャプチャ開始
         mainWindow.webContents.once('did-finish-load', () => {
-          startCapture(mainWindow.webContents, 60); // 60 FPS target
-          startInputLoop(60, mainWindow.webContents, { syncWithCapture: true }); // Sync input with capture
+          startCapture(mainWindow.webContents, 90); // 90 FPS target for smoother rendering
+          startInputLoop(120, mainWindow.webContents, { syncWithCapture: false }); // Decouple input from capture for lowest latency
           console.log('VR overlay capture started');
         });
       }
