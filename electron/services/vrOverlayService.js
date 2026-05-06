@@ -1,11 +1,14 @@
 import fs from 'fs';
-import path from 'path';
 
 import { getOverlayManager, toggleOverlayAll } from '../overlay.js';
-import { getAssetPath } from '../overlay/native.js';
+import {
+  ensureSteamVrInputFiles,
+  ensureSteamVrManifestRegistered,
+  getSteamVrAppKey,
+} from './SteamVrManifestService.js';
 
 const DEFAULT_POLL_HZ = 60;
-export const STEAMVR_APP_KEY = 'VRChat-OSC-Keyboard';
+export const STEAMVR_APP_KEY = getSteamVrAppKey();
 
 const state = {
   initialized: false,
@@ -18,7 +21,18 @@ function getManager() {
 }
 
 function getManifestPath() {
-  return getAssetPath(path.join('steamvr', 'actions.json'));
+  return ensureSteamVrInputFiles().actionsPath;
+}
+
+function registerManifestForBindings() {
+  const result = ensureSteamVrManifestRegistered();
+  if (!result?.success) {
+    console.warn(
+      '[SteamVR Input] manifest registration failed:',
+      result?.error || 'unknown error',
+    );
+  }
+  return result;
 }
 
 export function init() {
@@ -40,6 +54,7 @@ export function init() {
   }
 
   try {
+    registerManifestForBindings();
     manager.initInput(manifestPath);
     state.initialized = true;
     return true;
@@ -112,6 +127,7 @@ export function getCurrentBindings() {
 }
 
 export function openBindingUI(showOnDesktop = false) {
+  registerManifestForBindings();
   if (!state.initialized && !init()) {
     throw new Error('SteamVR input is not initialized');
   }

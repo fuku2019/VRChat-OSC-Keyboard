@@ -13,8 +13,16 @@ vi.mock('../overlay.js', () => ({
   resetOverlayPosition: vi.fn(),
 }));
 
-vi.mock('../overlay/native.js', () => ({
-  getAssetPath: vi.fn(() => 'E:/VRKB/steamvr/actions.json'),
+const { ensureSteamVrManifestRegistered } = vi.hoisted(() => ({
+  ensureSteamVrManifestRegistered: vi.fn(() => ({ success: true })),
+}));
+
+vi.mock('./SteamVrManifestService.js', () => ({
+  ensureSteamVrInputFiles: vi.fn(() => ({
+    actionsPath: 'E:/VRKB/userData/steamvr/actions.json',
+  })),
+  ensureSteamVrManifestRegistered,
+  getSteamVrAppKey: vi.fn(() => 'system.generated.vrchat-osc-keyboard.exe'),
 }));
 
 vi.mock('fs', () => ({
@@ -79,9 +87,10 @@ describe('vrOverlayService', () => {
     service.openBindingUI();
 
     expect(manager.openBindingUi).toHaveBeenCalledWith(
-      'VRChat-OSC-Keyboard',
+      'system.generated.vrchat-osc-keyboard.exe',
       false,
     );
+    expect(ensureSteamVrManifestRegistered).toHaveBeenCalled();
   });
 
   it('returns safe defaults when SteamVR input init fails', async () => {

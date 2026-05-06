@@ -10,7 +10,6 @@ import {
 } from '../SteamVrSettingsService.js';
 import {
   ensureSteamVrManifestRegistered,
-  ensureSteamVrManifestUnregistered,
 } from '../SteamVrManifestService.js';
 import { setSteamVrSettings } from '../WindowManager.js';
 
@@ -39,14 +38,11 @@ export function registerSteamVrIpcHandlers() {
       return result;
     }
 
-    // OFF: remove autolaunch flag and unregister from SteamVR app list.
+    // OFF only disables startup. Keep the manifest registered so SteamVR Input
+    // can apply official bindings to the active app key.
     const launchResult = setSteamVrAutoLaunch(STEAMVR_APP_KEY, false);
     if (!launchResult.success) {
       return launchResult;
-    }
-    const unregisterResult = ensureSteamVrManifestUnregistered();
-    if (!unregisterResult.success) {
-      return unregisterResult;
     }
     setSteamVrSettings({ autoLaunch: false });
     return { success: true, enabled: false };

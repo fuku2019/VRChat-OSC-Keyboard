@@ -30,7 +30,6 @@ import {
 import { setSteamVrAutoLaunch } from './services/SteamVrSettingsService.js';
 import {
   ensureSteamVrManifestRegistered,
-  ensureSteamVrManifestUnregistered,
 } from './services/SteamVrManifestService.js';
 import {
   initOverlay,
@@ -84,20 +83,20 @@ if (!gotTheLock) {
     const settings = getOverlaySettings();
     const steamVrSettings = getSteamVrSettings();
 
-    if (steamVrSettings.autoLaunch) {
-      const manifestRegistration = ensureSteamVrManifestRegistered();
-      if (!manifestRegistration.success) {
-        console.warn(
-          '[SteamVR] Failed to register app manifest:',
-          manifestRegistration.error,
-        );
-      } else {
-        console.log(
-          '[SteamVR] App manifest registered:',
-          manifestRegistration.manifestPath,
-        );
-      }
+    const manifestRegistration = ensureSteamVrManifestRegistered();
+    if (!manifestRegistration.success) {
+      console.warn(
+        '[SteamVR] Failed to register app manifest:',
+        manifestRegistration.error,
+      );
+    } else {
+      console.log(
+        '[SteamVR] App manifest registered:',
+        manifestRegistration.manifestPath,
+      );
+    }
 
+    if (steamVrSettings.autoLaunch) {
       const steamVrAutoLaunchSync = setSteamVrAutoLaunch(STEAMVR_APP_KEY, true);
       if (!steamVrAutoLaunchSync.success) {
         console.warn(
@@ -106,7 +105,8 @@ if (!gotTheLock) {
         );
       }
     } else {
-      // Keep OFF state strict by unregistering app and removing autolaunch entry / アプリを未登録にし、自動起動エントリを削除することで、OFF状態を厳密に保つ。
+      // Keep AutoLaunch off without unregistering the app manifest. SteamVR Input
+      // needs the manifest to save/apply bindings to the active app key.
       const steamVrAutoLaunchSync = setSteamVrAutoLaunch(
         STEAMVR_APP_KEY,
         false,
@@ -115,13 +115,6 @@ if (!gotTheLock) {
         console.warn(
           '[SteamVR] Failed to clear startup app setting on boot:',
           steamVrAutoLaunchSync.error,
-        );
-      }
-      const manifestUnregister = ensureSteamVrManifestUnregistered();
-      if (!manifestUnregister.success) {
-        console.warn(
-          '[SteamVR] Failed to unregister app manifest:',
-          manifestUnregister.error,
         );
       }
     }
