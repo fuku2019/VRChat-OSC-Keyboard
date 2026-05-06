@@ -5,6 +5,23 @@ import { app } from 'electron';
 import { getAssetPath } from '../overlay/native.js';
 
 const MANIFEST_FILE_NAME = 'vrchat-osc-keyboard.vrmanifest';
+const ACTIONS_FILE_NAME = 'actions.json';
+const STEAMVR_APP_NAME = 'VRChat OSC Keyboard';
+const CONTROLLER_TYPES = [
+  'knuckles',
+  'vive_controller',
+  'holographic_controller',
+  'oculus_touch',
+  'pico_controller',
+];
+
+export function getSteamVrAppKey() {
+  const executableName = path.basename(process.execPath || '').toLowerCase();
+  if (!executableName) {
+    return 'VRChat-OSC-Keyboard';
+  }
+  return `system.generated.${executableName}`;
+}
 
 function normalizePathForComparison(targetPath) {
   const normalized = path.normalize(path.resolve(targetPath));
@@ -89,17 +106,48 @@ function getSteamConfigPath() {
   );
 }
 
+function writeJsonFile(filePath, content) {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, `${JSON.stringify(content, null, 2)}\n`, 'utf-8');
+}
+
+function readAssetJson(relativePath) {
+  return JSON.parse(fs.readFileSync(getAssetPath(relativePath), 'utf-8'));
+}
+
+export function ensureSteamVrInputFiles() {
+  const appKey = getSteamVrAppKey();
+  const dir = path.join(app.getPath('userData'), 'steamvr');
+  const bindingsDir = path.join(dir, 'bindings');
+  const actionsPath = path.join(dir, ACTIONS_FILE_NAME);
+
+  const actions = readAssetJson(path.join('steamvr', ACTIONS_FILE_NAME));
+  const nextActions = {
+    ...actions,
+    app_key: appKey,
+    default_bindings: CONTROLLER_TYPES.map((controllerType) => ({
+      controller_type: controllerType,
+      binding_url: `bindings/${controllerType}.json`,
+    })),
+  };
+  writeJsonFile(actionsPath, nextActions);
+
+  for (const controllerType of CONTROLLER_TYPES) {
+    const binding = readAssetJson(
+      path.join('steamvr', 'bindings', `${controllerType}.json`),
+    );
+    writeJsonFile(path.join(bindingsDir, `${controllerType}.json`), {
+      ...binding,
+      app_key: appKey,
+    });
+  }
+
+  return { appKey, actionsPath, bindingsDir };
+}
+
 function buildManifestContent() {
-  const appKey = 'VRChat-OSC-Keyboard';
-  const actionsPath = getAssetPath(path.join('steamvr', 'actions.json'));
-  const bindingsDir = getAssetPath(path.join('steamvr', 'bindings'));
-  const bindings = [
-    'knuckles',
-    'vive_controller',
-    'holographic_controller',
-    'oculus_touch',
-    'pico_controller',
-  ].map((controllerType) => ({
+  const { appKey, actionsPath, bindingsDir } = ensureSteamVrInputFiles();
+  const bindings = CONTROLLER_TYPES.map((controllerType) => ({
     controller_type: controllerType,
     binding_url: `file://${path.join(bindingsDir, `${controllerType}.json`).replace(/\\/g, '/')}`,
   }));
@@ -113,8 +161,8 @@ function buildManifestContent() {
         binary_path_windows: process.execPath,
         is_dashboard_overlay: true,
         strings: {
-          en_us: { name: 'VRChat OSC Keyboard' },
-          ja_jp: { name: 'VRChat OSC Keyboard' },
+          en_us: { name: STEAMVR_APP_NAME },
+          ja_jp: { name: STEAMVR_APP_NAME },
         },
         action_manifest_path: actionsPath,
         default_bindings: bindings,
@@ -128,11 +176,7 @@ function ensureManifestFile() {
   fs.mkdirSync(dir, { recursive: true });
   const manifestPath = path.join(dir, MANIFEST_FILE_NAME);
   const content = buildManifestContent();
-  fs.writeFileSync(
-    manifestPath,
-    `${JSON.stringify(content, null, 2)}\n`,
-    'utf-8',
-  );
+  writeJsonFile(manifestPath, content);
   return manifestPath;
 }
 
