@@ -51,6 +51,8 @@ export interface TranslationStrings {
     updateAvailable: string;
     openReleasePage: string;
     latestVersion: string;
+    downloadAndUpdate: string;
+    downloading: string;
     checking: string;
     loading: string;
     updateError: string;
@@ -158,6 +160,8 @@ export const TRANSLATIONS: TranslationsMap = {
       updateAvailable: 'アップデートがあります: {version}',
       openReleasePage: 'リリースページを開く',
       latestVersion: '最新です',
+      downloadAndUpdate: 'ダウンロードして更新',
+      downloading: 'ダウンロード中...',
       checking: '確認中...',
       loading: '読み込み中...',
       updateError: '確認エラー',
@@ -261,6 +265,8 @@ export const TRANSLATIONS: TranslationsMap = {
       updateAvailable: 'Update Available: {version}',
       openReleasePage: 'Open Release Page',
       latestVersion: 'Latest',
+      downloadAndUpdate: 'Download and Update',
+      downloading: 'Downloading...',
       checking: 'Checking...',
       loading: 'Loading...',
       updateError: 'Check Error',

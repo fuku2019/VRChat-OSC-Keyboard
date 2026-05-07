@@ -1,5 +1,18 @@
 import { app, ipcMain, shell } from 'electron';
+import fs from 'fs';
+import path from 'path';
+import { spawn } from 'child_process';
 
+const isInstallerVersion = () => {
+  if (!app.isPackaged) return false;
+  try {
+    const exeDir = path.dirname(app.getPath('exe'));
+    const uninstallerPath = path.join(exeDir, 'Uninstall VRChat OSC Keyboard.exe');
+    return fs.existsSync(uninstallerPath);
+  } catch (error) {
+    return false;
+  }
+};
 // GitHub repository info / GitHubリポジトリ情報
 const GITHUB_API_URL =
   'https://api.github.com/repos/fuku2019/VRC-OSC-Keyboard/releases/latest';
@@ -86,11 +99,30 @@ export function registerSystemIpcHandlers(APP_VERSION) {
       const updateAvailable =
         compareVersions(latestVersion, currentVersion) > 0;
 
+      let isInstaller = false;
+      let installerUrl = undefined;
+
+      if (updateAvailable) {
+        isInstaller = isInstallerVersion();
+        if (isInstaller && data.assets && Array.isArray(data.assets)) {
+          // Find the executable asset / 実行ファイルアセットを検索
+          const exeAsset = data.assets.find(
+            (asset) =>
+              asset.name.endsWith('.exe') && !asset.name.startsWith('Uninstall')
+          );
+          if (exeAsset) {
+            installerUrl = exeAsset.browser_download_url;
+          }
+        }
+      }
+
       return {
         success: true,
         updateAvailable,
         latestVersion,
         url: data.html_url,
+        isInstaller,
+        installerUrl,
       };
     } catch (error) {
       console.error('Failed to check for updates:', error);
@@ -108,6 +140,43 @@ export function registerSystemIpcHandlers(APP_VERSION) {
       return { success: true };
     } catch (error) {
       console.error('Failed to open external URL:', error);
+      return { success: false, error: error.message };
+    }
+  });
+
+  // Download and install update / アップデートをダウンロードしてインストール
+  ipcMain.handle('download-and-install-update', async (event, url) => {
+    try {
+      if (!isSafeExternalUrl(url)) {
+        return { success: false, error: 'Invalid URL' };
+      }
+
+      const tempDir = app.getPath('temp');
+      const fileName = 'VRC-OSC-Keyboard-Update.exe';
+      const destPath = path.join(tempDir, fileName);
+
+      // Download the file / ファイルをダウンロード
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Failed to download: ${response.status} ${response.statusText}`);
+      }
+
+      const buffer = await response.arrayBuffer();
+      fs.writeFileSync(destPath, Buffer.from(buffer));
+
+      // Run the installer / インストーラーを実行
+      const installer = spawn(destPath, [], {
+        detached: true,
+        stdio: 'ignore'
+      });
+      installer.unref();
+
+      // Quit the app so the installer can run / インストーラーが実行できるようアプリを終了
+      app.quit();
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to download and install update:', error);
       return { success: false, error: error.message };
     }
   });

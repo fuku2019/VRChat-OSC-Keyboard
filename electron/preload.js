@@ -17,6 +17,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Check for updates / 更新を確認
   checkForUpdate: () => ipcRenderer.invoke('check-for-update'),
 
+  // Download and install update / アップデートをダウンロードしてインストール
+  downloadAndInstallUpdate: (url) => ipcRenderer.invoke('download-and-install-update', url),
+
   // Open external URL / 外部URLを開く
   openExternal: (url) => ipcRenderer.invoke('open-external', url),
 

@@ -5,6 +5,8 @@ import { useConfigStore } from '../stores/configStore';
 export interface UpdateInfo {
   version: string;
   url: string;
+  isInstaller?: boolean;
+  installerUrl?: string;
 }
 
 interface UseUpdateCheckerReturn {
@@ -100,6 +102,8 @@ export const useUpdateChecker = (): UseUpdateCheckerReturn => {
               url:
                 result.url ||
                 'https://github.com/fuku2019/VRC-OSC-Keyboard/releases',
+              isInstaller: result.isInstaller,
+              installerUrl: result.installerUrl,
             };
             setUpdateAvailable(updateInfo);
             // Persist to localStorage / localStorageに永続化

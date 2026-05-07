@@ -19,6 +19,8 @@ interface CheckUpdateResult {
   updateAvailable: boolean;
   latestVersion?: string;
   url?: string;
+  isInstaller?: boolean;
+  installerUrl?: string;
   error?: string;
 }
 
@@ -34,6 +36,7 @@ interface ElectronAPI {
   getOscPort: () => Promise<GetOscPortResult>;
   getBridgePort: () => Promise<{ port: number | null }>; // Get current WebSocket bridge port / 現在のWebSocketブリッジポートを取得
   checkForUpdate: () => Promise<CheckUpdateResult>;
+  downloadAndInstallUpdate: (url: string) => Promise<{ success: boolean; error?: string }>;
   openExternal: (url: string) => Promise<{ success: boolean; error?: string }>;
   logConfigChange: (
     key: string,
