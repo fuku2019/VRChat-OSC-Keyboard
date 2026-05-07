@@ -18,8 +18,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Check for updates / 更新を確認
   checkForUpdate: () => ipcRenderer.invoke('check-for-update'),
 
-  // Download and install update / アップデートをダウンロードしてインストール
-  downloadAndInstallUpdate: (url) => ipcRenderer.invoke('download-and-install-update', url),
+  // Download update / アップデートをダウンロード
+  downloadUpdate: (url) => ipcRenderer.invoke('download-update', url),
+
+  // Cancel download / ダウンロードをキャンセル
+  cancelUpdateDownload: () => ipcRenderer.invoke('cancel-update-download'),
+
+  // Install update / アップデートをインストール
+  installUpdate: (destPath) => ipcRenderer.invoke('install-update', destPath),
 
   // Listen to download progress / ダウンロード進捗をリッスン
   onUpdateDownloadProgress: (callback) => {

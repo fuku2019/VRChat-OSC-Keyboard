@@ -22,7 +22,10 @@ const isInstallerVersion = () => {
   if (!app.isPackaged) return false;
   try {
     const exeDir = path.dirname(app.getPath('exe'));
-    const uninstallerPath = path.join(exeDir, 'Uninstall VRChat OSC Keyboard.exe');
+    const uninstallerPath = path.join(
+      exeDir,
+      'Uninstall.exe',
+    );
     return fs.existsSync(uninstallerPath);
   } catch (error) {
     return false;
@@ -88,7 +91,9 @@ export function registerSystemIpcHandlers(APP_VERSION) {
           latestVersion: debugConfig.mockLatestVersion,
           url: 'https://github.com/fuku2019/VRC-OSC-Keyboard/releases',
           isInstaller,
-          installerUrl: isInstaller ? 'https://example.com/dummy-installer.exe' : undefined,
+          installerUrl: isInstaller
+            ? 'https://example.com/dummy-installer.exe'
+            : undefined,
         };
       }
 
@@ -135,7 +140,8 @@ export function registerSystemIpcHandlers(APP_VERSION) {
           // Find the executable asset / 実行ファイルアセットを検索
           const exeAsset = data.assets.find(
             (asset) =>
-              asset.name.endsWith('.exe') && !asset.name.startsWith('Uninstall')
+              asset.name.endsWith('.exe') &&
+              !asset.name.startsWith('Uninstall'),
           );
           if (exeAsset) {
             installerUrl = exeAsset.browser_download_url;
@@ -171,19 +177,28 @@ export function registerSystemIpcHandlers(APP_VERSION) {
     }
   });
 
-  // Download and install update / アップデートをダウンロードしてインストール
-  ipcMain.handle('download-and-install-update', async (event, url) => {
+  let updateAbortController = null;
+
+  // Download update / アップデートをダウンロード
+  ipcMain.handle('download-update', async (event, url) => {
     try {
       if (debugConfig.enableDebugMode) {
-        console.log(`[DEBUG] download-and-install-update called with url: ${url}`);
+        console.log(
+          `[DEBUG] download-update called with url: ${url}`,
+        );
         // Simulate progress for debugging / デバッグ用の進捗シミュレーション
+        updateAbortController = new AbortController();
         for (let i = 0; i <= 100; i += 2) {
+          if (updateAbortController.signal.aborted) {
+            return { success: false, error: 'Download cancelled' };
+          }
           if (event.sender && !event.sender.isDestroyed()) {
             event.sender.send('update-download-progress', { progress: i });
           }
-          await new Promise(resolve => setTimeout(resolve, 100));
+          await new Promise((resolve) => setTimeout(resolve, 100));
         }
-        return { success: true, isDebug: true };
+        updateAbortController = null;
+        return { success: true, isDebug: true, destPath: 'dummy-path.exe' };
       }
 
       if (!isSafeExternalUrl(url)) {
@@ -194,10 +209,14 @@ export function registerSystemIpcHandlers(APP_VERSION) {
       const fileName = 'VRC-OSC-Keyboard-Update.exe';
       const destPath = path.join(tempDir, fileName);
 
+      updateAbortController = new AbortController();
+
       // Download the file / ファイルをダウンロード
-      const response = await fetch(url);
+      const response = await fetch(url, { signal: updateAbortController.signal });
       if (!response.ok) {
-        throw new Error(`Failed to download: ${response.status} ${response.statusText}`);
+        throw new Error(
+          `Failed to download: ${response.status} ${response.statusText}`,
+        );
       }
 
       const contentLength = response.headers.get('content-length');
@@ -239,19 +258,50 @@ export function registerSystemIpcHandlers(APP_VERSION) {
       const buffer = Buffer.concat(chunks);
       fs.writeFileSync(destPath, buffer);
 
+      updateAbortController = null;
+      return { success: true, destPath };
+    } catch (error) {
+      updateAbortController = null;
+      if (error.name === 'AbortError') {
+        return { success: false, error: 'Download cancelled' };
+      }
+      console.error('Failed to download update:', error);
+      return { success: false, error: error.message };
+    }
+  });
+
+  // Cancel download / ダウンロードをキャンセル
+  ipcMain.handle('cancel-update-download', async () => {
+    if (updateAbortController) {
+      updateAbortController.abort();
+      updateAbortController = null;
+      return { success: true };
+    }
+    return { success: false, error: 'No active download' };
+  });
+
+  // Install update / アップデートをインストール
+  ipcMain.handle('install-update', async (event, destPath) => {
+    try {
+      if (debugConfig.enableDebugMode) {
+        console.log(`[DEBUG] install-update called with destPath: ${destPath}`);
+        return { success: true, isDebug: true };
+      }
+      if (!destPath || !fs.existsSync(destPath)) {
+        return { success: false, error: 'Installer file not found' };
+      }
       // Run the installer / インストーラーを実行
       const installer = spawn(destPath, [], {
         detached: true,
-        stdio: 'ignore'
+        stdio: 'ignore',
       });
       installer.unref();
 
       // Quit the app so the installer can run / インストーラーが実行できるようアプリを終了
       app.quit();
-      
       return { success: true };
     } catch (error) {
-      console.error('Failed to download and install update:', error);
+      console.error('Failed to install update:', error);
       return { success: false, error: error.message };
     }
   });

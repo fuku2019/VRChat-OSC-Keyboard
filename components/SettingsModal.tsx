@@ -45,7 +45,10 @@ interface SettingsModalProps {
   isDownloading?: boolean;
   downloadProgress?: number;
   downloadError?: string | null;
+  downloadedPath?: string | null;
   startDownload?: () => Promise<void>;
+  cancelDownload?: () => Promise<void>;
+  installUpdate?: () => Promise<void>;
 }
 
 // Shared label + description UI / 共通ラベル+説明文UI
@@ -129,7 +132,10 @@ const SettingsModal: FC<SettingsModalProps> = ({
   isDownloading,
   downloadProgress,
   downloadError,
+  downloadedPath,
   startDownload,
+  cancelDownload,
+  installUpdate,
 }) => {
   const config = useConfigStore((state) => state.config);
   const setConfig = useConfigStore((state) => state.setConfig);
@@ -830,13 +836,22 @@ const SettingsModal: FC<SettingsModalProps> = ({
                     {t.checkNow}
                   </button>
                   {updateAvailable?.isInstaller && updateAvailable.installerUrl ? (
-                    <button
-                      onClick={() => startDownload && startDownload()}
-                      disabled={isDownloading}
-                      className='text-sm px-4 py-2 bg-primary-600 hover:bg-primary-500 text-[rgb(var(--rgb-on-primary))] rounded-lg transition-colors font-medium shadow-primary-900/20 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed'
-                    >
-                      {isDownloading ? t.downloading : t.downloadAndUpdate}
-                    </button>
+                    downloadedPath && installUpdate ? (
+                      <button
+                        onClick={() => installUpdate()}
+                        className='text-sm px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded-lg transition-colors font-medium shadow-green-900/20 shadow-lg'
+                      >
+                        {t.installUpdate}
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => startDownload && startDownload()}
+                        disabled={isDownloading}
+                        className='text-sm px-4 py-2 bg-primary-600 hover:bg-primary-500 text-[rgb(var(--rgb-on-primary))] rounded-lg transition-colors font-medium shadow-primary-900/20 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed'
+                      >
+                        {isDownloading ? t.downloading : t.downloadAndUpdate}
+                      </button>
+                    )
                   ) : updateUrl ? (
                     <button
                       onClick={() => {
@@ -854,11 +869,21 @@ const SettingsModal: FC<SettingsModalProps> = ({
                 {/* Download Progress Bar / ダウンロードプログレスバー */}
                 {isDownloading && (
                   <div className='w-full min-w-[240px] mt-1'>
-                    <div className='flex justify-between text-xs mb-1.5 dark:text-slate-400 text-slate-500 font-medium'>
+                    <div className='flex justify-between items-center text-xs mb-1.5 dark:text-slate-400 text-slate-500 font-medium'>
                       <span>{t.downloading}</span>
-                      {downloadProgress !== undefined && downloadProgress >= 0 && (
-                        <span>{downloadProgress}%</span>
-                      )}
+                      <div className='flex items-center gap-2'>
+                        {downloadProgress !== undefined && downloadProgress >= 0 && (
+                          <span>{downloadProgress}%</span>
+                        )}
+                        {cancelDownload && (
+                          <button
+                            onClick={() => cancelDownload()}
+                            className='px-2 py-0.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 rounded text-[10px] transition-colors'
+                          >
+                            {t.cancel}
+                          </button>
+                        )}
+                      </div>
                     </div>
                     <div className='w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden'>
                       {downloadProgress !== undefined && downloadProgress >= 0 ? (

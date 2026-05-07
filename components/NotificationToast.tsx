@@ -11,7 +11,10 @@ interface NotificationToastProps {
   isDownloading: boolean;
   downloadProgress: number;
   downloadError: string | null;
+  downloadedPath?: string | null;
   startDownload: () => Promise<void>;
+  cancelDownload?: () => Promise<void>;
+  installUpdate?: () => Promise<void>;
 }
 
 // Update Notification Toast Component / アップデート通知トーストコンポーネント
@@ -22,7 +25,10 @@ const NotificationToast = ({
   isDownloading,
   downloadProgress,
   downloadError,
+  downloadedPath,
   startDownload,
+  cancelDownload,
+  installUpdate,
 }: NotificationToastProps) => {
   const [isClosing, setIsClosing] = useState(false);
   const t = TRANSLATIONS[language || DEFAULT_CONFIG.LANGUAGE];
@@ -52,13 +58,22 @@ const NotificationToast = ({
           </div>
           <div className='flex gap-2'>
             {updateAvailable.isInstaller && updateAvailable.installerUrl ? (
-              <button
-                onClick={startDownload}
-                disabled={isDownloading}
-                className='px-3 py-1.5 text-xs font-bold bg-primary-600 hover:bg-primary-500 text-[rgb(var(--rgb-on-primary))] rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
-              >
-                {isDownloading ? t.settings.downloading : t.settings.downloadAndUpdate}
-              </button>
+              downloadedPath && installUpdate ? (
+                <button
+                  onClick={installUpdate}
+                  className='px-3 py-1.5 text-xs font-bold bg-green-600 hover:bg-green-500 text-white rounded-lg transition-colors'
+                >
+                  {t.settings.installUpdate}
+                </button>
+              ) : (
+                <button
+                  onClick={startDownload}
+                  disabled={isDownloading}
+                  className='px-3 py-1.5 text-xs font-bold bg-primary-600 hover:bg-primary-500 text-[rgb(var(--rgb-on-primary))] rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
+                >
+                  {isDownloading ? t.settings.downloading : t.settings.downloadAndUpdate}
+                </button>
+              )
             ) : (
               <button
                 onClick={() => {
@@ -81,15 +96,25 @@ const NotificationToast = ({
         </div>
         {/* Download Progress Bar / ダウンロードプログレスバー */}
         {isDownloading && (
-          <div className='w-full'>
-            <div className='w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1 overflow-hidden'>
-              {downloadProgress >= 0 ? (
-                <div
-                  className='bg-primary-500 h-1 rounded-full transition-all duration-300 ease-out'
-                  style={{ width: `${downloadProgress}%` }}
-                ></div>
-              ) : (
-                <div className='bg-primary-500 h-1 rounded-full animate-pulse w-full'></div>
+          <div className='flex flex-col gap-1 w-full'>
+            <div className='flex items-center justify-between'>
+              <div className='w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1 overflow-hidden mr-2'>
+                {downloadProgress >= 0 ? (
+                  <div
+                    className='bg-primary-500 h-1 rounded-full transition-all duration-300 ease-out'
+                    style={{ width: `${downloadProgress}%` }}
+                  ></div>
+                ) : (
+                  <div className='bg-primary-500 h-1 rounded-full animate-pulse w-full'></div>
+                )}
+              </div>
+              {cancelDownload && (
+                <button
+                  onClick={cancelDownload}
+                  className='text-[10px] px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 transition-colors flex-shrink-0'
+                >
+                  {t.settings.cancel}
+                </button>
               )}
             </div>
           </div>

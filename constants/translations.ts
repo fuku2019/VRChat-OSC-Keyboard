@@ -52,6 +52,7 @@ export interface TranslationStrings {
     openReleasePage: string;
     latestVersion: string;
     downloadAndUpdate: string;
+    installUpdate: string;
     downloading: string;
     downloadError: string;
     checking: string;
@@ -162,6 +163,7 @@ export const TRANSLATIONS: TranslationsMap = {
       openReleasePage: 'リリースページを開く',
       latestVersion: '最新です',
       downloadAndUpdate: 'ダウンロードして更新',
+      installUpdate: 'インストールして再起動',
       downloading: 'ダウンロード中...',
       downloadError: 'ダウンロードに失敗しました',
       checking: '確認中...',
@@ -268,6 +270,7 @@ export const TRANSLATIONS: TranslationsMap = {
       openReleasePage: 'Open Release Page',
       latestVersion: 'Latest',
       downloadAndUpdate: 'Download and Update',
+      installUpdate: 'Install and Restart',
       downloading: 'Downloading...',
       downloadError: 'Download failed',
       checking: 'Checking...',
