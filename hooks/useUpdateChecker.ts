@@ -15,7 +15,10 @@ interface UseUpdateCheckerReturn {
   isDownloading: boolean;
   downloadProgress: number;
   downloadError: string | null;
+  downloadedPath: string | null;
   startDownload: () => Promise<void>;
+  cancelDownload: () => Promise<void>;
+  installUpdate: () => Promise<void>;
 }
 
 // Hook for checking updates / アップデート確認用フック
@@ -53,6 +56,8 @@ export const useUpdateChecker = (): UseUpdateCheckerReturn => {
       return null;
     },
   );
+
+  const [downloadedPath, setDownloadedPath] = useState<string | null>(null);
 
   // Update Check Logic - runs only once on mount / 更新確認ロジック - マウント時に1回のみ実行
   useEffect(() => {
@@ -163,23 +168,47 @@ export const useUpdateChecker = (): UseUpdateCheckerReturn => {
     setIsDownloading(true);
     setDownloadProgress(0);
     setDownloadError(null);
+    setDownloadedPath(null);
 
     try {
-      const result = await window.electronAPI.downloadAndInstallUpdate(updateAvailable.installerUrl);
+      const result = await window.electronAPI.downloadUpdate(updateAvailable.installerUrl);
       if (!result.success) {
         setIsDownloading(false);
         setDownloadError(result.error || 'Download failed');
-      } else if (result.isDebug) {
-        // Test successful in debug mode / デバッグモードでのテスト成功
+      } else {
+        if (result.isDebug) {
+          console.log('[DEBUG] テスト成功 (Download completed)');
+        }
         setIsDownloading(false);
-        console.log('[DEBUG] テスト成功');
-        setTimeout(() => alert('テスト成功 (Debug Mode)'), 100);
+        if (result.destPath) {
+          setDownloadedPath(result.destPath);
+        }
       }
-      // If success, the app will quit to install, so we leave it in downloading state
     } catch (e) {
       console.error('Download failed:', e);
       setIsDownloading(false);
       setDownloadError(e instanceof Error ? e.message : 'Download failed');
+    }
+  };
+
+  const cancelDownload = async () => {
+    if (!window.electronAPI || !isDownloading) return;
+    try {
+      await window.electronAPI.cancelUpdateDownload();
+      setIsDownloading(false);
+      setDownloadProgress(0);
+      setDownloadError(null);
+    } catch (e) {
+      console.error('Cancel failed:', e);
+    }
+  };
+
+  const installUpdate = async () => {
+    if (!window.electronAPI || !downloadedPath) return;
+    try {
+      await window.electronAPI.installUpdate(downloadedPath);
+    } catch (e) {
+      console.error('Install failed:', e);
     }
   };
 
@@ -189,6 +218,9 @@ export const useUpdateChecker = (): UseUpdateCheckerReturn => {
     isDownloading,
     downloadProgress,
     downloadError,
+    downloadedPath,
     startDownload,
+    cancelDownload,
+    installUpdate,
   };
 };

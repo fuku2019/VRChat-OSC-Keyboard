@@ -9,7 +9,7 @@ export const debugConfig = {
   enableDebugMode: false,
 
   // アップデート確認テスト用: 常にアップデートがあるとみなすか
-  forceUpdateAvailable: true,
+  forceUpdateAvailable: false,
 
   // テスト用の最新バージョン文字列
   mockLatestVersion: 'v9.9',

@@ -69,7 +69,7 @@ const App = () => {
   );
 
   // Use update checker hook / アップデート確認フックを使用
-  const { updateAvailable, setUpdateAvailable, isDownloading, downloadProgress, downloadError, startDownload } = useUpdateChecker();
+  const { updateAvailable, setUpdateAvailable, isDownloading, downloadProgress, downloadError, downloadedPath, startDownload, cancelDownload, installUpdate } = useUpdateChecker();
 
   // Common handler for input side effects (Typing indicator, Auto-send)
   // 入力副作用の共通ハンドラ（タイピングインジケーター、自動送信）
@@ -405,7 +405,10 @@ const App = () => {
         isDownloading={isDownloading}
         downloadProgress={downloadProgress}
         downloadError={downloadError}
+        downloadedPath={downloadedPath}
         startDownload={startDownload}
+        cancelDownload={cancelDownload}
+        installUpdate={installUpdate}
       />
 
       {/* Update Notification Toast / アップデート通知トースト */}
@@ -417,7 +420,10 @@ const App = () => {
           isDownloading={isDownloading}
           downloadProgress={downloadProgress}
           downloadError={downloadError}
+          downloadedPath={downloadedPath}
           startDownload={startDownload}
+          cancelDownload={cancelDownload}
+          installUpdate={installUpdate}
         />
       )}
 
