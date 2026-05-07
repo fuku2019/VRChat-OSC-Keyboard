@@ -36,7 +36,9 @@ interface ElectronAPI {
   getOscPort: () => Promise<GetOscPortResult>;
   getBridgePort: () => Promise<{ port: number | null }>; // Get current WebSocket bridge port / 現在のWebSocketブリッジポートを取得
   checkForUpdate: () => Promise<CheckUpdateResult>;
-  downloadAndInstallUpdate: (url: string) => Promise<{ success: boolean; error?: string }>;
+  downloadAndInstallUpdate: (url: string) => Promise<{ success: boolean; error?: string; isDebug?: boolean }>;
+  onUpdateDownloadProgress: (callback: (data: { progress: number }) => void) => void;
+  removeUpdateDownloadProgress: (callback: (data: { progress: number }) => void) => void;
   openExternal: (url: string) => Promise<{ success: boolean; error?: string }>;
   logConfigChange: (
     key: string,
