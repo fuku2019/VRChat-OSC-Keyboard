@@ -4,6 +4,7 @@ const cursorMoveListenerMap = new WeakMap();
 const cursorHideListenerMap = new WeakMap();
 const triggerStateListenerMap = new WeakMap();
 const inputScrollListenerMap = new WeakMap();
+const downloadProgressListenerMap = new WeakMap();
 
 // Expose protected methods to renderer process via contextBridge
 // contextBridge経由でレンダラープロセスに保護されたメソッドを公開
@@ -19,6 +20,25 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Download and install update / アップデートをダウンロードしてインストール
   downloadAndInstallUpdate: (url) => ipcRenderer.invoke('download-and-install-update', url),
+
+  // Listen to download progress / ダウンロード進捗をリッスン
+  onUpdateDownloadProgress: (callback) => {
+    if (typeof callback !== 'function') return;
+    const previous = downloadProgressListenerMap.get(callback);
+    if (previous) {
+      ipcRenderer.removeListener('update-download-progress', previous);
+    }
+    const wrapped = (_event, data) => callback(data);
+    downloadProgressListenerMap.set(callback, wrapped);
+    ipcRenderer.on('update-download-progress', wrapped);
+  },
+  removeUpdateDownloadProgress: (callback) => {
+    if (typeof callback !== 'function') return;
+    const wrapped = downloadProgressListenerMap.get(callback);
+    if (!wrapped) return;
+    ipcRenderer.removeListener('update-download-progress', wrapped);
+    downloadProgressListenerMap.delete(callback);
+  },
 
   // Open external URL / 外部URLを開く
   openExternal: (url) => ipcRenderer.invoke('open-external', url),

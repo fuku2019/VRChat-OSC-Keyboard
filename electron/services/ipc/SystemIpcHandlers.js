@@ -3,7 +3,22 @@ import fs from 'fs';
 import path from 'path';
 import { spawn } from 'child_process';
 
+let debugConfig = { enableDebugMode: false };
+
+if (!app.isPackaged) {
+  try {
+    // 開発環境のみ設定ファイルを動的インポート / Dynamically import config only in dev environment
+    const module = await import('../../../debug.config.js');
+    debugConfig = module.debugConfig;
+  } catch (err) {
+    console.warn('Debug config file not found or failed to load:', err.message);
+  }
+}
+
 const isInstallerVersion = () => {
+  if (debugConfig.enableDebugMode) {
+    return debugConfig.forceInstallerVersion;
+  }
   if (!app.isPackaged) return false;
   try {
     const exeDir = path.dirname(app.getPath('exe'));
@@ -65,6 +80,18 @@ export function registerSystemIpcHandlers(APP_VERSION) {
   // Check for updates / 更新を確認
   ipcMain.handle('check-for-update', async () => {
     try {
+      if (debugConfig.enableDebugMode) {
+        const isInstaller = isInstallerVersion();
+        return {
+          success: true,
+          updateAvailable: debugConfig.forceUpdateAvailable,
+          latestVersion: debugConfig.mockLatestVersion,
+          url: 'https://github.com/fuku2019/VRC-OSC-Keyboard/releases',
+          isInstaller,
+          installerUrl: isInstaller ? 'https://example.com/dummy-installer.exe' : undefined,
+        };
+      }
+
       // Disable cache to ensure fresh data / キャッシュを無効化して最新データを確保
       const response = await fetch(GITHUB_API_URL, {
         headers: {
@@ -147,6 +174,18 @@ export function registerSystemIpcHandlers(APP_VERSION) {
   // Download and install update / アップデートをダウンロードしてインストール
   ipcMain.handle('download-and-install-update', async (event, url) => {
     try {
+      if (debugConfig.enableDebugMode) {
+        console.log(`[DEBUG] download-and-install-update called with url: ${url}`);
+        // Simulate progress for debugging / デバッグ用の進捗シミュレーション
+        for (let i = 0; i <= 100; i += 2) {
+          if (event.sender && !event.sender.isDestroyed()) {
+            event.sender.send('update-download-progress', { progress: i });
+          }
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        return { success: true, isDebug: true };
+      }
+
       if (!isSafeExternalUrl(url)) {
         return { success: false, error: 'Invalid URL' };
       }
@@ -161,8 +200,44 @@ export function registerSystemIpcHandlers(APP_VERSION) {
         throw new Error(`Failed to download: ${response.status} ${response.statusText}`);
       }
 
-      const buffer = await response.arrayBuffer();
-      fs.writeFileSync(destPath, Buffer.from(buffer));
+      const contentLength = response.headers.get('content-length');
+      const total = contentLength ? parseInt(contentLength, 10) : 0;
+      let loaded = 0;
+      let lastSentProgress = -1;
+
+      const reader = response.body.getReader();
+      const chunks = [];
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        if (value) {
+          chunks.push(value);
+          loaded += value.length;
+          if (event.sender && !event.sender.isDestroyed()) {
+            if (total > 0) {
+              const progress = Math.round((loaded / total) * 100);
+              // Only send when progress changes / 進捗が変化した時のみ送信
+              if (progress !== lastSentProgress) {
+                event.sender.send('update-download-progress', { progress });
+                lastSentProgress = progress;
+              }
+            } else {
+              // Indeterminate progress (no content-length) / 不確定な進捗（content-lengthなし）
+              event.sender.send('update-download-progress', { progress: -1 });
+            }
+          }
+        }
+      }
+
+      // Ensure 100% progress is sent at the end / 最後に確実に100%の進捗を送信
+      if (event.sender && !event.sender.isDestroyed()) {
+        event.sender.send('update-download-progress', { progress: 100 });
+      }
+
+      const buffer = Buffer.concat(chunks);
+      fs.writeFileSync(destPath, buffer);
 
       // Run the installer / インストーラーを実行
       const installer = spawn(destPath, [], {

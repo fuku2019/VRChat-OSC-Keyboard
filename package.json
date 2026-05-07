@@ -77,6 +77,7 @@
     "files": [
       "dist/**/*",
       "electron/**/*",
+      "!debug.config.js",
       "electron/assets/ime/mozc/**/*",
       "package.json",
       "THIRD_PARTY_MOZC_DICTIONARY_LICENSES.txt",

@@ -18,6 +18,7 @@ import {
 import { reloadWindow } from '../utils/windowUtils';
 import packageJson from '../package.json';
 import { ConfirmDialog } from './ConfirmDialog';
+import { UpdateInfo } from '../hooks/useUpdateChecker';
 
 const APP_VERSION = packageJson.version;
 const DEFAULT_CUSTOM_ACCENT_COLOR = '#ff0000';
@@ -34,8 +35,17 @@ interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
   onShowTutorial: () => void;
-  onUpdateAvailable?: (version: string | null, url?: string) => void;
-  updateAvailableVersion?: string;
+  onUpdateAvailable?: (
+    version: string | null,
+    url?: string,
+    isInstaller?: boolean,
+    installerUrl?: string
+  ) => void;
+  updateAvailable?: UpdateInfo | null;
+  isDownloading?: boolean;
+  downloadProgress?: number;
+  downloadError?: string | null;
+  startDownload?: () => Promise<void>;
 }
 
 // Shared label + description UI / 共通ラベル+説明文UI
@@ -115,7 +125,11 @@ const SettingsModal: FC<SettingsModalProps> = ({
   onClose,
   onShowTutorial,
   onUpdateAvailable,
-  updateAvailableVersion,
+  updateAvailable,
+  isDownloading,
+  downloadProgress,
+  downloadError,
+  startDownload,
 }) => {
   const config = useConfigStore((state) => state.config);
   const setConfig = useConfigStore((state) => state.setConfig);
@@ -171,20 +185,20 @@ const SettingsModal: FC<SettingsModalProps> = ({
 
   useEffect(() => {
     if (!isOpen) return;
-    if (updateAvailableVersion) {
+    if (updateAvailable?.version) {
       const language = localConfig.language || 'ja';
       setCheckStatus(
         TRANSLATIONS[language].settings.updateAvailable.replace(
           '{version}',
-          updateAvailableVersion,
+          updateAvailable.version,
         ),
       );
-      setUpdateUrl(GITHUB.RELEASES_URL);
+      setUpdateUrl(updateAvailable.url || GITHUB.RELEASES_URL);
       return;
     }
     setCheckStatus('');
     setUpdateUrl('');
-  }, [isOpen, localConfig.language, updateAvailableVersion]);
+  }, [isOpen, localConfig.language, updateAvailable]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -378,10 +392,20 @@ const SettingsModal: FC<SettingsModalProps> = ({
         setUpdateUrl(url);
         localStorage.setItem(
           STORAGE_KEYS.UPDATE_AVAILABLE,
-          JSON.stringify({ version, url }),
+          JSON.stringify({ 
+            version, 
+            url,
+            isInstaller: result.isInstaller,
+            installerUrl: result.installerUrl
+          }),
         );
         if (onUpdateAvailable && result.latestVersion) {
-          onUpdateAvailable(result.latestVersion, url);
+          onUpdateAvailable(
+            result.latestVersion,
+            url,
+            result.isInstaller,
+            result.installerUrl
+          );
         }
         return;
       }
@@ -795,29 +819,65 @@ const SettingsModal: FC<SettingsModalProps> = ({
               ))}
             </div>
 
-            <div className='flex items-center justify-between'>
-              <div className='flex items-center gap-2'>
-                <button
-                  onClick={handleCheckNow}
-                  className='text-sm px-4 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 dark:text-white text-slate-900 rounded-lg transition-colors font-medium'
-                >
-                  {t.checkNow}
-                </button>
-                {updateUrl && (
+            <div className='flex items-start justify-between gap-4'>
+              <div className='flex flex-col gap-2'>
+                <div className='flex items-center gap-2'>
                   <button
-                    onClick={() => {
-                      if (window.electronAPI && updateUrl) {
-                        window.electronAPI.openExternal(updateUrl);
-                      }
-                    }}
-                    className='text-sm px-4 py-2 bg-primary-600 hover:bg-primary-500 text-[rgb(var(--rgb-on-primary))] rounded-lg transition-colors font-medium shadow-primary-900/20 shadow-lg'
+                    onClick={handleCheckNow}
+                    disabled={isDownloading}
+                    className='text-sm px-4 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 dark:text-white text-slate-900 rounded-lg transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed'
                   >
-                    {t.openReleasePage}
+                    {t.checkNow}
                   </button>
+                  {updateAvailable?.isInstaller && updateAvailable.installerUrl ? (
+                    <button
+                      onClick={() => startDownload && startDownload()}
+                      disabled={isDownloading}
+                      className='text-sm px-4 py-2 bg-primary-600 hover:bg-primary-500 text-[rgb(var(--rgb-on-primary))] rounded-lg transition-colors font-medium shadow-primary-900/20 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed'
+                    >
+                      {isDownloading ? t.downloading : t.downloadAndUpdate}
+                    </button>
+                  ) : updateUrl ? (
+                    <button
+                      onClick={() => {
+                        if (window.electronAPI && updateUrl) {
+                          window.electronAPI.openExternal(updateUrl);
+                        }
+                      }}
+                      className='text-sm px-4 py-2 bg-primary-600 hover:bg-primary-500 text-[rgb(var(--rgb-on-primary))] rounded-lg transition-colors font-medium shadow-primary-900/20 shadow-lg'
+                    >
+                      {t.openReleasePage}
+                    </button>
+                  ) : null}
+                </div>
+                
+                {/* Download Progress Bar / ダウンロードプログレスバー */}
+                {isDownloading && (
+                  <div className='w-full min-w-[240px] mt-1'>
+                    <div className='flex justify-between text-xs mb-1.5 dark:text-slate-400 text-slate-500 font-medium'>
+                      <span>{t.downloading}</span>
+                      {downloadProgress !== undefined && downloadProgress >= 0 && (
+                        <span>{downloadProgress}%</span>
+                      )}
+                    </div>
+                    <div className='w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden'>
+                      {downloadProgress !== undefined && downloadProgress >= 0 ? (
+                        <div
+                          className='bg-primary-500 h-1.5 rounded-full transition-all duration-300 ease-out'
+                          style={{ width: `${downloadProgress}%` }}
+                        ></div>
+                      ) : (
+                        <div className='bg-primary-500 h-1.5 rounded-full animate-pulse w-full'></div>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {downloadError && !isDownloading && (
+                  <p className='text-xs text-red-500 dark:text-red-400 mt-1'>{t.downloadError}: {downloadError}</p>
                 )}
               </div>
               {checkStatus && (
-                <span className='text-sm text-primary-600 dark:text-primary-400 font-medium'>
+                <span className='text-sm text-primary-600 dark:text-primary-400 font-medium whitespace-pre-line text-right'>
                   {checkStatus}
                 </span>
               )}

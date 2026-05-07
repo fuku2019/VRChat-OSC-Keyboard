@@ -53,6 +53,7 @@ export interface TranslationStrings {
     latestVersion: string;
     downloadAndUpdate: string;
     downloading: string;
+    downloadError: string;
     checking: string;
     loading: string;
     updateError: string;
@@ -162,6 +163,7 @@ export const TRANSLATIONS: TranslationsMap = {
       latestVersion: '最新です',
       downloadAndUpdate: 'ダウンロードして更新',
       downloading: 'ダウンロード中...',
+      downloadError: 'ダウンロードに失敗しました',
       checking: '確認中...',
       loading: '読み込み中...',
       updateError: '確認エラー',
@@ -267,6 +269,7 @@ export const TRANSLATIONS: TranslationsMap = {
       latestVersion: 'Latest',
       downloadAndUpdate: 'Download and Update',
       downloading: 'Downloading...',
+      downloadError: 'Download failed',
       checking: 'Checking...',
       loading: 'Loading...',
       updateError: 'Check Error',

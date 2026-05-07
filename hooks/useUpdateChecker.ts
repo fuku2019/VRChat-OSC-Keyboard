@@ -12,11 +12,19 @@ export interface UpdateInfo {
 interface UseUpdateCheckerReturn {
   updateAvailable: UpdateInfo | null;
   setUpdateAvailable: (info: UpdateInfo | null) => void;
+  isDownloading: boolean;
+  downloadProgress: number;
+  downloadError: string | null;
+  startDownload: () => Promise<void>;
 }
 
 // Hook for checking updates / アップデート確認用フック
 export const useUpdateChecker = (): UseUpdateCheckerReturn => {
   const config = useConfigStore((state) => state.config);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(0);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
+
   // Load persisted update info on mount / マウント時に永続化された更新情報を読み込む
   const [updateAvailable, setUpdateAvailable] = useState<UpdateInfo | null>(
     () => {
@@ -130,8 +138,57 @@ export const useUpdateChecker = (): UseUpdateCheckerReturn => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Run only once on mount / マウント時に1回のみ実行
 
+  // Listen for download progress / ダウンロード進捗をリッスン
+  useEffect(() => {
+    if (!window.electronAPI) return;
+
+    const handleProgress = (data: { progress: number }) => {
+      if (data && typeof data.progress === 'number') {
+        setDownloadProgress(data.progress);
+      }
+    };
+
+    window.electronAPI.onUpdateDownloadProgress(handleProgress);
+
+    return () => {
+      if (window.electronAPI) {
+        window.electronAPI.removeUpdateDownloadProgress(handleProgress);
+      }
+    };
+  }, []);
+
+  const startDownload = async () => {
+    if (!window.electronAPI || !updateAvailable?.installerUrl || isDownloading) return;
+
+    setIsDownloading(true);
+    setDownloadProgress(0);
+    setDownloadError(null);
+
+    try {
+      const result = await window.electronAPI.downloadAndInstallUpdate(updateAvailable.installerUrl);
+      if (!result.success) {
+        setIsDownloading(false);
+        setDownloadError(result.error || 'Download failed');
+      } else if (result.isDebug) {
+        // Test successful in debug mode / デバッグモードでのテスト成功
+        setIsDownloading(false);
+        console.log('[DEBUG] テスト成功');
+        setTimeout(() => alert('テスト成功 (Debug Mode)'), 100);
+      }
+      // If success, the app will quit to install, so we leave it in downloading state
+    } catch (e) {
+      console.error('Download failed:', e);
+      setIsDownloading(false);
+      setDownloadError(e instanceof Error ? e.message : 'Download failed');
+    }
+  };
+
   return {
     updateAvailable,
     setUpdateAvailable,
+    isDownloading,
+    downloadProgress,
+    downloadError,
+    startDownload,
   };
 };

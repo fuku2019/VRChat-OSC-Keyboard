@@ -8,6 +8,10 @@ interface NotificationToastProps {
   updateAvailable: UpdateInfo;
   language: Language;
   onClose?: () => void;
+  isDownloading: boolean;
+  downloadProgress: number;
+  downloadError: string | null;
+  startDownload: () => Promise<void>;
 }
 
 // Update Notification Toast Component / アップデート通知トーストコンポーネント
@@ -15,9 +19,12 @@ const NotificationToast = ({
   updateAvailable,
   language,
   onClose,
+  isDownloading,
+  downloadProgress,
+  downloadError,
+  startDownload,
 }: NotificationToastProps) => {
   const [isClosing, setIsClosing] = useState(false);
-  const [isDownloading, setIsDownloading] = useState(false);
   const t = TRANSLATIONS[language || DEFAULT_CONFIG.LANGUAGE];
 
   // Handle toast dismissal with animation / アニメーション付きでトーストを閉じる
@@ -32,55 +39,65 @@ const NotificationToast = ({
     <div
       className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-full max-w-lg px-4 ${isClosing ? 'animate-fade-out' : 'animate-bounce-in'}`}
     >
-      <div className='flex items-center justify-between gap-4 dark:bg-slate-800 bg-white p-4 rounded-xl shadow-2xl border dark:border-primary-500/50 border-primary-500 ring-1 ring-primary-500/20 w-full'>
-        <div className='flex flex-col'>
-          <span className='text-sm font-bold dark:text-white text-slate-800 flex items-center gap-2'>
-            <span className='w-2 h-2 rounded-full bg-primary-500 animate-pulse'></span>
-            {t.settings.updateAvailable.replace(
-              '{version}',
-              updateAvailable.version,
-            )}
-          </span>
-        </div>
-        <div className='flex gap-2'>
-          {updateAvailable.isInstaller && updateAvailable.installerUrl ? (
-            <button
-              onClick={async () => {
-                if (window.electronAPI && !isDownloading) {
-                  setIsDownloading(true);
-                  const result = await window.electronAPI.downloadAndInstallUpdate(
-                    updateAvailable.installerUrl!
-                  );
-                  if (!result.success) {
-                    // Reset if failed
-                    setIsDownloading(false);
+      <div className='flex flex-col gap-2 dark:bg-slate-800 bg-white p-4 rounded-xl shadow-2xl border dark:border-primary-500/50 border-primary-500 ring-1 ring-primary-500/20 w-full'>
+        <div className='flex items-center justify-between gap-4'>
+          <div className='flex flex-col'>
+            <span className='text-sm font-bold dark:text-white text-slate-800 flex items-center gap-2'>
+              <span className='w-2 h-2 rounded-full bg-primary-500 animate-pulse'></span>
+              {t.settings.updateAvailable.replace(
+                '{version}',
+                updateAvailable.version,
+              )}
+            </span>
+          </div>
+          <div className='flex gap-2'>
+            {updateAvailable.isInstaller && updateAvailable.installerUrl ? (
+              <button
+                onClick={startDownload}
+                disabled={isDownloading}
+                className='px-3 py-1.5 text-xs font-bold bg-primary-600 hover:bg-primary-500 text-[rgb(var(--rgb-on-primary))] rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
+              >
+                {isDownloading ? t.settings.downloading : t.settings.downloadAndUpdate}
+              </button>
+            ) : (
+              <button
+                onClick={() => {
+                  if (window.electronAPI && updateAvailable.url) {
+                    window.electronAPI.openExternal(updateAvailable.url);
                   }
-                }
-              }}
-              disabled={isDownloading}
-              className='px-3 py-1.5 text-xs font-bold bg-primary-600 hover:bg-primary-500 text-[rgb(var(--rgb-on-primary))] rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
-            >
-              {isDownloading ? t.settings.downloading : t.settings.downloadAndUpdate}
-            </button>
-          ) : (
+                }}
+                className='px-3 py-1.5 text-xs font-bold bg-primary-600 hover:bg-primary-500 text-[rgb(var(--rgb-on-primary))] rounded-lg transition-colors'
+              >
+                {t.settings.openReleasePage}
+              </button>
+            )}
             <button
-              onClick={() => {
-                if (window.electronAPI && updateAvailable.url) {
-                  window.electronAPI.openExternal(updateAvailable.url);
-                }
-              }}
-              className='px-3 py-1.5 text-xs font-bold bg-primary-600 hover:bg-primary-500 text-[rgb(var(--rgb-on-primary))] rounded-lg transition-colors'
+              onClick={handleDismiss}
+              className='p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-slate-500 dark:text-slate-400 transition-colors'
             >
-              {t.settings.openReleasePage}
+              <X size={16} />
             </button>
-          )}
-          <button
-            onClick={handleDismiss}
-            className='p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-slate-500 dark:text-slate-400 transition-colors'
-          >
-            <X size={16} />
-          </button>
+          </div>
         </div>
+        {/* Download Progress Bar / ダウンロードプログレスバー */}
+        {isDownloading && (
+          <div className='w-full'>
+            <div className='w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1 overflow-hidden'>
+              {downloadProgress >= 0 ? (
+                <div
+                  className='bg-primary-500 h-1 rounded-full transition-all duration-300 ease-out'
+                  style={{ width: `${downloadProgress}%` }}
+                ></div>
+              ) : (
+                <div className='bg-primary-500 h-1 rounded-full animate-pulse w-full'></div>
+              )}
+            </div>
+          </div>
+        )}
+        {/* Download Error / ダウンロードエラー */}
+        {downloadError && !isDownloading && (
+          <p className='text-xs text-red-500 dark:text-red-400'>{t.settings.downloadError}</p>
+        )}
       </div>
     </div>
   );

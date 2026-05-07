@@ -69,7 +69,7 @@ const App = () => {
   );
 
   // Use update checker hook / アップデート確認フックを使用
-  const { updateAvailable, setUpdateAvailable } = useUpdateChecker();
+  const { updateAvailable, setUpdateAvailable, isDownloading, downloadProgress, downloadError, startDownload } = useUpdateChecker();
 
   // Common handler for input side effects (Typing indicator, Auto-send)
   // 入力副作用の共通ハンドラ（タイピングインジケーター、自動送信）
@@ -394,14 +394,18 @@ const App = () => {
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
         onShowTutorial={handleOpenTutorialFromSettings}
-        updateAvailableVersion={updateAvailable?.version}
-        onUpdateAvailable={(version, url) => {
+        updateAvailable={updateAvailable}
+        onUpdateAvailable={(version, url, isInstaller, installerUrl) => {
           if (version === null) {
             setUpdateAvailable(null);
           } else if (url) {
-            setUpdateAvailable({ version, url });
+            setUpdateAvailable({ version, url, isInstaller, installerUrl });
           }
         }}
+        isDownloading={isDownloading}
+        downloadProgress={downloadProgress}
+        downloadError={downloadError}
+        startDownload={startDownload}
       />
 
       {/* Update Notification Toast / アップデート通知トースト */}
@@ -410,6 +414,10 @@ const App = () => {
           updateAvailable={updateAvailable}
           language={config.language}
           onClose={() => setIsToastDismissed(true)}
+          isDownloading={isDownloading}
+          downloadProgress={downloadProgress}
+          downloadError={downloadError}
+          startDownload={startDownload}
         />
       )}
 
