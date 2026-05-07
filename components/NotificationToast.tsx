@@ -17,6 +17,7 @@ const NotificationToast = ({
   onClose,
 }: NotificationToastProps) => {
   const [isClosing, setIsClosing] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const t = TRANSLATIONS[language || DEFAULT_CONFIG.LANGUAGE];
 
   // Handle toast dismissal with animation / アニメーション付きでトーストを閉じる
@@ -42,16 +43,37 @@ const NotificationToast = ({
           </span>
         </div>
         <div className='flex gap-2'>
-          <button
-            onClick={() => {
-              if (window.electronAPI && updateAvailable.url) {
-                window.electronAPI.openExternal(updateAvailable.url);
-              }
-            }}
-            className='px-3 py-1.5 text-xs font-bold bg-primary-600 hover:bg-primary-500 text-[rgb(var(--rgb-on-primary))] rounded-lg transition-colors'
-          >
-            {t.settings.openReleasePage}
-          </button>
+          {updateAvailable.isInstaller && updateAvailable.installerUrl ? (
+            <button
+              onClick={async () => {
+                if (window.electronAPI && !isDownloading) {
+                  setIsDownloading(true);
+                  const result = await window.electronAPI.downloadAndInstallUpdate(
+                    updateAvailable.installerUrl!
+                  );
+                  if (!result.success) {
+                    // Reset if failed
+                    setIsDownloading(false);
+                  }
+                }
+              }}
+              disabled={isDownloading}
+              className='px-3 py-1.5 text-xs font-bold bg-primary-600 hover:bg-primary-500 text-[rgb(var(--rgb-on-primary))] rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
+            >
+              {isDownloading ? t.settings.downloading : t.settings.downloadAndUpdate}
+            </button>
+          ) : (
+            <button
+              onClick={() => {
+                if (window.electronAPI && updateAvailable.url) {
+                  window.electronAPI.openExternal(updateAvailable.url);
+                }
+              }}
+              className='px-3 py-1.5 text-xs font-bold bg-primary-600 hover:bg-primary-500 text-[rgb(var(--rgb-on-primary))] rounded-lg transition-colors'
+            >
+              {t.settings.openReleasePage}
+            </button>
+          )}
           <button
             onClick={handleDismiss}
             className='p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-slate-500 dark:text-slate-400 transition-colors'
