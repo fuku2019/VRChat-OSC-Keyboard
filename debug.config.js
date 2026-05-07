@@ -6,7 +6,7 @@
  */
 export const debugConfig = {
   // デバッグモードを有効にするか (true の場合は以下の設定が優先される)
-  enableDebugMode: true,
+  enableDebugMode: false,
 
   // アップデート確認テスト用: 常にアップデートがあるとみなすか
   forceUpdateAvailable: true,
