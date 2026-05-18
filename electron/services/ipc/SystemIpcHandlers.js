@@ -5,13 +5,14 @@ import { spawn } from 'child_process';
 
 let debugConfig = { enableDebugMode: false };
 
-if (!app.isPackaged) {
+// Read debug config synchronously if file exists / デバッグ設定ファイルが存在する場合は同期的に読み込む
+const debugConfigPath = path.join(app.getAppPath(), 'debug.config.json');
+if (fs.existsSync(debugConfigPath)) {
   try {
-    // 開発環境のみ設定ファイルを動的インポート / Dynamically import config only in dev environment
-    const module = await import('../../../debug.config.js');
-    debugConfig = module.debugConfig;
+    // Parse JSON config file / JSON設定ファイルをパース
+    debugConfig = JSON.parse(fs.readFileSync(debugConfigPath, 'utf-8'));
   } catch (err) {
-    console.warn('Debug config file not found or failed to load:', err.message);
+    console.warn('Failed to load debug.config.json:', err.message);
   }
 }
 
