@@ -1,5 +1,5 @@
 {
-  "enableDebugMode": true,
+  "enableDebugMode": false,
   "forceUpdateAvailable": true,
   "mockLatestVersion": "v9.9",
   "forceInstallerVersion": true
