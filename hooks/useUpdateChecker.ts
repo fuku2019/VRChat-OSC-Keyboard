@@ -174,7 +174,10 @@ export const useUpdateChecker = (): UseUpdateCheckerReturn => {
       const result = await window.electronAPI.downloadUpdate(updateAvailable.installerUrl);
       if (!result.success) {
         setIsDownloading(false);
-        setDownloadError(result.error || 'Download failed');
+        // Do not set error if it was a cancellation / キャンセルによる終了であればエラーをセットしない
+        if (!result.cancelled) {
+          setDownloadError(result.error || 'Download failed');
+        }
       } else {
         if (result.isDebug) {
           console.log('[DEBUG] テスト成功 (Download completed)');

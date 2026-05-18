@@ -190,8 +190,8 @@ export function registerSystemIpcHandlers(APP_VERSION) {
         // Simulate progress for debugging / デバッグ用の進捗シミュレーション
         updateAbortController = new AbortController();
         for (let i = 0; i <= 100; i += 2) {
-          if (updateAbortController.signal.aborted) {
-            return { success: false, error: 'Download cancelled' };
+          if (!updateAbortController || updateAbortController.signal.aborted) {
+            return { success: false, cancelled: true };
           }
           if (event.sender && !event.sender.isDestroyed()) {
             event.sender.send('update-download-progress', { progress: i });
@@ -264,7 +264,7 @@ export function registerSystemIpcHandlers(APP_VERSION) {
     } catch (error) {
       updateAbortController = null;
       if (error.name === 'AbortError') {
-        return { success: false, error: 'Download cancelled' };
+        return { success: false, cancelled: true };
       }
       console.error('Failed to download update:', error);
       return { success: false, error: error.message };
