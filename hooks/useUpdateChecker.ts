@@ -209,7 +209,11 @@ export const useUpdateChecker = (): UseUpdateCheckerReturn => {
   const installUpdate = async () => {
     if (!window.electronAPI || !downloadedPath) return;
     try {
-      await window.electronAPI.installUpdate(downloadedPath);
+      const result = await window.electronAPI.installUpdate(downloadedPath);
+      if (result?.success && result?.isDebug) {
+        // Show test success alert in debug mode / デバッグモードでのテスト成功アラートを表示
+        setTimeout(() => alert('テスト成功 (Debug Mode)'), 100);
+      }
     } catch (e) {
       console.error('Install failed:', e);
     }

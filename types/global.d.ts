@@ -57,6 +57,8 @@ interface ElectronAPI {
   imeCancelConversion: () => Promise<ImeResponse>;
   resetOverlayPosition: () => Promise<{ success: boolean }>;
   restartApp: () => Promise<{ success: boolean; error?: string }>;
+  // Check if running in debug mode  デバッグモードが有効か確認
+  isDebugMode: () => Promise<boolean>;
   sendWindowSize: (width: number, height: number) => void;
   sendRendererMetrics: (metrics: {
     width: number;

@@ -155,4 +155,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('set-steamvr-auto-launch', enabled),
   getSteamVrBindings: () => ipcRenderer.invoke('get-steamvr-bindings'),
   openSteamVrBindingUi: () => ipcRenderer.invoke('open-steamvr-binding-ui'),
+  // Check if running in debug mode  デバッグモードが有効か確認
+  isDebugMode: () => ipcRenderer.invoke('is-debug-mode'),
 });

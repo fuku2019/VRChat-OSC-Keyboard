@@ -48,6 +48,8 @@ const App = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
   const [isToastDismissed, setIsToastDismissed] = useState(false); // Track if update toast is dismissed / 更新トーストが閉じられたか追跡
+  // State for debug mode  デバッグモードの状態
+  const [isDebug, setIsDebug] = useState(false);
 
   // Use custom hooks / カスタムフックを使用
   useTheme();
@@ -142,6 +144,17 @@ const App = () => {
     } else {
       textareaRef.current?.focus();
     }
+  }, []);
+
+  // Check if running in debug mode on mount  マウント時にデバッグモードで起動しているか確認
+  useEffect(() => {
+    const checkDebugMode = async () => {
+      if (window.electronAPI?.isDebugMode) {
+        const debugMode = await window.electronAPI.isDebugMode();
+        setIsDebug(debugMode);
+      }
+    };
+    checkDebugMode();
   }, []);
 
   // Handle textarea blur - stop typing indicator / textarea ブラー時 - タイピングインジケーターを停止
@@ -252,11 +265,16 @@ const App = () => {
       <div className='w-full max-w-5xl flex justify-between items-center mb-4 px-2 shrink-0 pt-4 md:pt-0'>
         <div className='flex items-center gap-3'>
           <div className='w-3 h-3 rounded-full bg-primary-500 shadow-[0_0_10px_rgb(var(--color-primary-500)_/_0.8)]'></div>
-          <h1 className='text-xl md:text-2xl font-bold dark:text-slate-100 text-slate-800 tracking-wider drop-shadow-md'>
+          <h1 className='text-xl md:text-2xl font-bold dark:text-slate-100 text-slate-800 tracking-wider drop-shadow-md flex items-center gap-2'>
             {t.appTitlePrefix}
             <span className='ml-0 px-1.5 py-1 bg-primary-500/40 dark:bg-primary-900/80 rounded-md border border-primary-500/60 dark:border-primary-500/30 shadow-lg backdrop-blur-sm'>
               {t.appTitle}
             </span>
+            {isDebug && (
+              <span className='text-sm font-medium tracking-wide text-red-500/80 dark:text-red-400/80 ml-2 select-none'>
+                (Debug)
+              </span>
+            )}
           </h1>
         </div>
 
