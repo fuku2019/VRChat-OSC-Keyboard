@@ -3,20 +3,13 @@ import fs from 'fs';
 import path from 'path';
 import { spawn } from 'child_process';
 
-let debugConfig = { enableDebugMode: false };
+// Allowed domains for download URLs / ダウンロードURL用の許可ドメイン
+const ALLOWED_DOWNLOAD_DOMAINS = [
+  'github.com',
+  'objects.githubusercontent.com',
+];
 
-// Read debug config synchronously if file exists / デバッグ設定ファイルが存在する場合は同期的に読み込む
-const debugConfigPath = path.join(app.getAppPath(), 'debug.config.json');
-if (fs.existsSync(debugConfigPath)) {
-  try {
-    // Parse JSON config file / JSON設定ファイルをパース
-    debugConfig = JSON.parse(fs.readFileSync(debugConfigPath, 'utf-8'));
-  } catch (err) {
-    console.warn('Failed to load debug.config.json:', err.message);
-  }
-}
-
-const isInstallerVersion = () => {
+const isInstallerVersion = (debugConfig) => {
   if (debugConfig.enableDebugMode) {
     return debugConfig.forceInstallerVersion;
   }
@@ -43,6 +36,21 @@ export function isSafeExternalUrl(url) {
   try {
     const parsed = new URL(url);
     return parsed.protocol === 'https:' || parsed.protocol === 'http:';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Validate URL is safe for downloading (domain whitelist) / ダウンロード用URLの安全性を検証（ドメインホワイトリスト）
+ */
+export function isSafeDownloadUrl(url) {
+  if (!isSafeExternalUrl(url)) return false;
+  try {
+    const parsed = new URL(url);
+    return ALLOWED_DOWNLOAD_DOMAINS.some(
+      (domain) => parsed.hostname === domain || parsed.hostname.endsWith(`.${domain}`),
+    );
   } catch {
     return false;
   }
@@ -80,12 +88,12 @@ export function compareVersions(v1, v2) {
 /**
  * Register System related IPC handlers / システム関連のIPCハンドラを登録
  */
-export function registerSystemIpcHandlers(APP_VERSION) {
+export function registerSystemIpcHandlers(APP_VERSION, debugConfig = { enableDebugMode: false }) {
   // Check for updates / 更新を確認
   ipcMain.handle('check-for-update', async () => {
     try {
       if (debugConfig.enableDebugMode) {
-        const isInstaller = isInstallerVersion();
+        const isInstaller = isInstallerVersion(debugConfig);
         return {
           success: true,
           updateAvailable: debugConfig.forceUpdateAvailable,
@@ -107,6 +115,13 @@ export function registerSystemIpcHandlers(APP_VERSION) {
       });
 
       if (!response.ok) {
+        // #10: Handle rate limit specifically / レート制限を個別に処理
+        if (response.status === 403 || response.status === 429) {
+          console.warn(
+            `GitHub API rate limit reached: ${response.status} ${response.statusText}`,
+          );
+          throw new Error('GitHub API rate limit reached. Please try again later.');
+        }
         console.error(
           `GitHub API Error: ${response.status} ${response.statusText}`,
         );
@@ -136,7 +151,7 @@ export function registerSystemIpcHandlers(APP_VERSION) {
       let installerUrl = undefined;
 
       if (updateAvailable) {
-        isInstaller = isInstallerVersion();
+        isInstaller = isInstallerVersion(debugConfig);
         if (isInstaller && data.assets && Array.isArray(data.assets)) {
           // Find the executable asset / 実行ファイルアセットを検索
           const exeAsset = data.assets.find(
@@ -183,14 +198,22 @@ export function registerSystemIpcHandlers(APP_VERSION) {
   // Download update / アップデートをダウンロード
   ipcMain.handle('download-update', async (event, url) => {
     try {
+      // #3: Prevent concurrent downloads / 並行ダウンロードを防止
+      if (updateAbortController) {
+        return { success: false, error: 'A download is already in progress' };
+      }
+
       if (debugConfig.enableDebugMode) {
+        // #9: Log URL validation in debug mode / デバッグモードでもURL検証結果をログ出力
         console.log(
-          `[DEBUG] download-update called with url: ${url}`,
+          `[DEBUG] download-update called with url: ${url} (safe=${isSafeDownloadUrl(url)})`,
         );
         // Simulate progress for debugging / デバッグ用の進捗シミュレーション
         updateAbortController = new AbortController();
         for (let i = 0; i <= 100; i += 2) {
           if (!updateAbortController || updateAbortController.signal.aborted) {
+            // #5: Clear AbortController on cancel / キャンセル時にAbortControllerをクリア
+            updateAbortController = null;
             return { success: false, cancelled: true };
           }
           if (event.sender && !event.sender.isDestroyed()) {
@@ -202,8 +225,9 @@ export function registerSystemIpcHandlers(APP_VERSION) {
         return { success: true, isDebug: true, destPath: 'dummy-path.exe' };
       }
 
-      if (!isSafeExternalUrl(url)) {
-        return { success: false, error: 'Invalid URL' };
+      // #1: Validate download URL domain / ダウンロードURLのドメインを検証
+      if (!isSafeDownloadUrl(url)) {
+        return { success: false, error: 'Invalid or untrusted download URL' };
       }
 
       const tempDir = app.getPath('temp');
@@ -224,31 +248,48 @@ export function registerSystemIpcHandlers(APP_VERSION) {
       const total = contentLength ? parseInt(contentLength, 10) : 0;
       let loaded = 0;
       let lastSentProgress = -1;
+      // #6: Track indeterminate state to avoid repeated IPC sends / 不確定状態を追跡してIPC送信の繰り返しを防止
+      let indeterminateSent = false;
 
       const reader = response.body.getReader();
-      const chunks = [];
+      // #4/#8: Stream to file instead of buffering in memory / メモリにバッファリングせずファイルにストリーム書き込み
+      const writeStream = fs.createWriteStream(destPath);
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
 
-        if (value) {
-          chunks.push(value);
-          loaded += value.length;
-          if (event.sender && !event.sender.isDestroyed()) {
-            if (total > 0) {
-              const progress = Math.round((loaded / total) * 100);
-              // Only send when progress changes / 進捗が変化した時のみ送信
-              if (progress !== lastSentProgress) {
-                event.sender.send('update-download-progress', { progress });
-                lastSentProgress = progress;
+          if (value) {
+            // Write chunk directly to file / チャンクを直接ファイルに書き込む
+            await new Promise((resolve, reject) => {
+              if (!writeStream.write(value)) {
+                writeStream.once('drain', resolve);
+              } else {
+                resolve();
               }
-            } else {
-              // Indeterminate progress (no content-length) / 不確定な進捗（content-lengthなし）
-              event.sender.send('update-download-progress', { progress: -1 });
+              writeStream.once('error', reject);
+            });
+            loaded += value.length;
+            if (event.sender && !event.sender.isDestroyed()) {
+              if (total > 0) {
+                const progress = Math.round((loaded / total) * 100);
+                // Only send when progress changes / 進捗が変化した時のみ送信
+                if (progress !== lastSentProgress) {
+                  event.sender.send('update-download-progress', { progress });
+                  lastSentProgress = progress;
+                }
+              } else if (!indeterminateSent) {
+                // #6: Send indeterminate progress only once / 不確定な進捗は1回のみ送信
+                event.sender.send('update-download-progress', { progress: -1 });
+                indeterminateSent = true;
+              }
             }
           }
         }
+      } finally {
+        // Ensure write stream is closed / 書き込みストリームを確実に閉じる
+        await new Promise((resolve) => writeStream.end(resolve));
       }
 
       // Ensure 100% progress is sent at the end / 最後に確実に100%の進捗を送信
@@ -256,14 +297,29 @@ export function registerSystemIpcHandlers(APP_VERSION) {
         event.sender.send('update-download-progress', { progress: 100 });
       }
 
-      const buffer = Buffer.concat(chunks);
-      fs.writeFileSync(destPath, buffer);
+      // #11: Verify downloaded file size if content-length was available / content-lengthが利用可能な場合、ダウンロードファイルサイズを検証
+      if (total > 0) {
+        const stat = fs.statSync(destPath);
+        if (stat.size !== total) {
+          // Remove incomplete file / 不完全なファイルを削除
+          fs.unlinkSync(destPath);
+          throw new Error(
+            `Downloaded file size mismatch: expected ${total} bytes, got ${stat.size} bytes`,
+          );
+        }
+      }
 
       updateAbortController = null;
       return { success: true, destPath };
     } catch (error) {
       updateAbortController = null;
       if (error.name === 'AbortError') {
+        // Clean up partial download on cancel / キャンセル時に途中のダウンロードファイルを削除
+        try {
+          const tempDir = app.getPath('temp');
+          const partialPath = path.join(tempDir, 'VRC-OSC-Keyboard-Update.exe');
+          if (fs.existsSync(partialPath)) fs.unlinkSync(partialPath);
+        } catch { /* Ignore cleanup errors / クリーンアップエラーを無視 */ }
         return { success: false, cancelled: true };
       }
       console.error('Failed to download update:', error);
@@ -291,8 +347,16 @@ export function registerSystemIpcHandlers(APP_VERSION) {
       if (!destPath || !fs.existsSync(destPath)) {
         return { success: false, error: 'Installer file not found' };
       }
+
+      // #2: Validate destPath is within temp directory / destPathがtempディレクトリ内であることを検証
+      const tempDir = app.getPath('temp');
+      const resolvedPath = path.resolve(destPath);
+      if (!resolvedPath.startsWith(path.resolve(tempDir))) {
+        return { success: false, error: 'Invalid installer path' };
+      }
+
       // Run the installer / インストーラーを実行
-      const installer = spawn(destPath, [], {
+      const installer = spawn(resolvedPath, [], {
         detached: true,
         stdio: 'ignore',
       });

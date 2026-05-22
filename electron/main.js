@@ -68,7 +68,7 @@ if (debugConfig.enableDebugMode) {
 setAppTitle(APP_TITLE);
 
 // Register IPC handlers / IPCハンドラを登録
-registerIpcHandlers(APP_VERSION);
+registerIpcHandlers(APP_VERSION, debugConfig);
 
 // Disable Chromium background throttling for consistent VR Overlay FPS
 // VRオーバーレイのFPSを安定させるため、Chromiumのバックグラウンド最適化および隠蔽保護を無効化
