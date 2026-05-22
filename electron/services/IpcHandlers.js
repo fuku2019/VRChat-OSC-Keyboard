@@ -14,9 +14,9 @@ export { isSafeExternalUrl, compareVersions } from './ipc/SystemIpcHandlers.js';
 /**
  * Register all IPC handlers / すべてのIPCハンドラを登録
  */
-export function registerIpcHandlers(APP_VERSION) {
+export function registerIpcHandlers(APP_VERSION, debugConfig) {
   registerOscIpcHandlers();
-  registerSystemIpcHandlers(APP_VERSION);
+  registerSystemIpcHandlers(APP_VERSION, debugConfig);
   registerOverlayIpcHandlers();
   registerSteamVrIpcHandlers();
   registerJapaneseImeIpcHandlers();

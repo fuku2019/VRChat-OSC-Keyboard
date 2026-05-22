@@ -121,7 +121,7 @@ const NotificationToast = ({
         )}
         {/* Download Error / ダウンロードエラー */}
         {downloadError && !isDownloading && (
-          <p className='text-xs text-red-500 dark:text-red-400'>{t.settings.downloadError}</p>
+          <p className='text-xs text-red-500 dark:text-red-400'>{t.settings.downloadError}: {downloadError}</p>
         )}
       </div>
     </div>
