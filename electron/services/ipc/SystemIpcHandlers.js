@@ -18,7 +18,7 @@ const isInstallerVersion = (debugConfig) => {
     const exeDir = path.dirname(app.getPath('exe'));
     const uninstallerPath = path.join(
       exeDir,
-      'Uninstall.exe',
+      'Uninstall VRChat-OSC-Keyboard.exe',
     );
     return fs.existsSync(uninstallerPath);
   } catch (error) {
@@ -49,7 +49,8 @@ export function isSafeDownloadUrl(url) {
   try {
     const parsed = new URL(url);
     return ALLOWED_DOWNLOAD_DOMAINS.some(
-      (domain) => parsed.hostname === domain || parsed.hostname.endsWith(`.${domain}`),
+      (domain) =>
+        parsed.hostname === domain || parsed.hostname.endsWith(`.${domain}`),
     );
   } catch {
     return false;
@@ -88,7 +89,10 @@ export function compareVersions(v1, v2) {
 /**
  * Register System related IPC handlers / システム関連のIPCハンドラを登録
  */
-export function registerSystemIpcHandlers(APP_VERSION, debugConfig = { enableDebugMode: false }) {
+export function registerSystemIpcHandlers(
+  APP_VERSION,
+  debugConfig = { enableDebugMode: false },
+) {
   // Check for updates / 更新を確認
   ipcMain.handle('check-for-update', async () => {
     try {
@@ -120,7 +124,9 @@ export function registerSystemIpcHandlers(APP_VERSION, debugConfig = { enableDeb
           console.warn(
             `GitHub API rate limit reached: ${response.status} ${response.statusText}`,
           );
-          throw new Error('GitHub API rate limit reached. Please try again later.');
+          throw new Error(
+            'GitHub API rate limit reached. Please try again later.',
+          );
         }
         console.error(
           `GitHub API Error: ${response.status} ${response.statusText}`,
@@ -237,7 +243,9 @@ export function registerSystemIpcHandlers(APP_VERSION, debugConfig = { enableDeb
       updateAbortController = new AbortController();
 
       // Download the file / ファイルをダウンロード
-      const response = await fetch(url, { signal: updateAbortController.signal });
+      const response = await fetch(url, {
+        signal: updateAbortController.signal,
+      });
       if (!response.ok) {
         throw new Error(
           `Failed to download: ${response.status} ${response.statusText}`,
@@ -319,7 +327,9 @@ export function registerSystemIpcHandlers(APP_VERSION, debugConfig = { enableDeb
           const tempDir = app.getPath('temp');
           const partialPath = path.join(tempDir, 'VRC-OSC-Keyboard-Update.exe');
           if (fs.existsSync(partialPath)) fs.unlinkSync(partialPath);
-        } catch { /* Ignore cleanup errors / クリーンアップエラーを無視 */ }
+        } catch {
+          /* Ignore cleanup errors / クリーンアップエラーを無視 */
+        }
         return { success: false, cancelled: true };
       }
       console.error('Failed to download update:', error);
