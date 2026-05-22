@@ -47,7 +47,22 @@ const __dirname = path.dirname(__filename);
 const packageJsonPath = path.join(__dirname, '../package.json');
 const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
 const APP_VERSION = packageJson.version;
-const APP_TITLE = `VRChat OSC Keyboard v${APP_VERSION}`;
+
+// Load debug config  デバッグ設定ファイルを読み込む
+let debugConfig = { enableDebugMode: false };
+const debugConfigPath = path.join(__dirname, '../debug.config.json');
+if (fs.existsSync(debugConfigPath)) {
+  try {
+    debugConfig = JSON.parse(fs.readFileSync(debugConfigPath, 'utf-8'));
+  } catch (err) {
+    console.warn('Failed to load debug.config.json:', err.message);
+  }
+}
+
+let APP_TITLE = `VRChat OSC Keyboard v${APP_VERSION}`;
+if (debugConfig.enableDebugMode) {
+  APP_TITLE = `[DEBUG] ${APP_TITLE}`;
+}
 
 // Set app title for window manager / ウィンドウマネージャー用にアプリタイトルを設定
 setAppTitle(APP_TITLE);

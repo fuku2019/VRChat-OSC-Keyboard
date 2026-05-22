@@ -326,4 +326,9 @@ export function registerSystemIpcHandlers(APP_VERSION) {
       return { success: false, error: error.message };
     }
   });
+
+  // Check if running in debug mode  デバッグモードが有効か確認
+  ipcMain.handle('is-debug-mode', () => {
+    return debugConfig.enableDebugMode;
+  });
 }
