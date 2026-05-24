@@ -45,18 +45,12 @@ impl OverlayManager {
 
     #[napi]
     pub fn get_controller_pose(&self, index: u32) -> napi::Result<Vec<f64>> {
-        // TODO: Add frame-level caching to avoid redundant GetDeviceToAbsoluteTrackingPose calls
-        // TODO: フレーム単位のキャッシュを追加し、重複する GetDeviceToAbsoluteTrackingPose 呼び出しを避ける
-        let system = self.system()?;
-        let get_pose_fn = require_fn(
-            system.GetDeviceToAbsoluteTrackingPose,
-            "GetDeviceToAbsoluteTrackingPose",
-        )?;
-
         if index >= vr::k_unMaxTrackedDeviceCount {
             return Err(napi::Error::from_reason("Invalid device index"));
         }
 
+        // Check if cached poses are still fresh (within TTL) / キャッシュされたポーズがまだ新鮮か確認 (TTL以内)
+        let cache_hit = self.poses_cache_valid();
         let mut poses = self.borrow_poses_cache()?;
         let pose_count = vr::k_unMaxTrackedDeviceCount as usize;
         debug_assert_eq!(poses.len(), pose_count);
@@ -65,16 +59,21 @@ impl OverlayManager {
         }
 
         unsafe {
-            // Getting generic tracker pose
-            // OpenVR API gets array of poses.
-            // 汎用トラッカーポーズの取得
-            // OpenVR APIはポーズの配列を取得する。
-            get_pose_fn(
-                vr::ETrackingUniverseOrigin_TrackingUniverseStanding,
-                0.0,
-                poses.as_mut_ptr(),
-                vr::k_unMaxTrackedDeviceCount,
-            );
+            if !cache_hit {
+                // Cache miss: fetch all poses from OpenVR API / キャッシュミス: OpenVR APIから全ポーズを取得
+                let system = self.system()?;
+                let get_pose_fn = require_fn(
+                    system.GetDeviceToAbsoluteTrackingPose,
+                    "GetDeviceToAbsoluteTrackingPose",
+                )?;
+                get_pose_fn(
+                    vr::ETrackingUniverseOrigin_TrackingUniverseStanding,
+                    0.0,
+                    poses.as_mut_ptr(),
+                    vr::k_unMaxTrackedDeviceCount,
+                );
+                self.mark_poses_cache();
+            }
 
             let pose = &poses[index as usize];
             if !pose.bPoseIsValid || !pose.bDeviceIsConnected {

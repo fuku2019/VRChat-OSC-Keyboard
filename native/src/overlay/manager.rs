@@ -1,6 +1,6 @@
 use napi_derive::napi;
 use openvr_sys as vr;
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::marker::PhantomData;
 use std::ptr::NonNull;
 use std::rc::Rc;
@@ -8,6 +8,7 @@ use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Mutex, OnceLock,
 };
+use std::time::{Duration, Instant};
 
 use super::constants::{
     DEFAULT_INPUT_INTERFACE, DEFAULT_OVERLAY_INTERFACE, DEFAULT_SYSTEM_INTERFACE,
@@ -27,6 +28,9 @@ fn create_poses_cache() -> Vec<vr::TrackedDevicePose_t> {
     });
     poses
 }
+
+/// Pose cache time-to-live / ポーズキャッシュの有効期間
+const POSE_CACHE_TTL: Duration = Duration::from_micros(2000);
 
 struct VrContext {
     overlay: Option<NonNull<vr::VR_IVROverlay_FnTable>>,
@@ -72,6 +76,7 @@ pub struct OverlayManager {
     context: VrContext,
     d3d11: Option<D3D11Context>,
     poses_cache: RefCell<Vec<vr::TrackedDevicePose_t>>,
+    poses_timestamp: Cell<Option<Instant>>,
     input_cache: RefCell<InputActionCache>,
     _vr_token: Option<isize>,
     // Make the manager !Send/!Sync unless we can prove thread safety / スレッドセーフティを証明できない限り、マネージャーを!Send/!Syncにする
@@ -111,6 +116,19 @@ impl OverlayManager {
         self.poses_cache
             .try_borrow_mut()
             .map_err(|_| napi::Error::from_reason("poses_cache is already borrowed"))
+    }
+
+    /// Check if cached poses are still valid / キャッシュされたポーズがまだ有効か確認
+    pub(super) fn poses_cache_valid(&self) -> bool {
+        match self.poses_timestamp.get() {
+            Some(ts) => ts.elapsed() < POSE_CACHE_TTL,
+            None => false,
+        }
+    }
+
+    /// Mark poses cache as freshly updated / ポーズキャッシュを更新済みとしてマーク
+    pub(super) fn mark_poses_cache(&self) {
+        self.poses_timestamp.set(Some(Instant::now()));
     }
 
     pub(super) fn input(&self) -> napi::Result<&vr::VR_IVRInput_FnTable> {
@@ -245,6 +263,7 @@ impl OverlayManager {
                 },
                 d3d11: d3d11_ctx,
                 poses_cache: RefCell::new(create_poses_cache()),
+                poses_timestamp: Cell::new(None),
                 input_cache: RefCell::new(InputActionCache::new()),
                 _vr_token: init_token,
                 _not_send: PhantomData,
