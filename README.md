@@ -1,5 +1,3 @@
-<div align="center">
-
 ### *SEASON 0 // GIVES YOU FEATHER*
 ![season0](https://raw.githubusercontent.com/Nrtm22/unofficial-vrchat-osc-keyboard-site/refs/heads/main/raw_images/1776701221570%7E2.png)
 
@@ -150,7 +148,7 @@ npm run dist
 
 ***
 
-**人間**
+**人**
 <table>
   <tr>
     <td><img src="https://avatars.githubusercontent.com/u/190678790?size=64" width="64"></td>
@@ -159,14 +157,13 @@ npm run dist
 </table>
 
 **人工知能**
-> *本プロジェクトの開発には以下のAIサービスを活用していますが、各提供企業との提携や公式な関係を示すものではありません。*
+> *本プロジェクトの開発には以下のAIサービスを活用しています。これは、各提供企業との提携や公式な関係を示すものではありません。*
 <table>
   <tr>
-    <td><img width="64" height="64" alt="googlegemini" src="https://github.com/user-attachments/assets/bd0739aa-25b0-4d20-8737-0116c77c9cb8" /></td>
-    <td><img width="64" height="64" alt="claude" src="https://github.com/user-attachments/assets/fa5201f0-533a-43b3-8d55-98d4879ae9ce" />
-</td>
-    <td><img width="64" height="64" alt="githubcopilot" src="https://github.com/user-attachments/assets/a8fdac55-341e-4352-a25b-27ecc71429f2" />
-    </td>
+    <!-- <td><img width="32" height="32" alt="googlegemini" src="https://github.com/user-attachments/assets/bd0739aa-25b0-4d20-8737-0116c77c9cb8" /></td> -->
+    <td><img width="32" height="32" alt="googleantigravity" src="https://antigravity.google/assets/image/brand/antigravity-icon__full-color.png" /></td>
+    <!-- <td><img width="64" height="64" alt="claude" src="https://github.com/user-attachments/assets/fa5201f0-533a-43b3-8d55-98d4879ae9ce" /> </td> 
+    <td><img width="32" height="32" alt="githubcopilot" src="https://github.com/user-attachments/assets/a8fdac55-341e-4352-a25b-27ecc71429f2" /> </td> -->
   </tr>
 </table>
 
