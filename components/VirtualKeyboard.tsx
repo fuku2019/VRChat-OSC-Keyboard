@@ -119,7 +119,7 @@ const VirtualKeyboard: FC<VirtualKeyboardProps> = ({
   };
 
   return (
-    <div className='flex flex-col w-full max-w-5xl mx-auto p-2 dark:bg-slate-900/90 bg-slate-100/90 rounded-2xl shadow-2xl border dark:border-slate-700 border-slate-300 select-none backdrop-blur-sm transition-colors duration-300'>
+    <div className='flex flex-col w-full max-w-5xl mx-auto p-2 dark:bg-slate-900/60 bg-white/60 rounded-2xl shadow-2xl border dark:border-white/10 border-black/10 select-none backdrop-blur-2xl transition-colors duration-300'>
       <div className='h-10 mb-2 px-2 md:px-4 flex items-center gap-2 dark:text-primary-300 text-primary-700 overflow-hidden'>
         <div className='flex-1 min-w-0 h-full overflow-x-auto overflow-y-hidden'>
           {isConverting && candidates.length > 0 && (

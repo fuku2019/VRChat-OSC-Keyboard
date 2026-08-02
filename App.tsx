@@ -282,7 +282,7 @@ const App = () => {
           <button
             onClick={handleCopyModeToggle}
             className={`
-              relative p-2 rounded-full transition-all border shadow-sm flex items-center gap-2 px-3
+              relative p-2 rounded-md transition-all border shadow-sm flex items-center gap-2 px-3
               ${
                 config.copyMode
                   ? 'bg-blue-500/10 border-blue-500/50 text-blue-600 dark:text-blue-400'
@@ -305,7 +305,7 @@ const App = () => {
             onClick={handleAutoSendToggle}
             disabled={config.copyMode}
             className={`
-              relative p-2 rounded-full transition-all border shadow-sm flex items-center gap-2 px-3
+              relative p-2 rounded-md transition-all border shadow-sm flex items-center gap-2 px-3
               ${
                 config.copyMode
                   ? 'dark:bg-slate-800/60 bg-slate-100/70 dark:text-slate-600 text-slate-400 border-slate-300 dark:border-slate-700 cursor-not-allowed opacity-70'
@@ -330,7 +330,7 @@ const App = () => {
 
           <button
             onClick={() => window.electronAPI?.resetOverlayPosition?.()}
-            className='relative p-2 dark:bg-slate-800/80 bg-white/80 rounded-full dark:hover:bg-slate-700 hover:bg-slate-100 dark:text-slate-300 text-slate-500 transition-colors border dark:border-slate-700 border-slate-200 shadow-sm'
+            className='relative p-2 dark:bg-slate-800/80 bg-white/80 rounded-md dark:hover:bg-slate-700 hover:bg-slate-100 dark:text-slate-300 text-slate-500 transition-colors border dark:border-slate-700 border-slate-200 shadow-sm'
             title='Reset Overlay to Front'
           >
             <RefreshCw size={20} />
@@ -338,7 +338,7 @@ const App = () => {
 
           <button
             onClick={() => setIsSettingsOpen(true)}
-            className='relative p-2 dark:bg-slate-800/80 bg-white/80 rounded-full dark:hover:bg-slate-700 hover:bg-slate-100 dark:text-slate-300 text-slate-500 transition-colors border dark:border-slate-700 border-slate-200 shadow-sm'
+            className='relative p-2 dark:bg-slate-800/80 bg-white/80 rounded-md dark:hover:bg-slate-700 hover:bg-slate-100 dark:text-slate-300 text-slate-500 transition-colors border dark:border-slate-700 border-slate-200 shadow-sm'
           >
             <Settings size={20} />
             {updateAvailable && (
@@ -352,11 +352,13 @@ const App = () => {
       <div className='w-full max-w-5xl mb-4 relative shrink-0 group px-1'>
         <div
           className={`
-          relative w-full h-24 md:h-32 dark:bg-slate-900/80 bg-white/80 rounded-2xl border-2
-          flex flex-col px-6 py-2 shadow-inner backdrop-blur transition-colors
-          ${error ? 'border-red-500/50' : 'dark:border-slate-700 border-slate-200 focus-within:border-primary-500/50'}
+          relative w-full h-24 md:h-32 dark:bg-slate-900/60 bg-white/60 rounded-xl border
+          flex flex-col px-6 py-2 shadow-lg backdrop-blur-2xl transition-colors overflow-hidden
+          ${error ? 'border-red-500/50' : 'dark:border-slate-500/30 border-slate-300/50'}
         `}
         >
+          {/* Active bar / アクティブバー */}
+          <div className='absolute bottom-0 left-0 h-[2px] w-full bg-primary-500 scale-x-0 origin-center transition-transform duration-300 ease-out group-focus-within:scale-x-100' />
           <StatusDisplay
             displayTextLength={displayText.length}
             isSending={isSending}
