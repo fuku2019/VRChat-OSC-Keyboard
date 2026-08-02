@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useRef, useCallback, FC } from 'react';
-import { X, CircleHelp, Info } from 'lucide-react';
+import { X, CircleHelp, Info, Settings, Palette, Link, Volume2 } from 'lucide-react';
 import { HexColorInput, HexColorPicker } from 'react-colorful';
 import { KeySoundVariant, Language, UpdateCheckInterval } from '../types';
 import { TRANSLATIONS, GITHUB, STORAGE_KEYS } from '../constants';
@@ -168,6 +168,7 @@ const SettingsModal: FC<SettingsModalProps> = ({
   const [lastCustomAccentColor, setLastCustomAccentColor] = useState<string>(
     DEFAULT_CUSTOM_ACCENT_COLOR,
   );
+  const [activeTab, setActiveTab] = useState<'general' | 'appearance' | 'connectivity' | 'sound'>('general');
 
   useEffect(() => {
     onCloseRef.current = onClose;
@@ -578,9 +579,16 @@ const SettingsModal: FC<SettingsModalProps> = ({
       : lastCustomAccentColor
     : lastCustomAccentColor;
 
+  const TABS = [
+    { id: 'general', label: 'General / 一般', icon: Settings },
+    { id: 'appearance', label: 'Appearance / 外観', icon: Palette },
+    { id: 'connectivity', label: 'Connectivity / 接続', icon: Link },
+    { id: 'sound', label: 'Sound / サウンド', icon: Volume2 },
+  ] as const;
+
   return (
     <div
-      className={`fixed inset-0 z-[110] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 ${animationClass}`}
+      className={`fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 ${animationClass}`}
     >
       <div
         ref={modalRef}
@@ -588,360 +596,401 @@ const SettingsModal: FC<SettingsModalProps> = ({
         aria-modal='true'
         aria-labelledby={SETTINGS_MODAL_TITLE_ID}
         tabIndex={-1}
-        className={`dark:bg-slate-800 pure-black:bg-black bg-white w-full max-w-lg max-h-[90vh] flex flex-col rounded-2xl border dark:border-slate-600 pure-black:border-slate-800 border-slate-200 shadow-2xl overflow-hidden transition-colors duration-300 ${modalAnimationClass}`}
+        className={`dark:bg-slate-900/80 pure-black:bg-black/80 bg-white/80 w-full max-w-4xl h-[85vh] flex rounded-2xl border dark:border-white/10 pure-black:border-slate-800 border-black/10 shadow-2xl overflow-hidden backdrop-blur-2xl transition-colors duration-300 ${modalAnimationClass}`}
       >
-        {/* Header / ヘッダー */}
-        <div className='flex justify-between items-center p-6 border-b dark:border-slate-700 pure-black:border-slate-800 border-slate-200 dark:bg-slate-800 pure-black:bg-black bg-white transition-colors duration-300'>
-          <h2
-            id={SETTINGS_MODAL_TITLE_ID}
-            className='text-2xl font-bold dark:text-primary-400 text-primary-600'
-          >
-            {t.title}
-          </h2>
-          <button
-            type='button'
-            onClick={onClose}
-            aria-label={t.save}
-            className='p-2 dark:hover:bg-slate-700 hover:bg-slate-100 rounded-full dark:text-slate-400 text-slate-500 dark:hover:text-[rgb(var(--rgb-on-primary))] hover:text-slate-900 transition-colors'
-          >
-            <X size={24} />
-          </button>
-        </div>
-
-        {/* Content / コンテンツ */}
-        <div ref={contentRef} className='flex-1 overflow-y-auto p-6 space-y-8'>
-          <section>
-            <label className={SECTION_LABEL_CLASS}>{t.language}</label>
-            <div className='flex gap-2'>
-              <button onClick={() => handleLanguageChange('ja')} className={selectedBtnClass(localConfig.language === 'ja')}>日本語</button>
-              <button onClick={() => handleLanguageChange('en')} className={selectedBtnClass(localConfig.language === 'en')}>English</button>
-            </div>
-          </section>
-
-          <section>
-            <label className={SECTION_LABEL_CLASS}>{t.theme}</label>
-            <div className='flex gap-2'>
-              <button onClick={() => handleThemeChange('pure-black')} className={selectedBtnClass(localConfig.theme === 'pure-black')}>{t.themePureBlack}</button>
-              <button onClick={() => handleThemeChange('dark')} className={selectedBtnClass(localConfig.theme === 'dark')}>{t.themeDark}</button>
-              <button onClick={() => handleThemeChange('light')} className={selectedBtnClass(localConfig.theme === 'light')}>{t.themeLight}</button>
-            </div>
-          </section>
-
-          <section className='pt-4 border-t dark:border-slate-700/50 border-slate-200'>
-            <label className={SECTION_LABEL_CLASS}>{t.accentColor}</label>
-            <div className='flex gap-2'>
-              <button onClick={() => handleAccentColorChange('cyan')} className={`${selectedBtnClass(localConfig.accentColor === 'cyan' || !localConfig.accentColor)} flex items-center justify-center gap-2`}>
-                <div className='w-3 h-3 rounded-full bg-[#06b6d4]' />
-                <span className='text-xs md:text-sm whitespace-nowrap'>{t.accentColorCyan}</span>
-              </button>
-              <button onClick={() => handleAccentColorChange('purple')} className={`${selectedBtnClass(localConfig.accentColor === 'purple')} flex items-center justify-center gap-2`}>
-                <div className='w-3 h-3 rounded-full bg-[#a855f7]' />
-                <span className='text-xs md:text-sm whitespace-nowrap'>{t.accentColorPurple}</span>
-              </button>
-              <button type='button' onClick={handleCustomAccentSelect} className={`${selectedBtnClass(isCustomAccentSelected)} flex items-center justify-center gap-2`}>
-                <div className='w-3 h-3 rounded-full border border-slate-300 dark:border-slate-600' style={{ background: customAccentColor }} />
-                <span className='text-xs md:text-sm whitespace-nowrap'>{t.accentColorCustom}</span>
-              </button>
-            </div>
-
-            {isCustomAccentSelected && (
-              <div className='mt-3 p-3 rounded-xl border dark:border-slate-700 border-slate-300 dark:bg-slate-900/70 bg-slate-50 space-y-3'>
-                <HexColorPicker
-                  color={customAccentColor}
-                  onChange={handleAccentColorChange}
-                  className='settings-accent-picker !w-full !h-48'
-                />
-                <div className='flex items-center gap-2'>
-                  <span className='text-xs font-semibold dark:text-slate-400 text-slate-500'>
-                    HEX
-                  </span>
-                  <HexColorInput
-                    color={customAccentColor}
-                    prefixed
-                    onChange={handleAccentColorChange}
-                    className='w-full dark:bg-slate-950 bg-white border dark:border-slate-600 border-slate-300 rounded-lg px-3 py-2 text-sm font-mono dark:text-slate-100 text-slate-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500/30 focus:outline-none'
-                    aria-label='custom-accent-color-input'
-                  />
-                </div>
-              </div>
-            )}
-          </section>
-
-          {/* Tutorial Trigger / チュートリアル表示 */}
-          <section className='pt-4 border-t dark:border-slate-700/50 border-slate-200'>
-            <button
-              onClick={onShowTutorial}
-              className='w-full flex items-center justify-between p-4 dark:bg-slate-700/30 bg-slate-100 hover:bg-slate-200 dark:hover:bg-slate-700/50 rounded-xl border dark:border-slate-600/50 border-slate-200 dark:text-slate-300 text-slate-700 dark:hover:text-[rgb(var(--rgb-on-primary))] hover:text-slate-900 transition-all group'
-            >
-              <div className='flex items-center gap-3'>
-                <CircleHelp size={20} className='text-primary-500' />
-                <span className='font-medium text-sm'>{t.resetWelcome}</span>
-              </div>
-              <span className='text-slate-500 group-hover:translate-x-1 transition-transform'>
-                →
-              </span>
-            </button>
-          </section>
-
-          <section className='pt-4 border-t dark:border-slate-700/50 border-slate-200'>
-            <label className={SECTION_LABEL_CLASS}>{t.oscPort}</label>
-            <div className='relative group'>
-              <input
-                type='number'
-                min={1}
-                max={65535}
-                value={oscPortInput}
-                onChange={(e) => setOscPortInput(e.target.value)}
-                onBlur={handleOscPortCommit}
-                onKeyDown={handleOscPortKeyDown}
-                className='w-full dark:bg-slate-900 bg-slate-50 border dark:border-slate-700 border-slate-300 rounded-xl p-4 dark:text-white text-slate-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500/30 focus:outline-none font-mono text-sm transition-all'
-                placeholder='9000'
-              />
-            </div>
-            <p className='text-xs text-slate-500 mt-3 flex items-start gap-2 px-1 whitespace-pre-line'>
-              <Info size={14} className='text-slate-400 mt-0.5 flex-shrink-0' />
-              <span>{t.oscPortDesc}</span>
-            </p>
-          </section>
-
-          <section className='pt-4 border-t dark:border-slate-700/50 border-slate-200 space-y-4'>
-            <label className={`${SECTION_LABEL_CLASS} !mb-1`}>{t.keySoundTitle}</label>
-            <ToggleRow
-              label={t.keySoundEnabled}
-              description={t.keySoundEnabledDesc}
-              enabled={localConfig.keySoundEnabled}
-              onToggle={handleToggleKeySound}
-            />
-            <div className='flex items-center justify-between gap-4'>
-              <SettingLabel label={t.keySoundVariant} description={t.keySoundVariantDesc} />
-              <select
-                value={localConfig.keySoundVariant}
-                onChange={(e) =>
-                  handleKeySoundVariantChange(e.target.value as KeySoundVariant)
-                }
-                disabled={!localConfig.keySoundEnabled}
-                className='min-w-[160px] px-3 py-2 rounded-lg text-sm border dark:bg-slate-900 bg-slate-50 dark:border-slate-600 border-slate-300 dark:text-slate-100 text-slate-800 disabled:opacity-50 disabled:cursor-not-allowed'
-              >
-                <option value='soft'>{t.keySoundSoft}</option>
-                <option value='mechanical'>{t.keySoundMechanical}</option>
-              </select>
-            </div>
-          </section>
-
-          <section className='pt-4 border-t dark:border-slate-700/50 border-slate-200 space-y-5'>
-            <label className={`${SECTION_LABEL_CLASS} !mb-1`}>{t.overlayTitle}</label>
-            <ToggleRow
-              label={t.disableOverlay}
-              description={t.disableOverlayDesc}
-              enabled={localConfig.disableOverlay}
-              onToggle={handleToggleDisableOverlay}
-            />
-            <TextSwitchRow
-              label={t.steamVrAutoLaunch}
-              description={t.steamVrAutoLaunchDesc}
-              enabled={localConfig.steamVrAutoLaunch}
-              onToggle={(value) => void handleToggleSteamVrAutoLaunch(value)}
-              enabledText={t.steamVrUnregisterLabel}
-              disabledText={t.steamVrRegisterLabel}
-            />
-            {steamVrAutoLaunchError && (
-              <p className='text-xs text-red-400'>{steamVrAutoLaunchError}</p>
-            )}
-            <div className='rounded-xl border dark:border-slate-600/60 border-slate-200 p-4 space-y-3 dark:bg-slate-700/20 bg-slate-50'>
-              <p className='text-sm font-semibold dark:text-slate-200 text-slate-700'>
-                {t.steamVrBindingsTitle}
-              </p>
-              <div className='text-xs text-slate-500 min-h-5'>
-                {loadingBindings ? (
-                  <span>{t.loading}</span>
-                ) : !initialized ? (
-                  <span>{bindingError || t.steamVrBindingsUnavailable}</span>
-                ) : (
-                  <div className='space-y-1'>
-                    <p>
-                      <span className='font-semibold'>{t.steamVrBindingsToggleLabel}:</span>{' '}
-                      {formatBindings(toggleBindings)}
-                    </p>
-                    <p>
-                      <span className='font-semibold'>{t.steamVrBindingsTriggerLabel}:</span>{' '}
-                      {formatBindings(triggerBindings)}
-                    </p>
-                    <p>
-                      <span className='font-semibold'>{t.steamVrBindingsGripLabel}:</span>{' '}
-                      {formatBindings(gripBindings)}
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {bindingError && initialized && (
-                <p className='text-xs text-red-400'>{bindingError}</p>
-              )}
-              {initialized && (!triggerBound || !gripBound) && (
-                <p className='text-xs text-amber-400'>
-                  {t.steamVrBindingsMissingActions}
-                </p>
-              )}
-
-              <div className='flex flex-wrap gap-2'>
+        {/* Sidebar */}
+        <div className='w-64 border-r dark:border-white/10 border-black/10 flex flex-col bg-slate-100/30 dark:bg-slate-950/30'>
+          <div className='p-6 pb-2'>
+            <h2 id={SETTINGS_MODAL_TITLE_ID} className='text-2xl font-bold dark:text-primary-400 text-primary-600 drop-shadow-sm'>
+              {t.title}
+            </h2>
+          </div>
+          <nav className='flex-1 overflow-y-auto p-4 space-y-2'>
+            {TABS.map(tab => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+              return (
                 <button
-                  type='button'
-                  onClick={() => void loadBindings()}
-                  className='px-3 py-2 rounded-lg text-xs font-semibold border dark:border-slate-500 border-slate-300 dark:text-slate-200 text-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600/60 transition-colors'
-                >
-                  {t.steamVrBindingsRefresh}
-                </button>
-                <button
-                  type='button'
-                  onClick={() => void handleOpenBindingUi()}
-                  className='px-3 py-2 rounded-lg text-xs font-semibold bg-primary-600 hover:bg-primary-500 text-[rgb(var(--rgb-on-primary))] transition-colors'
-                >
-                  {t.openSteamVrBindingUi}
-                </button>
-              </div>
-            </div>
-          </section>
-
-          <section className='pt-4 border-t dark:border-slate-700/50 border-slate-200'>
-            <label className={SECTION_LABEL_CLASS}>{t.checkInterval}</label>
-            <div className='bg-gray-100 dark:bg-slate-900 rounded-xl p-1 mb-3 flex gap-1 overflow-x-auto'>
-              {[
-                { id: 'startup' as const, label: t.intervalStartup },
-                { id: 'daily' as const, label: t.intervalDaily },
-                { id: 'weekly' as const, label: t.intervalWeekly },
-                { id: 'manual' as const, label: t.intervalManual },
-              ].map((option) => (
-                <button
-                  key={option.id}
-                  onClick={() => handleIntervalChange(option.id)}
-                  className={`flex-1 py-2 px-2 text-xs rounded-lg transition-all whitespace-nowrap ${
-                    localConfig.updateCheckInterval === option.id
-                      ? 'bg-white dark:bg-primary-900/40 text-primary-600 dark:text-primary-300 shadow-sm'
-                      : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
+                    isActive 
+                      ? 'bg-primary-500/20 text-primary-700 dark:text-primary-300 font-bold shadow-sm' 
+                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-200'
                   }`}
                 >
-                  {option.label}
+                  <Icon size={18} />
+                  <span className='text-sm'>{tab.label}</span>
+                  {isActive && <div className='absolute left-0 w-1 h-6 bg-primary-500 rounded-r-full' />}
                 </button>
-              ))}
-            </div>
+              );
+            })}
+          </nav>
+          <div className='p-4 border-t dark:border-white/10 border-black/10'>
+            <button onClick={onClose} className='w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary-600 hover:bg-primary-500 text-white rounded-lg font-bold transition-all shadow-md active:scale-95'>
+              <X size={18} />
+              {t.save}
+            </button>
+          </div>
+        </div>
 
-            <div className='flex items-start justify-between gap-4'>
-              <div className='flex flex-col gap-2'>
-                <div className='flex items-center gap-2'>
-                  <button
-                    onClick={handleCheckNow}
-                    disabled={isDownloading}
-                    className='text-sm px-4 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 dark:text-white text-slate-900 rounded-lg transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed'
-                  >
-                    {t.checkNow}
-                  </button>
-                  {updateAvailable?.isInstaller && updateAvailable.installerUrl ? (
-                    downloadedPath && installUpdate ? (
-                      <button
-                        onClick={() => installUpdate()}
-                        className='text-sm px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded-lg transition-colors font-medium shadow-green-900/20 shadow-lg'
-                      >
-                        {t.installUpdate}
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => startDownload && startDownload()}
-                        disabled={isDownloading}
-                        className='text-sm px-4 py-2 bg-primary-600 hover:bg-primary-500 text-[rgb(var(--rgb-on-primary))] rounded-lg transition-colors font-medium shadow-primary-900/20 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed'
-                      >
-                        {isDownloading ? t.downloading : t.downloadAndUpdate}
-                      </button>
-                    )
-                  ) : updateUrl ? (
-                    <button
-                      onClick={() => {
-                        if (window.electronAPI && updateUrl) {
-                          window.electronAPI.openExternal(updateUrl);
-                        }
-                      }}
-                      className='text-sm px-4 py-2 bg-primary-600 hover:bg-primary-500 text-[rgb(var(--rgb-on-primary))] rounded-lg transition-colors font-medium shadow-primary-900/20 shadow-lg'
-                    >
-                      {t.openReleasePage}
-                    </button>
-                  ) : null}
+        {/* Content Area */}
+        <div ref={contentRef} className='flex-1 overflow-y-auto p-8 bg-transparent'>
+          
+          {activeTab === 'general' && (
+            <div className='space-y-8 animate-fade-in'>
+              <section>
+                <label className={SECTION_LABEL_CLASS}>{t.language}</label>
+                <div className='flex gap-2'>
+                  <button onClick={() => handleLanguageChange('ja')} className={selectedBtnClass(localConfig.language === 'ja')}>日本語</button>
+                  <button onClick={() => handleLanguageChange('en')} className={selectedBtnClass(localConfig.language === 'en')}>English</button>
                 </div>
-                
-                {/* Download Progress Bar / ダウンロードプログレスバー */}
-                {isDownloading && (
-                  <div className='w-full min-w-[240px] mt-1'>
-                    <div className='flex justify-between items-center text-xs mb-1.5 dark:text-slate-400 text-slate-500 font-medium'>
-                      <span>{t.downloading}</span>
-                      <div className='flex items-center gap-2'>
-                        {downloadProgress !== undefined && downloadProgress >= 0 && (
-                          <span>{downloadProgress}%</span>
-                        )}
-                        {cancelDownload && (
+              </section>
+
+              <section className='pt-6 border-t dark:border-white/10 border-black/10'>
+                <label className={SECTION_LABEL_CLASS}>{t.checkInterval}</label>
+                <div className='bg-gray-100/50 dark:bg-slate-900/50 rounded-xl p-1 mb-3 flex gap-1 overflow-x-auto border dark:border-white/10 border-black/10 backdrop-blur-sm'>
+                  {[
+                    { id: 'startup' as const, label: t.intervalStartup },
+                    { id: 'daily' as const, label: t.intervalDaily },
+                    { id: 'weekly' as const, label: t.intervalWeekly },
+                    { id: 'manual' as const, label: t.intervalManual },
+                  ].map((option) => (
+                    <button
+                      key={option.id}
+                      onClick={() => handleIntervalChange(option.id)}
+                      className={`flex-1 py-2 px-2 text-xs rounded-lg transition-all whitespace-nowrap ${
+                        localConfig.updateCheckInterval === option.id
+                          ? 'bg-white dark:bg-primary-600 text-primary-600 dark:text-white shadow-sm'
+                          : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className='flex items-start justify-between gap-4'>
+                  <div className='flex flex-col gap-2 w-full'>
+                    <div className='flex items-center gap-2'>
+                      <button
+                        onClick={handleCheckNow}
+                        disabled={isDownloading}
+                        className='text-sm px-4 py-2 bg-slate-200/80 dark:bg-slate-700/80 hover:bg-slate-300 dark:hover:bg-slate-600 dark:text-white text-slate-900 rounded-lg transition-colors font-medium border dark:border-white/10 border-black/10 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed'
+                      >
+                        {t.checkNow}
+                      </button>
+                      {updateAvailable?.isInstaller && updateAvailable.installerUrl ? (
+                        downloadedPath && installUpdate ? (
                           <button
-                            onClick={() => cancelDownload()}
-                            className='px-2 py-0.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 rounded text-[10px] transition-colors'
+                            onClick={() => installUpdate()}
+                            className='text-sm px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded-lg transition-colors font-medium shadow-sm'
                           >
-                            {t.cancel}
+                            {t.installUpdate}
                           </button>
-                        )}
-                      </div>
+                        ) : (
+                          <button
+                            onClick={() => startDownload && startDownload()}
+                            disabled={isDownloading}
+                            className='text-sm px-4 py-2 bg-primary-600 hover:bg-primary-500 text-white rounded-lg transition-colors font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed'
+                          >
+                            {isDownloading ? t.downloading : t.downloadAndUpdate}
+                          </button>
+                        )
+                      ) : updateUrl ? (
+                        <button
+                          onClick={() => {
+                            if (window.electronAPI && updateUrl) {
+                              window.electronAPI.openExternal(updateUrl);
+                            }
+                          }}
+                          className='text-sm px-4 py-2 bg-primary-600 hover:bg-primary-500 text-white rounded-lg transition-colors font-medium shadow-sm'
+                        >
+                          {t.openReleasePage}
+                        </button>
+                      ) : null}
                     </div>
-                    <div className='w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden'>
-                      {downloadProgress !== undefined && downloadProgress >= 0 ? (
-                        <div
-                          className='bg-primary-500 h-1.5 rounded-full transition-all duration-300 ease-out'
-                          style={{ width: `${downloadProgress}%` }}
-                        ></div>
-                      ) : (
-                        <div className='bg-primary-500 h-1.5 rounded-full animate-pulse w-full'></div>
-                      )}
+                    
+                    {/* Download Progress Bar */}
+                    {isDownloading && (
+                      <div className='w-full mt-2 p-3 rounded-lg dark:bg-slate-900/50 bg-slate-100/50 border dark:border-white/10 border-black/10'>
+                        <div className='flex justify-between items-center text-xs mb-1.5 dark:text-slate-300 text-slate-600 font-medium'>
+                          <span>{t.downloading}</span>
+                          <div className='flex items-center gap-2'>
+                            {downloadProgress !== undefined && downloadProgress >= 0 && (
+                              <span>{downloadProgress}%</span>
+                            )}
+                            {cancelDownload && (
+                              <button
+                                onClick={() => cancelDownload()}
+                                className='px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 rounded text-[10px] transition-colors'
+                              >
+                                {t.cancel}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                        <div className='w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden'>
+                          {downloadProgress !== undefined && downloadProgress >= 0 ? (
+                            <div
+                              className='bg-primary-500 h-1.5 rounded-full transition-all duration-300 ease-out'
+                              style={{ width: `${downloadProgress}%` }}
+                            ></div>
+                          ) : (
+                            <div className='bg-primary-500 h-1.5 rounded-full animate-pulse w-full'></div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    {downloadError && !isDownloading && (
+                      <p className='text-xs text-red-500 dark:text-red-400 mt-1'>{t.downloadError}: {downloadError}</p>
+                    )}
+                    {checkStatus && (
+                      <span className='text-sm text-primary-600 dark:text-primary-400 font-medium whitespace-pre-line mt-2'>
+                        {checkStatus}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </section>
+
+              <section className='pt-6 border-t dark:border-white/10 border-black/10'>
+                <button
+                  onClick={onShowTutorial}
+                  className='w-full flex items-center justify-between p-4 dark:bg-slate-800/50 bg-white/50 hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded-xl border dark:border-white/10 border-black/10 dark:text-slate-200 text-slate-700 transition-all group shadow-sm'
+                >
+                  <div className='flex items-center gap-3'>
+                    <CircleHelp size={20} className='text-primary-500' />
+                    <span className='font-medium text-sm'>{t.resetWelcome}</span>
+                  </div>
+                  <span className='text-slate-500 group-hover:translate-x-1 transition-transform'>
+                    →
+                  </span>
+                </button>
+              </section>
+
+              <section className='pt-6 border-t dark:border-white/10 border-black/10'>
+                <h3 className='text-sm font-bold text-slate-900 dark:text-slate-100 mb-2'>
+                  {t.resetTitle}
+                </h3>
+                <div className='flex items-center justify-between p-4 bg-red-50/50 dark:bg-red-900/10 rounded-xl border border-red-200 dark:border-red-900/30 backdrop-blur-sm'>
+                  <p className='text-xs sm:text-sm text-red-600 dark:text-red-400 mr-4'>
+                    {t.resetDesc}
+                  </p>
+                  <button
+                    onClick={() => setIsResetConfirmOpen(true)}
+                    className='whitespace-nowrap px-4 py-2 bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 text-red-700 dark:text-red-300 rounded-lg text-xs sm:text-sm font-bold transition-colors'
+                  >
+                    {t.resetButton}
+                  </button>
+                </div>
+              </section>
+              
+              <section className='text-center pt-8 opacity-60'>
+                <p className='text-xs text-slate-500 font-mono'>v{APP_VERSION}</p>
+              </section>
+            </div>
+          )}
+
+          {activeTab === 'appearance' && (
+            <div className='space-y-8 animate-fade-in'>
+              <section>
+                <label className={SECTION_LABEL_CLASS}>{t.theme}</label>
+                <div className='flex gap-2'>
+                  <button onClick={() => handleThemeChange('pure-black')} className={selectedBtnClass(localConfig.theme === 'pure-black')}>{t.themePureBlack}</button>
+                  <button onClick={() => handleThemeChange('dark')} className={selectedBtnClass(localConfig.theme === 'dark')}>{t.themeDark}</button>
+                  <button onClick={() => handleThemeChange('light')} className={selectedBtnClass(localConfig.theme === 'light')}>{t.themeLight}</button>
+                </div>
+              </section>
+
+              <section className='pt-6 border-t dark:border-white/10 border-black/10'>
+                <label className={SECTION_LABEL_CLASS}>{t.accentColor}</label>
+                <div className='flex gap-2'>
+                  <button onClick={() => handleAccentColorChange('cyan')} className={`${selectedBtnClass(localConfig.accentColor === 'cyan' || !localConfig.accentColor)} flex items-center justify-center gap-2`}>
+                    <div className='w-4 h-4 rounded-full bg-[#06b6d4] shadow-sm' />
+                    <span className='text-xs md:text-sm whitespace-nowrap'>{t.accentColorCyan}</span>
+                  </button>
+                  <button onClick={() => handleAccentColorChange('purple')} className={`${selectedBtnClass(localConfig.accentColor === 'purple')} flex items-center justify-center gap-2`}>
+                    <div className='w-4 h-4 rounded-full bg-[#a855f7] shadow-sm' />
+                    <span className='text-xs md:text-sm whitespace-nowrap'>{t.accentColorPurple}</span>
+                  </button>
+                  <button type='button' onClick={handleCustomAccentSelect} className={`${selectedBtnClass(isCustomAccentSelected)} flex items-center justify-center gap-2`}>
+                    <div className='w-4 h-4 rounded-full border border-slate-300 dark:border-slate-500 shadow-sm' style={{ background: customAccentColor }} />
+                    <span className='text-xs md:text-sm whitespace-nowrap'>{t.accentColorCustom}</span>
+                  </button>
+                </div>
+
+                {isCustomAccentSelected && (
+                  <div className='mt-4 p-4 rounded-xl border dark:border-white/10 border-black/10 dark:bg-slate-900/50 bg-white/50 backdrop-blur-md space-y-4 shadow-sm'>
+                    <HexColorPicker
+                      color={customAccentColor}
+                      onChange={handleAccentColorChange}
+                      className='settings-accent-picker !w-full !h-48'
+                    />
+                    <div className='flex items-center gap-3'>
+                      <span className='text-xs font-semibold dark:text-slate-400 text-slate-500 bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded-md'>
+                        HEX
+                      </span>
+                      <HexColorInput
+                        color={customAccentColor}
+                        prefixed
+                        onChange={handleAccentColorChange}
+                        className='flex-1 dark:bg-slate-950/80 bg-white border dark:border-white/10 border-black/10 rounded-lg px-3 py-2 text-sm font-mono dark:text-slate-100 text-slate-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500/30 focus:outline-none transition-all shadow-inner'
+                        aria-label='custom-accent-color-input'
+                      />
                     </div>
                   </div>
                 )}
-                {downloadError && !isDownloading && (
-                  <p className='text-xs text-red-500 dark:text-red-400 mt-1'>{t.downloadError}: {downloadError}</p>
-                )}
-              </div>
-              {checkStatus && (
-                <span className='text-sm text-primary-600 dark:text-primary-400 font-medium whitespace-pre-line text-right'>
-                  {checkStatus}
-                </span>
-              )}
+              </section>
+
+              <section className='pt-6 border-t dark:border-white/10 border-black/10'>
+                <label className={`${SECTION_LABEL_CLASS} !mb-2`}>{t.overlayTitle}</label>
+                <div className='p-4 rounded-xl border dark:border-white/10 border-black/10 dark:bg-slate-800/30 bg-white/50 shadow-sm'>
+                  <ToggleRow
+                    label={t.disableOverlay}
+                    description={t.disableOverlayDesc}
+                    enabled={localConfig.disableOverlay}
+                    onToggle={handleToggleDisableOverlay}
+                  />
+                </div>
+              </section>
             </div>
-          </section>
+          )}
 
-          {/* Version Info / バージョン情報 */}
-          <section className='text-center'>
-            <p className='text-xs text-slate-500'>Version: v{APP_VERSION}</p>
-          </section>
+          {activeTab === 'connectivity' && (
+            <div className='space-y-8 animate-fade-in'>
+              <section>
+                <label className={SECTION_LABEL_CLASS}>{t.oscPort}</label>
+                <div className='relative group'>
+                  <input
+                    type='number'
+                    min={1}
+                    max={65535}
+                    value={oscPortInput}
+                    onChange={(e) => setOscPortInput(e.target.value)}
+                    onBlur={handleOscPortCommit}
+                    onKeyDown={handleOscPortKeyDown}
+                    className='w-full dark:bg-slate-950/60 bg-white/80 border dark:border-white/10 border-black/10 rounded-xl p-4 dark:text-white text-slate-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500/30 focus:outline-none font-mono text-lg transition-all shadow-inner'
+                    placeholder='9000'
+                  />
+                </div>
+                <p className='text-xs text-slate-500 mt-3 flex items-start gap-2 px-1 whitespace-pre-line'>
+                  <Info size={14} className='text-slate-400 mt-0.5 flex-shrink-0' />
+                  <span>{t.oscPortDesc}</span>
+                </p>
+              </section>
 
-          {/* Reset Settings / 設定リセット */}
-          <section className='pt-6 border-t dark:border-slate-700/50 border-slate-200'>
-            <h3 className='text-sm font-bold text-slate-900 dark:text-slate-100 mb-2'>
-              {t.resetTitle}
-            </h3>
-            <div className='flex items-center justify-between p-4 bg-red-50 dark:bg-red-900/10 rounded-xl border border-red-100 dark:border-red-900/30'>
-              <p className='text-xs sm:text-sm text-red-600 dark:text-red-400 mr-4'>
-                {t.resetDesc}
-              </p>
-              <button
-                onClick={() => setIsResetConfirmOpen(true)}
-                className='whitespace-nowrap px-4 py-2 bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 text-red-700 dark:text-red-300 rounded-lg text-xs sm:text-sm font-bold transition-colors'
-              >
-                {t.resetButton}
-              </button>
+              <section className='pt-6 border-t dark:border-white/10 border-black/10 space-y-4'>
+                <label className={`${SECTION_LABEL_CLASS} !mb-2`}>SteamVR Integration</label>
+                
+                <div className='p-4 rounded-xl border dark:border-white/10 border-black/10 dark:bg-slate-800/30 bg-white/50 shadow-sm'>
+                  <TextSwitchRow
+                    label={t.steamVrAutoLaunch}
+                    description={t.steamVrAutoLaunchDesc}
+                    enabled={localConfig.steamVrAutoLaunch}
+                    onToggle={(value) => void handleToggleSteamVrAutoLaunch(value)}
+                    enabledText={t.steamVrUnregisterLabel}
+                    disabledText={t.steamVrRegisterLabel}
+                  />
+                  {steamVrAutoLaunchError && (
+                    <p className='text-xs text-red-400 mt-2 px-1'>{steamVrAutoLaunchError}</p>
+                  )}
+                </div>
+
+                <div className='rounded-xl border dark:border-white/10 border-black/10 p-5 space-y-4 dark:bg-slate-800/30 bg-white/50 shadow-sm'>
+                  <div className='flex items-center gap-2 mb-2'>
+                    <div className='w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500'>
+                      <Info size={16} />
+                    </div>
+                    <p className='text-sm font-bold dark:text-slate-200 text-slate-800'>
+                      {t.steamVrBindingsTitle}
+                    </p>
+                  </div>
+                  
+                  <div className='text-xs dark:text-slate-400 text-slate-600 bg-black/5 dark:bg-black/20 p-3 rounded-lg min-h-[4rem] font-mono'>
+                    {loadingBindings ? (
+                      <span className='animate-pulse'>{t.loading}</span>
+                    ) : !initialized ? (
+                      <span className='text-amber-500 dark:text-amber-400'>{bindingError || t.steamVrBindingsUnavailable}</span>
+                    ) : (
+                      <div className='space-y-2'>
+                        <p className='flex items-center gap-2'>
+                          <span className='font-semibold text-slate-500 dark:text-slate-300 w-20'>{t.steamVrBindingsToggleLabel}:</span>
+                          <span className='text-primary-600 dark:text-primary-400'>{formatBindings(toggleBindings)}</span>
+                        </p>
+                        <p className='flex items-center gap-2'>
+                          <span className='font-semibold text-slate-500 dark:text-slate-300 w-20'>{t.steamVrBindingsTriggerLabel}:</span>
+                          <span className='text-primary-600 dark:text-primary-400'>{formatBindings(triggerBindings)}</span>
+                        </p>
+                        <p className='flex items-center gap-2'>
+                          <span className='font-semibold text-slate-500 dark:text-slate-300 w-20'>{t.steamVrBindingsGripLabel}:</span>
+                          <span className='text-primary-600 dark:text-primary-400'>{formatBindings(gripBindings)}</span>
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {bindingError && initialized && (
+                    <p className='text-xs text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-2 rounded-md'>{bindingError}</p>
+                  )}
+                  {initialized && (!triggerBound || !gripBound) && (
+                    <p className='text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 p-2 rounded-md'>
+                      {t.steamVrBindingsMissingActions}
+                    </p>
+                  )}
+
+                  <div className='flex flex-wrap gap-2 pt-2 border-t dark:border-white/10 border-black/10'>
+                    <button
+                      type='button'
+                      onClick={() => void loadBindings()}
+                      className='px-4 py-2 rounded-lg text-xs font-semibold border dark:border-white/20 border-black/20 dark:text-slate-200 text-slate-700 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors shadow-sm'
+                    >
+                      {t.steamVrBindingsRefresh}
+                    </button>
+                    <button
+                      type='button'
+                      onClick={() => void handleOpenBindingUi()}
+                      className='px-4 py-2 rounded-lg text-xs font-semibold bg-primary-600 hover:bg-primary-500 text-white transition-colors shadow-sm'
+                    >
+                      {t.openSteamVrBindingUi}
+                    </button>
+                  </div>
+                </div>
+              </section>
             </div>
-          </section>
-        </div>
+          )}
 
-        {/* Footer / フッター */}
-        <div className='p-6 border-t dark:border-slate-700 pure-black:border-slate-800 border-slate-200 dark:bg-slate-800/50 pure-black:bg-black bg-slate-50 transition-colors duration-300'>
-          <button
-            onClick={onClose}
-            className='flex items-center gap-2 bg-primary-600 hover:bg-primary-500 text-[rgb(var(--rgb-on-primary))] px-8 py-4 rounded-xl font-bold shadow-lg shadow-primary-900/30 active:scale-95 transition-all w-full justify-center'
-          >
-            <X size={20} />
-            {t.save}
-          </button>
+          {activeTab === 'sound' && (
+            <div className='space-y-8 animate-fade-in'>
+              <section>
+                <label className={`${SECTION_LABEL_CLASS} !mb-2`}>{t.keySoundTitle}</label>
+                <div className='p-4 rounded-xl border dark:border-white/10 border-black/10 dark:bg-slate-800/30 bg-white/50 shadow-sm space-y-4'>
+                  <ToggleRow
+                    label={t.keySoundEnabled}
+                    description={t.keySoundEnabledDesc}
+                    enabled={localConfig.keySoundEnabled}
+                    onToggle={handleToggleKeySound}
+                  />
+                  <div className='h-px w-full bg-black/5 dark:bg-white/5' />
+                  <div className='flex items-center justify-between gap-4'>
+                    <SettingLabel label={t.keySoundVariant} description={t.keySoundVariantDesc} />
+                    <select
+                      value={localConfig.keySoundVariant}
+                      onChange={(e) =>
+                        handleKeySoundVariantChange(e.target.value as KeySoundVariant)
+                      }
+                      disabled={!localConfig.keySoundEnabled}
+                      className='min-w-[160px] px-3 py-2 rounded-lg text-sm border dark:bg-slate-900/80 bg-white/80 dark:border-white/10 border-black/10 dark:text-slate-100 text-slate-800 disabled:opacity-50 disabled:cursor-not-allowed focus:ring-1 focus:ring-primary-500/50 outline-none transition-all shadow-inner'
+                    >
+                      <option value='soft'>{t.keySoundSoft}</option>
+                      <option value='mechanical'>{t.keySoundMechanical}</option>
+                    </select>
+                  </div>
+                </div>
+              </section>
+            </div>
+          )}
+
         </div>
       </div>
 
