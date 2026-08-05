@@ -65,6 +65,15 @@ export interface TranslationStrings {
     resetConfirmMessage: string;
     resetConfirmButton: string;
     cancel: string;
+    historyTitle: string;
+    historyMaxCount: string;
+    historyMaxCountDesc: string;
+    historyPersist: string;
+    historyPersistDesc: string;
+    historyClear: string;
+    historyClearConfirmTitle: string;
+    historyClearConfirmMessage: string;
+    historyClearConfirmButton: string;
   };
   tutorial: {
     title: string;
@@ -106,6 +115,10 @@ export interface TranslationStrings {
     autoSendOn: string;
     autoSendOff: string;
     autoSendDisabledByCopyMode: string;
+  };
+  history: {
+    historyUp: string;
+    historyDown: string;
   };
 }
 
@@ -176,6 +189,15 @@ export const TRANSLATIONS: TranslationsMap = {
       resetConfirmMessage: 'すべての設定をデフォルトに戻します。アプリが再起動されます。',
       resetConfirmButton: '初期化',
       cancel: 'キャンセル',
+      historyTitle: '送信履歴',
+      historyMaxCount: '保存件数',
+      historyMaxCountDesc: '保持する送信履歴の最大件数を設定します。',
+      historyPersist: '再起動時に履歴を保持',
+      historyPersistDesc: 'アプリ再起動後も送信履歴を引き継ぎます。',
+      historyClear: '履歴を削除',
+      historyClearConfirmTitle: '送信履歴の削除',
+      historyClearConfirmMessage: 'すべての送信履歴を削除します。この操作は元に戻せません。',
+      historyClearConfirmButton: '削除',
     },
     tutorial: {
       title: 'VRChat OSC Keyboardへようこそ',
@@ -217,6 +239,10 @@ export const TRANSLATIONS: TranslationsMap = {
       autoSendOn: 'チャット自動送信: ON',
       autoSendOff: 'チャット自動送信: OFF',
       autoSendDisabledByCopyMode: 'コピー機能ON中はチャット自動送信は無効です'
+    },
+    history: {
+      historyUp: '前の履歴',
+      historyDown: '次の履歴',
     }
   },
   en: {
@@ -283,6 +309,15 @@ export const TRANSLATIONS: TranslationsMap = {
       resetConfirmMessage: 'This will reset all application settings to their defaults. The application will restart. Are you sure?',
       resetConfirmButton: 'Reset',
       cancel: 'Cancel',
+      historyTitle: 'Send History',
+      historyMaxCount: 'Max History Count',
+      historyMaxCountDesc: 'Maximum number of send history entries to keep.',
+      historyPersist: 'Persist on Restart',
+      historyPersistDesc: 'Keep send history after restarting the app.',
+      historyClear: 'Clear History',
+      historyClearConfirmTitle: 'Clear Send History',
+      historyClearConfirmMessage: 'This will delete all send history. This action cannot be undone.',
+      historyClearConfirmButton: 'Clear',
     },
     tutorial: {
       title: 'Welcome to VRC OSC Keyboard',
@@ -324,6 +359,10 @@ export const TRANSLATIONS: TranslationsMap = {
       autoSendOn: 'Auto Send: ON',
       autoSendOff: 'Auto Send: OFF',
       autoSendDisabledByCopyMode: 'Auto Send is disabled while Copy Mode is on'
+    },
+    history: {
+      historyUp: 'Previous',
+      historyDown: 'Next',
     }
   }
 };

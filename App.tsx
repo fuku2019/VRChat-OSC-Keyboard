@@ -20,6 +20,7 @@ import { useTypingIndicator } from './hooks/useTypingIndicator';
 import { useOscSender } from './hooks/useOscSender';
 import { useKeyboardController } from './hooks/useKeyboardController';
 import { useVrScrollSelectionGuard } from './hooks/useVrScrollSelectionGuard';
+import { useSendHistory } from './hooks/useSendHistory';
 import { TRANSLATIONS, STORAGE_KEYS, TIMEOUTS, CHATBOX } from './constants';
 
 const App = () => {
@@ -51,9 +52,15 @@ const App = () => {
   // State for debug mode  デバッグモードの状態
   const [isDebug, setIsDebug] = useState(false);
 
-  // Use custom hooks / カスタムフックを使用
   useTheme();
   useVrScrollSelectionGuard();
+  const {
+    pushHistory,
+    navigateUp,
+    navigateDown,
+    resetNavigation,
+    clearHistory,
+  } = useSendHistory();
   const { sendTypingStatus, resetTypingTimeout, cancelTypingTimeout } =
     useTypingIndicator();
   const {
@@ -68,6 +75,7 @@ const App = () => {
     sendTypingStatus,
     cancelTypingTimeout,
     commitBuffer,
+    pushHistory,
   );
 
   // Use update checker hook / アップデート確認フックを使用
@@ -126,6 +134,16 @@ const App = () => {
     commitBuffer,
     handlePrimaryAction,
     handleInputEffect,
+    onHistoryUp: () => {
+      // Navigate to older history / 古い履歴へ移動
+      const text = navigateUp(displayText);
+      if (text !== null) overwriteInput(text);
+    },
+    onHistoryDown: () => {
+      // Navigate to newer history / 新しい履歴へ移動
+      const text = navigateDown();
+      if (text !== null) overwriteInput(text);
+    },
   });
 
   // Create virtual key handlers / 仮想キーハンドラーを作成
@@ -407,6 +425,8 @@ const App = () => {
           language={config.language}
           keySoundEnabled={config.keySoundEnabled}
           keySoundVariant={config.keySoundVariant}
+          onHistoryUp={virtualKeyHandlers.onHistoryUp}
+          onHistoryDown={virtualKeyHandlers.onHistoryDown}
         />
       </div>
 
@@ -429,6 +449,7 @@ const App = () => {
         startDownload={startDownload}
         cancelDownload={cancelDownload}
         installUpdate={installUpdate}
+        onClearHistory={clearHistory}
       />
 
       {/* Update Notification Toast / アップデート通知トースト */}

@@ -25,6 +25,8 @@ interface UseKeyboardControllerProps {
   commitBuffer: () => void;
   handlePrimaryAction: () => void;
   handleInputEffect: (text: string) => void;
+  onHistoryUp?: () => void; // Navigate to older history / 古い履歴へ移動
+  onHistoryDown?: () => void; // Navigate to newer history / 新しい履歴へ移動
 }
 
 export const useKeyboardController = ({
@@ -45,6 +47,8 @@ export const useKeyboardController = ({
   commitBuffer,
   handlePrimaryAction,
   handleInputEffect,
+  onHistoryUp,
+  onHistoryDown,
 }: UseKeyboardControllerProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const preCompositionValue = useRef<string>(''); // Store value before IME composition / IME構成前の値を保存
@@ -116,6 +120,18 @@ export const useKeyboardController = ({
         return;
       }
       handleClear();
+    } else if (e.key === 'ArrowUp' && !isConverting) {
+      // Navigate to older history / 古い履歴へ移動
+      if (onHistoryUp) {
+        e.preventDefault();
+        onHistoryUp();
+      }
+    } else if (e.key === 'ArrowDown' && !isConverting) {
+      // Navigate to newer history / 新しい履歴へ移動
+      if (onHistoryDown) {
+        e.preventDefault();
+        onHistoryDown();
+      }
     }
   };
 
@@ -187,6 +203,12 @@ export const useKeyboardController = ({
         handleSpace(lastCursorPosition.current ?? undefined),
       ),
     onToggleMode: () => handleVirtualKey(toggleMode),
+    onHistoryUp: onHistoryUp
+      ? () => handleVirtualKey(() => onHistoryUp())
+      : undefined,
+    onHistoryDown: onHistoryDown
+      ? () => handleVirtualKey(() => onHistoryDown())
+      : undefined,
   });
 
   return {

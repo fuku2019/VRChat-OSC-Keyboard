@@ -66,8 +66,9 @@ export const KEYBOARD_LAYOUT: KeyConfig[] = [
   { label: '_', value: '_', shiftValue: '_', gridCols: 4 },
   { label: 'Shift', value: 'shift', action: 'shift', gridCols: 7 },
 
-  // ROW 5 (8 + 44 + 8 = 60) / 5行目
+  // ROW 5 (8 + 44 + 4 + 4 = 60) / 5行目
   { label: 'Clear', value: 'clear', action: 'clear', gridCols: 8 },
   { label: 'Space', value: ' ', action: 'space', gridCols: 44 },
-  { label: 'Clear', value: 'clear', action: 'clear', gridCols: 8 },
+  { label: '↑', value: 'history-up', action: 'history-up', gridCols: 4 },
+  { label: '↓', value: 'history-down', action: 'history-down', gridCols: 4 },
 ];

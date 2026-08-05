@@ -59,6 +59,10 @@ const loadConfigFromStorage = (): OscConfig => {
           parsed.disableOverlay ?? DEFAULT_CONFIG.DISABLE_OVERLAY,
         steamVrAutoLaunch:
           parsed.steamVrAutoLaunch ?? DEFAULT_CONFIG.STEAMVR_AUTO_LAUNCH,
+        historyMaxCount:
+          parsed.historyMaxCount ?? DEFAULT_CONFIG.HISTORY_MAX_COUNT,
+        historyPersistEnabled:
+          parsed.historyPersistEnabled ?? DEFAULT_CONFIG.HISTORY_PERSIST_ENABLED,
       };
     }
   } catch (error) {
@@ -80,6 +84,8 @@ const loadConfigFromStorage = (): OscConfig => {
     updateCheckInterval: DEFAULT_CONFIG.UPDATE_CHECK_INTERVAL,
     disableOverlay: DEFAULT_CONFIG.DISABLE_OVERLAY,
     steamVrAutoLaunch: DEFAULT_CONFIG.STEAMVR_AUTO_LAUNCH,
+    historyMaxCount: DEFAULT_CONFIG.HISTORY_MAX_COUNT,
+    historyPersistEnabled: DEFAULT_CONFIG.HISTORY_PERSIST_ENABLED,
   };
 };
 
