@@ -10,12 +10,16 @@ const { mockSetConfig, getCurrentConfig, resetMockConfig, mockReloadWindow } =
     autoSend: false,
     copyMode: false,
     autoSendBeforeCopyMode: false,
+    keySoundEnabled: true,
+    keySoundVariant: 'soft' as const,
     language: 'ja' as const,
     theme: 'dark' as const,
     accentColor: 'cyan',
     updateCheckInterval: 'weekly' as const,
     disableOverlay: false,
     steamVrAutoLaunch: false,
+    historyMaxCount: 30,
+    historyPersistEnabled: true,
   });
 
   let currentConfig = createInitialConfig();

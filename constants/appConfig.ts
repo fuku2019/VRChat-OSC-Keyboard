@@ -7,6 +7,7 @@ export const STORAGE_KEYS = {
   WINDOW_POSITION: 'vrc_osc_window_position', // Window position (x, y) / ウィンドウ位置（x, y）
   LAST_UPDATE_CHECK: 'vrc_osc_last_update_check',
   UPDATE_AVAILABLE: 'vrc_osc_update_available', // Stores {version, url} or null / 更新情報を保存
+  SEND_HISTORY: 'vrc_osc_send_history', // Send history array / 送信履歴配列
 } as const;
 
 // Default configuration values / デフォルト設定値
@@ -24,6 +25,8 @@ export const DEFAULT_CONFIG = {
   UPDATE_CHECK_INTERVAL: 'weekly' as const,
   DISABLE_OVERLAY: false,
   STEAMVR_AUTO_LAUNCH: false,
+  HISTORY_MAX_COUNT: 30, // Max send history entries / 送信履歴の最大保持件数
+  HISTORY_PERSIST_ENABLED: true, // Persist history on restart / 再起動時に履歴を保持
 } as const;
 
 // Timeout values (in milliseconds) / タイムアウト値（ミリ秒）

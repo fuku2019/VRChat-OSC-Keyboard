@@ -1,4 +1,5 @@
 import { useState, FC, memo } from 'react';
+import { ChevronUp, ChevronDown } from 'lucide-react';
 import { KEYBOARD_LAYOUT, TRANSLATIONS, KEYBOARD_GRID } from '../constants';
 import { KeyConfig, InputMode, Language, KeySoundVariant } from '../types';
 import type { ImeCandidate } from '../types/ime';
@@ -24,6 +25,8 @@ interface VirtualKeyboardProps {
   language: Language;
   keySoundEnabled: boolean;
   keySoundVariant: KeySoundVariant;
+  onHistoryUp?: () => void; // Navigate to older history / 古い履歴へ移動
+  onHistoryDown?: () => void; // Navigate to newer history / 新しい履歴へ移動
 }
 
 const SOUND_SRC_MAP: Record<KeySoundVariant, string> = {
@@ -46,6 +49,8 @@ const VirtualKeyboard: FC<VirtualKeyboardProps> = ({
   language,
   keySoundEnabled,
   keySoundVariant,
+  onHistoryUp,
+  onHistoryDown,
 }) => {
   const [shift, setShift] = useState(false);
   const [capsLock, setCapsLock] = useState(false);
@@ -88,6 +93,12 @@ const VirtualKeyboard: FC<VirtualKeyboardProps> = ({
         return;
       case 'tab':
         onToggleMode();
+        return;
+      case 'history-up':
+        onHistoryUp?.();
+        return;
+      case 'history-down':
+        onHistoryDown?.();
         return;
     }
 
@@ -143,6 +154,7 @@ const VirtualKeyboard: FC<VirtualKeyboardProps> = ({
             </div>
           )}
         </div>
+
       </div>
 
       <div

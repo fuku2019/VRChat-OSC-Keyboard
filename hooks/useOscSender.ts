@@ -14,6 +14,7 @@ export const useOscSender = (
   sendTypingStatus: (isTyping: boolean) => void,
   cancelTypingTimeout: () => void,
   commitBuffer: () => void,
+  onSendSuccess?: (text: string) => void,
 ) => {
   const config = useConfigStore((state) => state.config);
   const [lastSent, setLastSent] = useState<string | null>(null);
@@ -71,6 +72,8 @@ export const useOscSender = (
       const result = await sendOscMessage(textToSend, config.bridgeUrl);
 
       if (result.success) {
+        // Record to send history before clearing input / 入力クリア前に送信履歴に記録
+        if (onSendSuccess) onSendSuccess(textToSend);
         setLastSent(textToSend);
         setInput('');
         // Stop typing indicator on successful send / 送信成功時にタイピングインジケーターを停止

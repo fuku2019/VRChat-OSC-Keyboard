@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useRef, useCallback, FC } from 'react';
-import { X, CircleHelp, Info, Settings, Palette, Link, Volume2 } from 'lucide-react';
+import { X, CircleHelp, Info, Settings, Palette, Link, Volume2, History } from 'lucide-react';
 import { HexColorInput, HexColorPicker } from 'react-colorful';
 import { KeySoundVariant, Language, UpdateCheckInterval } from '../types';
 import { TRANSLATIONS, GITHUB, STORAGE_KEYS } from '../constants';
@@ -49,6 +49,7 @@ interface SettingsModalProps {
   startDownload?: () => Promise<void>;
   cancelDownload?: () => Promise<void>;
   installUpdate?: () => Promise<void>;
+  onClearHistory?: () => void; // Clear send history callback / 送信履歴削除コールバック
 }
 
 // Shared label + description UI / 共通ラベル+説明文UI
@@ -136,6 +137,7 @@ const SettingsModal: FC<SettingsModalProps> = ({
   startDownload,
   cancelDownload,
   installUpdate,
+  onClearHistory,
 }) => {
   const config = useConfigStore((state) => state.config);
   const setConfig = useConfigStore((state) => state.setConfig);
@@ -147,6 +149,7 @@ const SettingsModal: FC<SettingsModalProps> = ({
     useModalAnimation(isOpen);
 
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
+  const [isHistoryClearConfirmOpen, setIsHistoryClearConfirmOpen] = useState(false);
   const modalRef = useRef<HTMLDivElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
   const delayedRefreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
@@ -785,6 +788,54 @@ const SettingsModal: FC<SettingsModalProps> = ({
                   </button>
                 </div>
               </section>
+
+              <section className='pt-6 border-t dark:border-white/10 border-black/10'>
+                <label className={`${SECTION_LABEL_CLASS} !mb-2`}>
+                  <span className='flex items-center gap-2'>
+                    <History size={14} className='text-primary-500' />
+                    {t.historyTitle}
+                  </span>
+                </label>
+                <div className='p-4 rounded-xl border dark:border-white/10 border-black/10 dark:bg-slate-800/30 bg-white/50 shadow-sm space-y-4'>
+                  <div className='flex items-center justify-between gap-4'>
+                    <SettingLabel label={t.historyMaxCount} description={t.historyMaxCountDesc} />
+                    <input
+                      type='number'
+                      min={10}
+                      max={100}
+                      value={localConfig.historyMaxCount}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value, 10);
+                        if (!isNaN(val) && val >= 10 && val <= 100) {
+                          updateConfig('historyMaxCount', val);
+                        }
+                      }}
+                      className='w-20 px-3 py-2 rounded-lg text-sm border dark:bg-slate-900/80 bg-white/80 dark:border-white/10 border-black/10 dark:text-slate-100 text-slate-800 focus:ring-1 focus:ring-primary-500/50 outline-none transition-all shadow-inner text-center'
+                    />
+                  </div>
+                  <div className='h-px w-full bg-black/5 dark:bg-white/5' />
+                  <ToggleRow
+                    label={t.historyPersist}
+                    description={t.historyPersistDesc}
+                    enabled={localConfig.historyPersistEnabled}
+                    onToggle={(value) => updateConfig('historyPersistEnabled', value)}
+                  />
+                  {onClearHistory && (
+                    <>
+                      <div className='h-px w-full bg-black/5 dark:bg-white/5' />
+                      <div className='flex items-center justify-end'>
+                        <button
+                          type='button'
+                          onClick={() => setIsHistoryClearConfirmOpen(true)}
+                          className='px-4 py-2 bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 text-red-700 dark:text-red-300 rounded-lg text-xs font-bold transition-colors'
+                        >
+                          {t.historyClear}
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </section>
               
               <section className='text-center pt-8 opacity-60'>
                 <p className='text-xs text-slate-500 font-mono'>v{APP_VERSION}</p>
@@ -1004,6 +1055,22 @@ const SettingsModal: FC<SettingsModalProps> = ({
         cancelText={t.cancel}
         isDanger={true}
       />
+
+      {onClearHistory && (
+        <ConfirmDialog
+          isOpen={isHistoryClearConfirmOpen}
+          onClose={() => setIsHistoryClearConfirmOpen(false)}
+          onConfirm={() => {
+            onClearHistory();
+            setIsHistoryClearConfirmOpen(false);
+          }}
+          title={t.historyClearConfirmTitle}
+          message={t.historyClearConfirmMessage}
+          confirmText={t.historyClearConfirmButton}
+          cancelText={t.cancel}
+          isDanger={true}
+        />
+      )}
     </div>
   );
 };

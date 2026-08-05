@@ -1,4 +1,5 @@
 import { FC, useRef, useEffect } from 'react';
+import { ChevronUp, ChevronDown } from 'lucide-react';
 import { KeyConfig } from '../types';
 import { TIMEOUTS } from '../constants';
 
@@ -159,7 +160,13 @@ const Key: FC<KeyProps> = ({
       onClick={handleClick}
       type='button'
     >
-      <span>{displayLabel}</span>
+      {config.action === 'history-up' ? (
+        <ChevronUp size={24} />
+      ) : config.action === 'history-down' ? (
+        <ChevronDown size={24} />
+      ) : (
+        <span>{displayLabel}</span>
+      )}
     </button>
   );
 };
