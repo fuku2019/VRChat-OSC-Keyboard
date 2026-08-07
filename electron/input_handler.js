@@ -36,7 +36,9 @@ export function startInputLoop(fps = 120, webContents = null, options = {}) {
 
   stopInputLoop();
 
-  const syncWithCapture = options.syncWithCapture !== false;
+  // Default to independent polling for lower latency unless syncWithCapture is explicitly true
+  // syncWithCaptureが明示的にtrueでない限り、低遅延のため独立ポーリングをデフォルトにする
+  const syncWithCapture = options.syncWithCapture === true;
   if (syncWithCapture && typeof addCaptureFrameListener === 'function') {
     state.captureSyncUnsubscribe = addCaptureFrameListener(() => {
       state.lastCaptureFrameAt = Date.now();
@@ -177,11 +179,10 @@ function updateInput() {
       if (hit) {
         // --- Smoothing Logic Start ---
         if (!state.inputSmoothers[id]) {
-          // Initialize smoothing filter for this controller
-          // Parameters (minCutoff, beta, dcutoff) need tuning.
-          // minCutoff=0.1: Very strong smoothing at low speed
-          // beta=5.0: Quick response at high speed
-          state.inputSmoothers[id] = new PointerStabilizer(0.1, 5.0, 1.0);
+          // Initialize smoothing filter for this controller / コントローラー用平滑化フィルターの初期化
+          // minCutoff=1.5: Reduced lag at low speed / 低速時の遅延を軽減
+          // beta=3.0: Smooth response at high speed / 高速移動時のスムーズな応答
+          state.inputSmoothers[id] = new PointerStabilizer(1.5, 3.0, 1.0);
         }
         const smoothed = state.inputSmoothers[id].update(hit.u, hit.v, now);
         // Use smoothed coordinates for cursor events
