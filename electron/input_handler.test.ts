@@ -66,7 +66,7 @@ describe('input_handler cleanup behavior', () => {
     }));
     vi.mocked(computeHitFromPose).mockReturnValue({ u: 0.2, v: 0.3 });
 
-    startInputLoop(120, {} as Electron.WebContents);
+    startInputLoop(120, {} as Electron.WebContents, { syncWithCapture: true });
     expect(captureFrameListener).toBeTypeOf('function');
     captureFrameListener?.();
 
@@ -161,7 +161,7 @@ describe('input_handler cleanup behavior', () => {
     });
     vi.mocked(computeHitFromPose).mockReturnValue({ u: 0.2, v: 0.3 });
 
-    startInputLoop(120, {} as Electron.WebContents);
+    startInputLoop(120, {} as Electron.WebContents, { syncWithCapture: true });
     captureFrameListener?.();
     expect(state.lastCursorHitState[1]).toBe(true);
     expect(state.lastTriggerPressedState[1]).toBe(true);
