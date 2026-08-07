@@ -44,3 +44,4 @@ native/vr-overlay-native.win32-x64-msvc.node
 *.njsproj
 *.sln
 *.sw?
+CLAUDE.md
