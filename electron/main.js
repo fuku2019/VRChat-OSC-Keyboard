@@ -38,7 +38,7 @@ import {
   startCapture,
 } from './overlay.js';
 import { startInputLoop } from './input_handler.js';
-import { isSteamVrRunning } from './overlay/native.js';
+import { isSteamVrRunningAsync } from './overlay/native.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -77,6 +77,112 @@ app.commandLine.appendSwitch('disable-backgrounding-occluded-windows');
 app.commandLine.appendSwitch('disable-renderer-backgrounding');
 app.commandLine.appendSwitch('disable-features', 'CalculateNativeWinOcclusion');
 
+// Let pending IPC and renderer work run between blocking startup steps.
+// ブロッキングな起動処理の合間に、保留中のIPCやレンダラーの処理を進めさせる。
+const yieldToEventLoop = () => new Promise((resolve) => setImmediate(resolve));
+
+/**
+ * Register the SteamVR manifest, sync auto-launch, and bring up the VR overlay.
+ * Returns the overlay handles, or null when the overlay was not started.
+ * SteamVRマニフェストの登録、自動起動設定の同期、VRオーバーレイの起動を行う。
+ * オーバーレイハンドルを返す。起動しなかった場合は null。
+ */
+async function bootstrapSteamVr() {
+  const manifestRegistration = ensureSteamVrManifestRegistered();
+  if (!manifestRegistration.success) {
+    console.warn(
+      '[SteamVR] Failed to register app manifest:',
+      manifestRegistration.error,
+    );
+  } else {
+    console.log(
+      '[SteamVR] App manifest registered:',
+      manifestRegistration.manifestPath,
+    );
+  }
+  await yieldToEventLoop();
+
+  const steamVrSettings = getSteamVrSettings();
+  if (steamVrSettings.autoLaunch) {
+    const steamVrAutoLaunchSync = setSteamVrAutoLaunch(STEAMVR_APP_KEY, true);
+    if (!steamVrAutoLaunchSync.success) {
+      console.warn(
+        '[SteamVR] Failed to sync startup app setting on boot:',
+        steamVrAutoLaunchSync.error,
+      );
+    }
+  } else {
+    // Keep AutoLaunch off without unregistering the app manifest. SteamVR Input
+    // needs the manifest to save/apply bindings to the active app key.
+    const steamVrAutoLaunchSync = setSteamVrAutoLaunch(STEAMVR_APP_KEY, false);
+    if (!steamVrAutoLaunchSync.success) {
+      console.warn(
+        '[SteamVR] Failed to clear startup app setting on boot:',
+        steamVrAutoLaunchSync.error,
+      );
+    }
+  }
+  await yieldToEventLoop();
+
+  const settings = getOverlaySettings();
+  if (settings.disableOverlay) {
+    console.log('VR Overlay is disabled by settings.');
+    return null;
+  }
+
+  if (!(await isSteamVrRunningAsync())) {
+    console.log('SteamVR is not running. Skipping VR overlay initialization.');
+    return null;
+  }
+
+  // Init Splash Overlay (Head-locked) first / 最初にスプラッシュオーバーレイ（ヘッドロック）を初期化する
+  initSplash();
+
+  // Init Main Overlay (Hidden by default) / メインオーバーレイを初期化する（デフォルトでは非表示）
+  const overlayHandles = initOverlay();
+  if (overlayHandles !== null) {
+    initVrOverlayService();
+    startVrOverlayPolling(60);
+  }
+  return overlayHandles;
+}
+
+/**
+ * Run the SteamVR bootstrap on the next event-loop tick, after createWindow() has
+ * returned control. This still lets the renderer's startup IPC interleave with the
+ * bootstrap's blocking steps (each yields via yieldToEventLoop), without pushing VR
+ * init all the way out to did-finish-load.
+ * createWindow() が制御を返した直後、次のイベントループティックでSteamVR初期化を実行する。
+ * bootstrap内の各ブロッキング処理はyieldToEventLoopで制御を返すため、レンダラーの
+ * 起動時IPCとの間で処理が交互に進む。VR初期化をdid-finish-loadまで遅延させはしない。
+ */
+function scheduleSteamVrBootstrap() {
+  const run = async () => {
+    let overlayHandles = null;
+    try {
+      overlayHandles = await bootstrapSteamVr();
+    } catch (error) {
+      console.error('SteamVR bootstrap failed:', error);
+      return;
+    }
+    if (overlayHandles === null) {
+      return;
+    }
+
+    const window = getMainWindow();
+    if (!window || window.isDestroyed()) {
+      return;
+    }
+
+    // Start capturing window content to VR overlay / ウィンドウ内容のVRオーバーレイへのキャプチャを開始
+    startCapture(window.webContents, 90); // 90 FPS target for smoother rendering
+    startInputLoop(120, window.webContents, { syncWithCapture: false }); // Decouple input from capture for lowest latency
+    console.log('VR overlay capture started');
+  };
+
+  setImmediate(run);
+}
+
 // Single instance lock / 単一インスタンスロック
 const gotTheLock = app.requestSingleInstanceLock();
 
@@ -95,79 +201,19 @@ if (!gotTheLock) {
   app.whenReady().then(() => {
     startBridge();
     createWindow();
-    const settings = getOverlaySettings();
-    const steamVrSettings = getSteamVrSettings();
 
-    const manifestRegistration = ensureSteamVrManifestRegistered();
-    if (!manifestRegistration.success) {
-      console.warn(
-        '[SteamVR] Failed to register app manifest:',
-        manifestRegistration.error,
-      );
-    } else {
-      console.log(
-        '[SteamVR] App manifest registered:',
-        manifestRegistration.manifestPath,
-      );
-    }
-
-    if (steamVrSettings.autoLaunch) {
-      const steamVrAutoLaunchSync = setSteamVrAutoLaunch(STEAMVR_APP_KEY, true);
-      if (!steamVrAutoLaunchSync.success) {
-        console.warn(
-          '[SteamVR] Failed to sync startup app setting on boot:',
-          steamVrAutoLaunchSync.error,
-        );
-      }
-    } else {
-      // Keep AutoLaunch off without unregistering the app manifest. SteamVR Input
-      // needs the manifest to save/apply bindings to the active app key.
-      const steamVrAutoLaunchSync = setSteamVrAutoLaunch(
-        STEAMVR_APP_KEY,
-        false,
-      );
-      if (!steamVrAutoLaunchSync.success) {
-        console.warn(
-          '[SteamVR] Failed to clear startup app setting on boot:',
-          steamVrAutoLaunchSync.error,
-        );
-      }
-    }
-
-    // Initialize VR overlay / VRオーバーレイを初期化
-    let overlayHandles = null;
-    if (!settings.disableOverlay) {
-      if (!isSteamVrRunning()) {
-        console.log(
-          'SteamVR is not running. Skipping VR overlay initialization.',
-        );
-      } else {
-        // Init Splash Overlay (Head-locked) first / 最初にスプラッシュオーバーレイ（ヘッドロック）を初期化する
-        initSplash();
-
-        // Init Main Overlay (Hidden by default) / メインオーバーレイを初期化する（デフォルトでは非表示）
-        overlayHandles = initOverlay();
-        if (overlayHandles !== null) {
-          initVrOverlayService();
-          startVrOverlayPolling(60);
-        }
-      }
-    } else {
-      console.log('VR Overlay is disabled by settings.');
-    }
-
-    // Start capturing window content to VR overlay / ウィンドウ内容のVRオーバーレイへのキャプチャを開始
-    if (overlayHandles !== null) {
-      const mainWindow = getMainWindow();
-      if (mainWindow) {
-        // Wait for window to be ready, then start capture / ウィンドウ準備完了を待ってからキャプチャ開始
-        mainWindow.webContents.once('did-finish-load', () => {
-          startCapture(mainWindow.webContents, 90); // 90 FPS target for smoother rendering
-          startInputLoop(120, mainWindow.webContents, { syncWithCapture: false }); // Decouple input from capture for lowest latency
-          console.log('VR overlay capture started');
-        });
-      }
-    }
+    // The SteamVR bootstrap below spawns several external processes synchronously
+    // (vrpathreg, tasklist) and calls VR_Init. Running it inline would block the main
+    // process for seconds while the renderer is mounting and awaiting its startup IPC,
+    // which is what made the window appear long before its content. Push it to the
+    // next tick and yield to the event loop between its blocking steps so the
+    // renderer's startup IPC can interleave with it instead of queuing behind it.
+    // 以下のSteamVR初期化は外部プロセスを同期的に複数起動し (vrpathreg, tasklist)、
+    // VR_Init も呼ぶ。ここで直接実行するとレンダラーのマウント中および起動時IPCの待機中に
+    // メインプロセスを数秒ブロックし、ウィンドウだけ先に出て中身が遅れる原因になる。
+    // 次のティックへ回し、ブロッキング処理の合間にイベントループへ制御を返すことで、
+    // レンダラーの起動時IPCがその後ろに並ばず交互に処理されるようにする。
+    scheduleSteamVrBootstrap();
 
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) {

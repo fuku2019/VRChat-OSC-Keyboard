@@ -2,7 +2,7 @@ import { createRequire } from 'module';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { app } from 'electron';
-import { execFileSync } from 'child_process';
+import { execFile, execFileSync } from 'child_process';
 
 const require = createRequire(import.meta.url);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -46,41 +46,98 @@ const STEAMVR_PROCESS_NAMES = new Set([
   'vrcompositor',
 ]);
 
-function getRunningProcessNames() {
-  try {
-    if (process.platform === 'win32') {
-      const output = execFileSync('tasklist', ['/FO', 'CSV', '/NH'], {
-        encoding: 'utf-8',
-        windowsHide: true,
-      });
-      return output
-        .split(/\r?\n/)
-        .map((line) => line.trim())
-        .filter(Boolean)
-        .map((line) => {
-          const cleaned = line.replace(/^"+|"+$/g, '');
-          const firstColumn = cleaned.split('","')[0];
-          return firstColumn.trim().toLowerCase();
-        })
-        .filter(Boolean);
-    }
+const PROCESS_LIST_COMMAND =
+  process.platform === 'win32'
+    ? {
+        file: 'tasklist',
+        args: ['/FO', 'CSV', '/NH'],
+        options: { encoding: 'utf-8', windowsHide: true },
+      }
+    : { file: 'ps', args: ['-A', '-o', 'comm='], options: { encoding: 'utf-8' } };
 
-    const output = execFileSync('ps', ['-A', '-o', 'comm='], {
-      encoding: 'utf-8',
-    });
+function parseProcessNames(output) {
+  if (process.platform === 'win32') {
     return output
       .split(/\r?\n/)
-      .map((line) => path.basename(line.trim()).toLowerCase())
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => {
+        const cleaned = line.replace(/^"+|"+$/g, '');
+        const firstColumn = cleaned.split('","')[0];
+        return firstColumn.trim().toLowerCase();
+      })
       .filter(Boolean);
+  }
+
+  return output
+    .split(/\r?\n/)
+    .map((line) => path.basename(line.trim()).toLowerCase())
+    .filter(Boolean);
+}
+
+function getRunningProcessNames() {
+  try {
+    const { file, args, options } = PROCESS_LIST_COMMAND;
+    return parseProcessNames(execFileSync(file, args, options));
   } catch (error) {
     console.warn('Failed to query running processes:', error);
     return [];
   }
 }
 
+function getRunningProcessNamesAsync() {
+  const { file, args, options } = PROCESS_LIST_COMMAND;
+  return new Promise((resolve) => {
+    execFile(file, args, options, (error, stdout) => {
+      if (error) {
+        console.warn('Failed to query running processes:', error);
+        resolve([]);
+        return;
+      }
+      resolve(parseProcessNames(stdout));
+    });
+  });
+}
+
+// Listing processes costs ~1s on Windows and the startup path asks twice (main.js
+// gate + createOverlayManager guard). Cache briefly so the second lookup is free.
+// Windowsではプロセス一覧の取得に約1秒かかり、起動経路では2回問い合わせる
+// (main.js の判定 + createOverlayManager のガード)。2回目が無料になるよう短時間キャッシュする。
+const STEAMVR_RUNNING_TTL_MS = 5000;
+let steamVrRunningCache = null;
+
+function readSteamVrRunningCache() {
+  if (
+    steamVrRunningCache &&
+    Date.now() - steamVrRunningCache.at < STEAMVR_RUNNING_TTL_MS
+  ) {
+    return steamVrRunningCache.running;
+  }
+  return null;
+}
+
+function storeSteamVrRunning(processNames) {
+  const running = processNames.some((name) => STEAMVR_PROCESS_NAMES.has(name));
+  steamVrRunningCache = { at: Date.now(), running };
+  return running;
+}
+
 export function isSteamVrRunning() {
-  const running = getRunningProcessNames();
-  return running.some((name) => STEAMVR_PROCESS_NAMES.has(name));
+  const cached = readSteamVrRunningCache();
+  return cached !== null ? cached : storeSteamVrRunning(getRunningProcessNames());
+}
+
+/**
+ * Non-blocking variant. Use this on startup so the main process can keep serving the
+ * renderer's IPC while the process list is being collected.
+ * ノンブロッキング版。プロセス一覧の収集中もメインプロセスがレンダラーのIPCに
+ * 応答できるよう、起動時はこちらを使う。
+ */
+export async function isSteamVrRunningAsync() {
+  const cached = readSteamVrRunningCache();
+  return cached !== null
+    ? cached
+    : storeSteamVrRunning(await getRunningProcessNamesAsync());
 }
 
 // Load native module with DLL handling / DLL処理付きでネイティブモジュールを読み込み
