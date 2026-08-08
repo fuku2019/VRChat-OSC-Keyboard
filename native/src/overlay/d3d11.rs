@@ -244,8 +244,12 @@ impl D3D11Context {
     /// viewport, RTV) を変更する。保存・復元は行わない。将来他のD3D11利用者が
     /// 追加された場合、ステート保存・復元パターンを導入すること。
     pub fn convert_bgra_to_rgba(&self, width: u32, height: u32) -> napi::Result<()> {
-        // Use references instead of clone() to avoid COM AddRef/Release per frame
-        // clone()の代わりに参照を使い、毎フレームのCOM AddRef/Releaseを回避
+        // Borrow the cached resources; the clone() calls below are required by the
+        // windows-rs signatures (they take Option<T> by value in a slice) and cost one
+        // balanced AddRef/Release each — the interfaces themselves stay cached.
+        // キャッシュ済みリソースを借用する。以下の clone() は windows-rs のシグネチャ上必須で
+        // (スライス内で Option<T> を値で取る)、対になる AddRef/Release が1回ずつ走るだけ。
+        // インターフェース自体はキャッシュされたままになる。
         let rtv = self
             .rgba_rtv
             .as_ref()

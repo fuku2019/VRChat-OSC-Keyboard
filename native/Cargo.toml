@@ -6,6 +6,13 @@ edition = "2021"
 [lib]
 crate-type = ["cdylib"]
 
+# Force every FFI call site to sit in an explicit unsafe block, so `grep unsafe`
+# lists exactly the code the compiler cannot check.
+# すべての FFI 呼び出しを明示的な unsafe ブロック内に置くことを強制する。
+# これにより `grep unsafe` がコンパイラの検査対象外のコードを正確に列挙できる。
+[lints.rust]
+unsafe_op_in_unsafe_fn = "deny"
+
 [dependencies]
 napi = { version = "3.8.3", features = ["default", "napi4"] }
 napi-derive = "3.5.2"

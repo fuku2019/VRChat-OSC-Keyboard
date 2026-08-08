@@ -1,5 +1,5 @@
 use openvr_sys as vr;
-use std::ffi::{c_char, CString};
+use std::ffi::{c_char, CStr, CString};
 
 pub(super) fn cstring_from_env(env_key: &str, default: &str) -> napi::Result<CString> {
     if let Ok(value) = std::env::var(env_key) {
@@ -16,17 +16,16 @@ pub(super) fn require_fn<T>(opt: Option<T>, name: &'static str) -> napi::Result<
     opt.ok_or_else(|| napi::Error::from_reason(format!("{name} not available")))
 }
 
-// Maximum length to scan for null terminator / NUL終端をスキャンする最大長
-const MAX_CSTR_LEN: usize = 4096;
-
 pub(super) fn cstr_to_string(ptr: *const c_char) -> Option<String> {
     if ptr.is_null() {
         return None;
     }
-    // Scan up to MAX_CSTR_LEN bytes for safety / 安全のため最大 MAX_CSTR_LEN バイトまでスキャン
-    let bytes = unsafe { std::slice::from_raw_parts(ptr as *const u8, MAX_CSTR_LEN) };
-    let len = bytes.iter().position(|&b| b == 0).unwrap_or(MAX_CSTR_LEN);
-    Some(String::from_utf8_lossy(&bytes[..len]).into_owned())
+    // SAFETY: OpenVR returns NUL-terminated static strings; CStr stops at the
+    // terminator instead of reading a fixed-size window past the allocation.
+    // SAFETY: OpenVR は NUL 終端の静的文字列を返す。CStr は終端で止まるため、
+    // 確保領域を越えて固定長を読むことがない。
+    let cstr = unsafe { CStr::from_ptr(ptr) };
+    Some(cstr.to_string_lossy().into_owned())
 }
 
 pub(super) fn init_error_message(err: vr::EVRInitError) -> String {

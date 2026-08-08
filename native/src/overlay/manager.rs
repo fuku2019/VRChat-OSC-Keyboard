@@ -79,6 +79,8 @@ pub struct OverlayManager {
     poses_timestamp: Cell<Option<Instant>>,
     input_cache: RefCell<InputActionCache>,
     _vr_token: Option<isize>,
+    // Guards teardown against running twice (explicit dispose + Drop) / 明示的な dispose と Drop の二重解放を防ぐ
+    disposed: bool,
     // Make the manager !Send/!Sync unless we can prove thread safety / スレッドセーフティを証明できない限り、マネージャーを!Send/!Syncにする
     _not_send: PhantomData<Rc<()>>,
 }
@@ -151,6 +153,51 @@ impl OverlayManager {
         self.input_cache
             .try_borrow_mut()
             .map_err(|_| napi::Error::from_reason("input_cache is already mutably borrowed"))
+    }
+
+    /// Release VR / D3D11 resources. Idempotent, so calling `dispose()` and then
+    /// dropping the instance only tears down once.
+    /// VR / D3D11 リソースを解放する。冪等なので、`dispose()` 後に破棄されても
+    /// 解放処理は一度しか走らない。
+    fn teardown(&mut self) {
+        if self.disposed {
+            return;
+        }
+        self.disposed = true;
+
+        // Clear pointers before VR shutdown to prevent dangling access
+        // VR シャットダウン前にポインタをクリアしダングリングアクセスを防止
+        self.context.overlay = None;
+        self.context.system = None;
+        self.context.input = None;
+
+        // Drop D3D11 resources before VR shutdown
+        // VR シャットダウン前に D3D11 リソースを解放
+        self.d3d11 = None;
+
+        let init_lock = VR_INIT_LOCK.get_or_init(|| Mutex::new(()));
+        let _guard = match init_lock.lock() {
+            Ok(guard) => guard,
+            Err(poisoned) => poisoned.into_inner(),
+        };
+
+        // Atomically decrement; abort if already zero to prevent underflow
+        // アトミックにデクリメント。既にゼロならアンダーフロー防止のため中断
+        let result = VR_INIT_COUNT.fetch_update(Ordering::SeqCst, Ordering::SeqCst, |count| {
+            if count == 0 {
+                None
+            } else {
+                Some(count - 1)
+            }
+        });
+
+        match result {
+            // SAFETY: last live manager, and every interface pointer was cleared above
+            // SAFETY: 最後の生存マネージャーであり、全インターフェースポインタは上でクリア済み
+            Ok(1) => unsafe { vr::VR_ShutdownInternal() },
+            Err(_) => debug_assert!(false, "VR_INIT_COUNT underflow"),
+            _ => {}
+        }
     }
 }
 
@@ -266,44 +313,24 @@ impl OverlayManager {
                 poses_timestamp: Cell::new(None),
                 input_cache: RefCell::new(InputActionCache::new()),
                 _vr_token: init_token,
+                disposed: false,
                 _not_send: PhantomData,
             })
         }
+    }
+
+    /// Explicitly release VR / D3D11 resources without waiting for GC finalization.
+    /// Safe to call more than once; every other method fails cleanly afterwards.
+    /// GC のファイナライズを待たずに VR / D3D11 リソースを明示的に解放する。
+    /// 複数回呼んでも安全で、以降は他のメソッドがエラーを返すだけになる。
+    #[napi]
+    pub fn dispose(&mut self) {
+        self.teardown();
     }
 }
 
 impl Drop for OverlayManager {
     fn drop(&mut self) {
-        // Clear pointers before VR shutdown to prevent dangling access
-        // VR シャットダウン前にポインタをクリアしダングリングアクセスを防止
-        self.context.overlay = None;
-        self.context.system = None;
-        self.context.input = None;
-
-        // Drop D3D11 resources before VR shutdown
-        // VR シャットダウン前に D3D11 リソースを解放
-        self.d3d11 = None;
-
-        let init_lock = VR_INIT_LOCK.get_or_init(|| Mutex::new(()));
-        let _guard = match init_lock.lock() {
-            Ok(guard) => guard,
-            Err(poisoned) => poisoned.into_inner(),
-        };
-
-        // Atomically decrement; abort if already zero to prevent underflow
-        // アトミックにデクリメント。既にゼロならアンダーフロー防止のため中断
-        let result = VR_INIT_COUNT.fetch_update(Ordering::SeqCst, Ordering::SeqCst, |count| {
-            if count == 0 {
-                None
-            } else {
-                Some(count - 1)
-            }
-        });
-
-        match result {
-            Ok(1) => unsafe { vr::VR_ShutdownInternal() },
-            Err(_) => debug_assert!(false, "VR_INIT_COUNT underflow"),
-            _ => {}
-        }
+        self.teardown();
     }
 }
