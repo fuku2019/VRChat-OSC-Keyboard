@@ -24,6 +24,7 @@
     "test": "vitest",
     "test:run": "vitest run",
     "build:native": "napi build --platform --release --manifest-path ./native/Cargo.toml && node scripts/sync-native.cjs",
+    "native:check": "cargo clippy --manifest-path ./native/Cargo.toml --all-targets -- -D warnings",
     "ime:build-dict": "node scripts/ime/build-mozc-shards.mjs",
     "typecheck": "tsc --noEmit"
   },
