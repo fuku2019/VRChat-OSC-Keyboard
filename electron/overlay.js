@@ -174,6 +174,9 @@ function ensureOverlayManager() {
       assertOverlayApi(state.overlayManager);
     } catch (e) {
       console.error('OverlayManager API check failed:', e);
+      // Release VR/D3D11 resources now instead of leaving them to GC
+      // VR/D3D11 リソースを GC 任せにせずここで解放する
+      state.overlayManager.dispose?.();
       state.overlayManager = null; // Invalidate
       throw e;
     }
@@ -414,6 +417,16 @@ export function shutdownOverlay() {
 
   state.overlayHandleBack = null;
   state.overlayHandle = null;
+
+  // Release VR/D3D11 resources deterministically. Dropping the JS reference alone
+  // defers teardown until V8 finalizes the object.
+  // VR/D3D11 リソースを確定的に解放する。JS の参照を外すだけでは V8 のファイナライズまで解放が遅延する。
+  try {
+    manager.dispose?.();
+  } catch (e) {
+    console.error('Failed to dispose overlay manager:', e);
+  }
+
   state.overlayManager = null;
   setOverlayVisible(false);
 }
