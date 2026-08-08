@@ -153,6 +153,7 @@ export function createWindow() {
     frame: true,
     transparent: false,
     backgroundColor: '#020617', // Match slate-950
+    show: false, // Wait for content to be ready before showing / コンテンツの準備ができるまで表示を待つ
     icon: path.join(__dirname, '../../dist/icon.ico'), // Try to load icon if available / 利用可能な場合はアイコンをロードしようとする
     webPreferences: {
       nodeIntegration: false,
@@ -182,6 +183,11 @@ export function createWindow() {
   // Save window position when moved / ウィンドウ移動時に位置を保存
   mainWindow.on('move', () => {
     scheduleSaveWindowPosition();
+  });
+
+  // Show only once content has rendered, avoiding a blank window on startup / コンテンツの描画後にのみ表示し、起動時の白い画面を防ぐ
+  mainWindow.once('ready-to-show', () => {
+    mainWindow.show();
   });
 
   // In development, load from Vite server. In production, load built file. / 開発中はViteサーバーからロードする。本番環境ではビルドされたファイルをロードする。
