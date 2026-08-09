@@ -53,25 +53,21 @@ export function getSpawnTransform(hmdPose) {
   const targetPos = vec3.create();
   vec3.add(targetPos, hmdPos, offset);
 
-  // 2. Calculate Rotation (Yaw-only from HMD, keep overlay horizontal)
-  // Extract HMD forward (+Z) and project onto XZ plane (invert if facing is reversed)
+  // 2. Calculate Rotation (Yaw+Pitch from HMD, roll removed to keep overlay upright)
+  // Extract HMD forward (+Z), including up/down tilt, so the overlay follows gaze even when looking straight up (e.g. lying on the back)
   const hmdForward = vec3.fromValues(0, 0, 1);
   vec3.transformQuat(hmdForward, hmdForward, hmdRot);
-  hmdForward[1] = 0;
-  if (vec3.length(hmdForward) < 1e-5) {
-    vec3.set(hmdForward, 0, 0, -1);
-  } else {
-    vec3.normalize(hmdForward, hmdForward);
-  }
+  vec3.normalize(hmdForward, hmdForward);
 
   const worldUp = vec3.fromValues(0, 1, 0);
   const right = vec3.create();
   vec3.cross(right, worldUp, hmdForward);
   if (vec3.length(right) < 1e-5) {
+    // Looking almost straight up/down: worldUp is parallel to forward, fall back to HMD's own local right axis
     vec3.set(right, 1, 0, 0);
-  } else {
-    vec3.normalize(right, right);
+    vec3.transformQuat(right, right, hmdRot);
   }
+  vec3.normalize(right, right);
 
   const trueUp = vec3.create();
   vec3.cross(trueUp, hmdForward, right);
