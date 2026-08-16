@@ -2,7 +2,14 @@
 import { toHiragana } from './textUtils.js';
 
 // Splits a kana reading into segments using a dictionary provider.
+// Only segment boundaries are decided here; candidate lookup is left to the
+// caller (JapaneseConversionService), which needs the fallback chain anyway.
+// Building candidates here too meant every conversion queried the dictionary
+// and the learning store twice.
 // 辞書プロバイダーを使用してかな読みをセグメントに分割する。
+// ここで決めるのは区切り位置のみで、候補の取得はフォールバック連鎖を持つ
+// 呼び出し側（JapaneseConversionService）に任せる。
+// ここでも候補を作ると、1回の変換で辞書と学習ストアを2度引くことになる。
 export class Segmenter {
   constructor(provider, options = {}) {
     this.provider = provider;
@@ -10,13 +17,12 @@ export class Segmenter {
   }
 
   // Segment reading string into dictionary-matched chunks / 読み文字列を辞書一致チャンクに分割
-  segment(reading, context = {}) {
+  segment(reading, _context = {}) {
     const normalized = toHiragana(reading);
     if (!normalized) return [];
 
     const segments = [];
     let cursor = 0;
-    let previousWord = context.previousWord || '';
 
     while (cursor < normalized.length) {
       const remaining = normalized.length - cursor;
@@ -33,32 +39,7 @@ export class Segmenter {
         }
       }
 
-      const raw = normalized.slice(cursor, cursor + matchedLength);
-      const candidates = this.provider.getCandidates(raw, {
-        ...context,
-        previousWord,
-      });
-      // Ensure at least one fallback candidate exists / フォールバック候補が最低1つ存在することを保証
-      const safeCandidates =
-        candidates.length > 0
-          ? candidates
-          : [
-              {
-                text: raw,
-                reading: raw,
-                source: 'fallback',
-                dictSource: 'fallback',
-                score: 0,
-              },
-            ];
-
-      segments.push({
-        raw,
-        candidates: safeCandidates,
-        selectedIndex: 0,
-      });
-
-      previousWord = safeCandidates[0].text;
+      segments.push({ raw: normalized.slice(cursor, cursor + matchedLength) });
       cursor += matchedLength;
     }
 
