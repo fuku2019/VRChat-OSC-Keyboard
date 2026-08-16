@@ -36,8 +36,9 @@ import {
   initSplash,
   shutdownOverlay,
   startCapture,
+  stopCapture,
 } from './overlay.js';
-import { startInputLoop } from './input_handler.js';
+import { startInputLoop, stopInputLoop } from './input_handler.js';
 import { isSteamVrRunningAsync } from './overlay/native.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -183,6 +184,24 @@ function scheduleSteamVrBootstrap() {
   setImmediate(run);
 }
 
+/**
+ * Release VR overlay handles, input loop and bridge sockets.
+ * Idempotent, so it is safe to run from both window-all-closed and before-quit.
+ * VRオーバーレイのハンドル、入力ループ、ブリッジのソケットを解放する。
+ * 冪等なので window-all-closed と before-quit の両方から呼んで問題ない。
+ */
+let servicesShutdown = false;
+function shutdownServices() {
+  if (servicesShutdown) return;
+  servicesShutdown = true;
+  stopInputLoop();
+  stopCapture();
+  stopVrOverlayService();
+  shutdownOverlay();
+  // Close bridge connections / ブリッジ接続を閉じる
+  cleanupBridge();
+}
+
 // Single instance lock / 単一インスタンスロック
 const gotTheLock = app.requestSingleInstanceLock();
 
@@ -222,12 +241,15 @@ if (!gotTheLock) {
     });
   });
 
+  // Also covers quit paths that never close a window (e.g. restart / installer).
+  // ウィンドウを閉じずに終了する経路（再起動やインストーラ実行など）もここで拾う。
+  app.on('before-quit', () => {
+    shutdownServices();
+  });
+
   app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') {
-      stopVrOverlayService();
-      shutdownOverlay();
-      // Close bridge connections / ブリッジ接続を閉じる
-      cleanupBridge();
+      shutdownServices();
       app.quit();
     }
   });
