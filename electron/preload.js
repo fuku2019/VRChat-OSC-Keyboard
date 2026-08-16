@@ -131,7 +131,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // VR Controller scroll events / VRコントローラスクロールイベント
   onInputScroll: (callback) => {
     if (typeof callback !== 'function') return;
-    const wrapped = (event, data) => callback(data);
+    const previous = inputScrollListenerMap.get(callback);
+    if (previous) {
+      ipcRenderer.removeListener('input-scroll', previous);
+    }
+    const wrapped = (_event, data) => callback(data);
     inputScrollListenerMap.set(callback, wrapped);
     ipcRenderer.on('input-scroll', wrapped);
   },
