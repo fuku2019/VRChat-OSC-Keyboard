@@ -3,6 +3,7 @@ import path from 'path';
 import { execFileSync } from 'child_process';
 import { app } from 'electron';
 import { getAssetPath } from '../overlay/native.js';
+import { writeFileAtomicSync } from './atomicWrite.js';
 
 const MANIFEST_FILE_NAME = 'vrchat-osc-keyboard.vrmanifest';
 const ACTIONS_FILE_NAME = 'actions.json';
@@ -107,8 +108,7 @@ function getSteamConfigPath() {
 }
 
 function writeJsonFile(filePath, content) {
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(filePath, `${JSON.stringify(content, null, 2)}\n`, 'utf-8');
+  writeFileAtomicSync(filePath, `${JSON.stringify(content, null, 2)}\n`);
 }
 
 function readAssetJson(relativePath) {
@@ -213,11 +213,9 @@ function ensureManifestPathInAppConfig(manifestPath) {
     ...appConfig,
     manifest_paths: [...currentPaths, manifestPath],
   };
-  fs.writeFileSync(
-    appConfigPath,
-    `${JSON.stringify(next, null, 3)}\n`,
-    'utf-8',
-  );
+  // appconfig.json is Steam-owned; never leave it half-written.
+  // appconfig.json は Steam 所有のファイルなので中途半端な状態で残さない。
+  writeFileAtomicSync(appConfigPath, `${JSON.stringify(next, null, 3)}\n`);
   return { success: true, appConfigPath, updated: true };
 }
 
@@ -250,11 +248,9 @@ function removeManifestPathFromAppConfig(manifestPath) {
     ...appConfig,
     manifest_paths: nextPaths,
   };
-  fs.writeFileSync(
-    appConfigPath,
-    `${JSON.stringify(next, null, 3)}\n`,
-    'utf-8',
-  );
+  // appconfig.json is Steam-owned; never leave it half-written.
+  // appconfig.json は Steam 所有のファイルなので中途半端な状態で残さない。
+  writeFileAtomicSync(appConfigPath, `${JSON.stringify(next, null, 3)}\n`);
   return { success: true, appConfigPath, updated: true };
 }
 
