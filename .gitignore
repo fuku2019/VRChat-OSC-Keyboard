@@ -28,9 +28,6 @@ native/vr-overlay-native.win32-x64-msvc.node
 .env.*.local
 *.local
 
-# Internal
-.agent/
-
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -44,4 +41,3 @@ native/vr-overlay-native.win32-x64-msvc.node
 *.njsproj
 *.sln
 *.sw?
-CLAUDE.md
