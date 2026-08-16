@@ -2,6 +2,7 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import { execFileSync } from 'child_process';
+import { writeFileAtomicSync } from './atomicWrite.js';
 
 const SETTINGS_FILE_NAME = 'steamvr.vrsettings';
 const APPLICATIONS_SECTION = 'applications';
@@ -106,9 +107,11 @@ function loadSettingsFile(settingsPath) {
 }
 
 function writeSettings(settingsPath, settings) {
-  const dir = path.dirname(settingsPath);
-  fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(settingsPath, `${JSON.stringify(settings, null, 2)}\n`, 'utf-8');
+  // This rewrites the whole steamvr.vrsettings, which holds settings unrelated
+  // to this app, so it must never be left half-written.
+  // steamvr.vrsettings は本アプリと無関係な設定も含むファイル全体を書き直すため、
+  // 中途半端な状態で残してはならない。
+  writeFileAtomicSync(settingsPath, `${JSON.stringify(settings, null, 2)}\n`);
 }
 
 function readAutoLaunchFromSettings(settings, appKey) {
