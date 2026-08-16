@@ -13,12 +13,31 @@ const loadHistory = (): string[] => {
     const saved = localStorage.getItem(STORAGE_KEYS.SEND_HISTORY);
     if (saved) {
       const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed)) return parsed;
+      if (Array.isArray(parsed)) {
+        return parsed.filter((item): item is string => typeof item === 'string');
+      }
     }
   } catch (e) {
     console.warn('[SendHistory] Failed to load history:', e);
   }
   return [];
+};
+
+// Merge session entries (newest first) with stored ones / セッション履歴（新しい順）と保存済み履歴を統合
+const mergeHistory = (
+  sessionHistory: string[],
+  storedHistory: string[],
+  maxCount: number,
+): string[] => {
+  const seen = new Set<string>();
+  const merged: string[] = [];
+  for (const item of [...sessionHistory, ...storedHistory]) {
+    if (seen.has(item)) continue;
+    seen.add(item);
+    merged.push(item);
+    if (merged.length >= maxCount) break;
+  }
+  return merged;
 };
 
 // Save history to localStorage / localStorageに履歴を保存する
@@ -44,12 +63,33 @@ export const useSendHistory = () => {
   // Draft text saved before navigation / 走査開始前に退避した入力テキスト
   const draftRef = useRef<string>('');
 
+  // Tracks the previous persist setting to detect the off -> on transition
+  // 永続化設定の前回値。OFF -> ON の切り替わりを検出するために保持する
+  const persistEnabledRef = useRef<boolean>(config.historyPersistEnabled);
+
   // Persist when history or persist setting changes / 履歴・永続化設定変更時に保存
   useEffect(() => {
-    if (config.historyPersistEnabled) {
-      saveHistory(history);
+    const wasEnabled = persistEnabledRef.current;
+    persistEnabledRef.current = config.historyPersistEnabled;
+
+    if (!config.historyPersistEnabled) return;
+
+    // Turning persistence on must not overwrite the stored history with the
+    // current (possibly empty) session. Restore it first, then persist.
+    // 永続化をONにした時に、現在の（多くは空の）セッションで保存済み履歴を
+    // 上書きしないよう、先に読み戻してから保存する。
+    if (!wasEnabled) {
+      const stored = loadHistory();
+      if (stored.length > 0) {
+        setHistory((prev) =>
+          mergeHistory(prev, stored, config.historyMaxCount),
+        );
+        return;
+      }
     }
-  }, [history, config.historyPersistEnabled]);
+
+    saveHistory(history);
+  }, [history, config.historyPersistEnabled, config.historyMaxCount]);
 
   // Push a new entry to history / 新しいエントリを履歴に追加
   const pushHistory = useCallback(
