@@ -1,5 +1,7 @@
+<!--
 ### *SEASON 0 // GIVES YOU FEATHER*
 ![season0](https://raw.githubusercontent.com/Nrtm22/unofficial-vrchat-osc-keyboard-site/refs/heads/main/raw_images/1776701221570%7E2.png)
+-->
 
 </div>
 
@@ -7,6 +9,8 @@
 
 🕊️ VRChatのチャットをもっと自由に！！<br>
 VRモードでも **物理・仮想キーボード** で快適なチャットができるツール 😎
+
+[ユーザーマニュアル🤷はこちら(日本語🗾)](/docs/manual.jp.md)
 
 ![logo](https://raw.githubusercontent.com/fuku2019/VRChat-OSC-Keyboard/refs/heads/main/docs/fake_logo_3.png)
 <br>
