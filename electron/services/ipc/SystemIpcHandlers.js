@@ -438,7 +438,11 @@ export function registerSystemIpcHandlers(
   ipcMain.handle('restart-app', () => {
     try {
       app.relaunch();
-      app.exit(0);
+      // Use quit() instead of exit() so before-quit cleanup (VR overlay handles,
+      // OSC bridge sockets) actually runs before the process goes away.
+      // exit() ではなく quit() を使い、before-quit のクリーンアップ
+      // （VRオーバーレイのハンドル、OSCブリッジのソケット）を確実に実行させる。
+      app.quit();
       return { success: true };
     } catch (error) {
       return { success: false, error: error.message };
