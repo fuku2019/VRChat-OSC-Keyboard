@@ -7,17 +7,17 @@
 
 # VRChat-OSC-Keyboard
 
-🕊️ VRChatのチャットをもっと自由に！！<br>
-VRモードでも **物理・仮想キーボード** で快適なチャットができるツール 😎
+🕊️ **VRChatのチャットをもっと自由に！！** <br>
+VRモードでも **物理・仮想キーボード** で快適なチャットができる**オープンソースフリーウェア**
 
-[ユーザーマニュアル🤷はこちら(日本語🗾)](/docs/manual.jp.md)
+<div align="center">
+
+[**📖ユーザーマニュアルはこちら(日本語🗾)📖**](/docs/manual.jp.md)
 
 ![logo](https://raw.githubusercontent.com/fuku2019/VRChat-OSC-Keyboard/refs/heads/main/docs/fake_logo_3.png)
 <br>
 
 <!-- https://github.com/user-attachments/assets/cd2ba263-f580-4a85-8861-cc934f06c34e -->
-
-<div align="center">
 
   [![platform-windows](https://img.shields.io/badge/windows-platform?label=platform&labelColor=333333&color=357EC7)](https://windows.com)
   ![new_view_count](https://gitviews.com/repo/fuku2019/VRChat-OSC-Keyboard.svg?label-color=333333&style=flat)
@@ -47,12 +47,9 @@ VRモードでも **物理・仮想キーボード** で快適なチャットが
 VRChatはVRモードでプレイすると、テキストチャットが不便 ¯⁠\⁠_⁠(⁠ツ⁠)⁠_⁠/⁠¯<br><br>
 VRChatの**OSC機能**を使用することで、外部アプリからゲームのコントロールができる ☆彡 <br> これを利用して、チャットのコントロールを行った！
 
-## 🙃 ツールはどんな感じ?
-こんな感じ (⁠ﾉﾟ⁠0ﾟ⁠)⁠ﾉ⁠↘
+![app_img_0](docs/app_img_0.webp)
 ![zm_vok_0](https://github.com/user-attachments/assets/e7d60988-36bf-4302-9654-9d8162f98422)
-<br>
-物理キーボードとツールに実装された仮想キーボードで、入力ができるよ ^^ <br>
-物理キーボードで入力したら、変換が使えて嬉しい 😆
+[^1]: ソフトウェアのデザインや機能はバージョンによって異なる場合があります。
 
 ## ✨ 機能・特徴
 + **マルチ入力対応:** 内蔵キーボード（かな・カナ・英）＆物理キーボードの両方に対応。
