@@ -13,12 +13,31 @@ const loadHistory = (): string[] => {
     const saved = localStorage.getItem(STORAGE_KEYS.SEND_HISTORY);
     if (saved) {
       const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed)) return parsed;
+      if (Array.isArray(parsed)) {
+        return parsed.filter((item): item is string => typeof item === 'string');
+      }
     }
   } catch (e) {
     console.warn('[SendHistory] Failed to load history:', e);
   }
   return [];
+};
+
+// Merge session entries (newest first) with stored ones / セッション履歴（新しい順）と保存済み履歴を統合
+const mergeHistory = (
+  sessionHistory: string[],
+  storedHistory: string[],
+  maxCount: number,
+): string[] => {
+  const seen = new Set<string>();
+  const merged: string[] = [];
+  for (const item of [...sessionHistory, ...storedHistory]) {
+    if (seen.has(item)) continue;
+    seen.add(item);
+    merged.push(item);
+    if (merged.length >= maxCount) break;
+  }
+  return merged;
 };
 
 // Save history to localStorage / localStorageに履歴を保存する
@@ -43,13 +62,37 @@ export const useSendHistory = () => {
   const indexRef = useRef<number>(-1);
   // Draft text saved before navigation / 走査開始前に退避した入力テキスト
   const draftRef = useRef<string>('');
+  // Text last handed out by navigation, used to tell navigation apart from edits
+  // 直近にナビゲーションが返したテキスト。ユーザー編集との区別に使う
+  const lastNavigatedTextRef = useRef<string | null>(null);
+
+  // Tracks the previous persist setting to detect the off -> on transition
+  // 永続化設定の前回値。OFF -> ON の切り替わりを検出するために保持する
+  const persistEnabledRef = useRef<boolean>(config.historyPersistEnabled);
 
   // Persist when history or persist setting changes / 履歴・永続化設定変更時に保存
   useEffect(() => {
-    if (config.historyPersistEnabled) {
-      saveHistory(history);
+    const wasEnabled = persistEnabledRef.current;
+    persistEnabledRef.current = config.historyPersistEnabled;
+
+    if (!config.historyPersistEnabled) return;
+
+    // Turning persistence on must not overwrite the stored history with the
+    // current (possibly empty) session. Restore it first, then persist.
+    // 永続化をONにした時に、現在の（多くは空の）セッションで保存済み履歴を
+    // 上書きしないよう、先に読み戻してから保存する。
+    if (!wasEnabled) {
+      const stored = loadHistory();
+      if (stored.length > 0) {
+        setHistory((prev) =>
+          mergeHistory(prev, stored, config.historyMaxCount),
+        );
+        return;
+      }
     }
-  }, [history, config.historyPersistEnabled]);
+
+    saveHistory(history);
+  }, [history, config.historyPersistEnabled, config.historyMaxCount]);
 
   // Push a new entry to history / 新しいエントリを履歴に追加
   const pushHistory = useCallback(
@@ -69,6 +112,7 @@ export const useSendHistory = () => {
       // Reset navigation state after send / 送信後にナビゲーション状態をリセット
       indexRef.current = -1;
       draftRef.current = '';
+      lastNavigatedTextRef.current = null;
     },
     [],
   );
@@ -87,6 +131,7 @@ export const useSendHistory = () => {
       }
 
       indexRef.current = nextIndex;
+      lastNavigatedTextRef.current = history[nextIndex];
       return history[nextIndex];
     },
     [history],
@@ -101,10 +146,12 @@ export const useSendHistory = () => {
     if (nextIndex < 0) {
       // Return to draft / ドラフトに戻る
       indexRef.current = -1;
+      lastNavigatedTextRef.current = draftRef.current;
       return draftRef.current;
     }
 
     indexRef.current = nextIndex;
+    lastNavigatedTextRef.current = history[nextIndex];
     return history[nextIndex];
   }, [history]);
 
@@ -112,13 +159,30 @@ export const useSendHistory = () => {
   const resetNavigation = useCallback(() => {
     indexRef.current = -1;
     draftRef.current = '';
+    lastNavigatedTextRef.current = null;
   }, []);
+
+  // Leave navigation once the user edits the text themselves, so the next
+  // Up starts from the newest entry again. Text that still matches what
+  // navigation produced (e.g. right after pressing Up) keeps the position.
+  // ユーザーが自分でテキストを編集したらナビゲーションを抜け、次の↑が
+  // 再び最新から始まるようにする。ナビゲーションが返したテキストのままの
+  // 場合（↑を押した直後など）は位置を保持する。
+  const notifyInputChanged = useCallback(
+    (text: string) => {
+      if (indexRef.current === -1) return;
+      if (lastNavigatedTextRef.current === text) return;
+      resetNavigation();
+    },
+    [resetNavigation],
+  );
 
   // Clear all history / 全履歴を削除
   const clearHistory = useCallback(() => {
     setHistory([]);
     indexRef.current = -1;
     draftRef.current = '';
+    lastNavigatedTextRef.current = null;
     try {
       localStorage.removeItem(STORAGE_KEYS.SEND_HISTORY);
     } catch (e) {
@@ -132,6 +196,7 @@ export const useSendHistory = () => {
     navigateUp,
     navigateDown,
     resetNavigation,
+    notifyInputChanged,
     clearHistory,
   };
 };

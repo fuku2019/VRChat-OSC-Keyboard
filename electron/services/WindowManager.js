@@ -185,6 +185,24 @@ export function createWindow() {
     scheduleSaveWindowPosition();
   });
 
+  // Flush the debounced save before the window is gone, so a move right before
+  // closing is not lost with the pending timer.
+  // ウィンドウが破棄される前に保留中の保存を確定させ、閉じる直前の移動が
+  // タイマーごと失われないようにする。
+  mainWindow.on('close', () => {
+    if (savePositionTimer) {
+      clearTimeout(savePositionTimer);
+      savePositionTimer = null;
+    }
+    saveWindowPosition();
+  });
+
+  // Drop the reference so getMainWindow() never hands out a destroyed window
+  // 破棄済みウィンドウを getMainWindow() が返さないよう参照を解放する
+  mainWindow.on('closed', () => {
+    mainWindow = null;
+  });
+
   // Show only once content has rendered, avoiding a blank window on startup / コンテンツの描画後にのみ表示し、起動時の白い画面を防ぐ
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();

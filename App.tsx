@@ -58,7 +58,7 @@ const App = () => {
     pushHistory,
     navigateUp,
     navigateDown,
-    resetNavigation,
+    notifyInputChanged,
     clearHistory,
   } = useSendHistory();
   const { sendTypingStatus, resetTypingTimeout, cancelTypingTimeout } =
@@ -84,6 +84,9 @@ const App = () => {
   // Common handler for input side effects (Typing indicator, Auto-send)
   // 入力副作用の共通ハンドラ（タイピングインジケーター、自動送信）
   const handleInputEffect = (text: string) => {
+    // Editing the text leaves history navigation / テキストを編集したら履歴走査を抜ける
+    notifyInputChanged(text);
+
     if (config.copyMode) {
       cancelTypingTimeout();
       sendTypingStatus(false);
