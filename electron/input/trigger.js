@@ -15,8 +15,11 @@ export function handleTriggerInput(controllerId, controllerState, hit) {
   if (pressed) {
     if (!existing) {
       if (!hit) return;
-      sendClickEvent(hit.u, hit.v, 'mouseDown');
-      sendClickEvent(hit.u, hit.v, 'mouseUp', 1);
+      // Defer the click to release. Emitting it on press made the drag/cancel
+      // tracking below unreachable, so a trigger-drag used for scrolling also
+      // clicked whatever sat under the press point.
+      // クリックはトリガーを離した時に送る。押下時に送ると以下のドラッグ判定が
+      // 無意味になり、スクロール目的のドラッグでも押下位置の要素がクリックされていた。
       state.triggerDragState[controllerId] = {
         startU: hit.u,
         startV: hit.v,
@@ -63,6 +66,15 @@ export function handleTriggerInput(controllerId, controllerState, hit) {
 
   if (existing) {
     delete state.triggerDragState[controllerId];
+    // Released without dragging past the cancel threshold -> treat as a click.
+    // A scroll drag (or a release while pointing off the overlay) sets `moved`
+    // and is intentionally swallowed here.
+    // 取り消ししきい値を超えずに離された場合のみクリックとして扱う。
+    // スクロールドラッグやオーバーレイ外での解放は moved が立つため送らない。
+    if (!existing.moved) {
+      sendClickEvent(existing.lastU, existing.lastV, 'mouseDown');
+      sendClickEvent(existing.lastU, existing.lastV, 'mouseUp', 1);
+    }
   }
 }
 

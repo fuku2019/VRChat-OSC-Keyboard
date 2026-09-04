@@ -263,6 +263,38 @@ export function registerSystemIpcHandlers(
       // #4/#8: Stream to file instead of buffering in memory / メモリにバッファリングせずファイルにストリーム書き込み
       const writeStream = fs.createWriteStream(destPath);
 
+      // Track write errors with a single listener kept for the stream lifetime.
+      // Registering one per chunk would pile up thousands of listeners on a
+      // large download, and detaching it entirely would turn a stream error
+      // into an uncaught exception.
+      // ストリーム全体で単一のエラーリスナーを保持して書き込みエラーを追跡する。
+      // チャンクごとに登録すると大きなダウンロードでリスナーが大量に蓄積し、
+      // 完全に外すとストリームエラーが未捕捉例外になる。
+      let writeStreamError = null;
+      let rejectPendingDrain = null;
+      const handleWriteStreamError = (error) => {
+        writeStreamError = error;
+        const reject = rejectPendingDrain;
+        rejectPendingDrain = null;
+        if (reject) reject(error);
+      };
+      writeStream.on('error', handleWriteStreamError);
+
+      // Wait for backpressure to clear, settling early if the stream errors.
+      // バックプレッシャー解消を待つ。ストリームがエラーになった場合は即座に終了する。
+      const waitForDrain = () =>
+        new Promise((resolve, reject) => {
+          if (writeStreamError) {
+            reject(writeStreamError);
+            return;
+          }
+          rejectPendingDrain = reject;
+          writeStream.once('drain', () => {
+            rejectPendingDrain = null;
+            resolve();
+          });
+        });
+
       try {
         while (true) {
           const { done, value } = await reader.read();
@@ -270,14 +302,10 @@ export function registerSystemIpcHandlers(
 
           if (value) {
             // Write chunk directly to file / チャンクを直接ファイルに書き込む
-            await new Promise((resolve, reject) => {
-              if (!writeStream.write(value)) {
-                writeStream.once('drain', resolve);
-              } else {
-                resolve();
-              }
-              writeStream.once('error', reject);
-            });
+            if (writeStreamError) throw writeStreamError;
+            if (!writeStream.write(value)) {
+              await waitForDrain();
+            }
             loaded += value.length;
             if (event.sender && !event.sender.isDestroyed()) {
               if (total > 0) {
@@ -297,8 +325,24 @@ export function registerSystemIpcHandlers(
         }
       } finally {
         // Ensure write stream is closed / 書き込みストリームを確実に閉じる
-        await new Promise((resolve) => writeStream.end(resolve));
+        await new Promise((resolve) => {
+          let settled = false;
+          const done = () => {
+            if (settled) return;
+            settled = true;
+            resolve();
+          };
+          // 'close' also covers the error path (autoDestroy) / エラー経路も'close'で拾う
+          writeStream.once('close', done);
+          writeStream.end(done);
+        });
+        writeStream.removeListener('error', handleWriteStreamError);
+        writeStream.removeAllListeners('drain');
       }
+
+      // Surface a write error that arrived while no drain was pending
+      // drain待ちでない間に発生した書き込みエラーを伝播させる
+      if (writeStreamError) throw writeStreamError;
 
       // Ensure 100% progress is sent at the end / 最後に確実に100%の進捗を送信
       if (event.sender && !event.sender.isDestroyed()) {
@@ -394,7 +438,11 @@ export function registerSystemIpcHandlers(
   ipcMain.handle('restart-app', () => {
     try {
       app.relaunch();
-      app.exit(0);
+      // Use quit() instead of exit() so before-quit cleanup (VR overlay handles,
+      // OSC bridge sockets) actually runs before the process goes away.
+      // exit() ではなく quit() を使い、before-quit のクリーンアップ
+      // （VRオーバーレイのハンドル、OSCブリッジのソケット）を確実に実行させる。
+      app.quit();
       return { success: true };
     } catch (error) {
       return { success: false, error: error.message };

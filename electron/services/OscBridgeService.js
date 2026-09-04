@@ -19,7 +19,13 @@ let OSC_PORT = 9000;
 let ACTIVE_WS_PORT = null;
 
 function closeOscClient() {
-  if (oscClient && oscClient._socket) {
+  // Always attempt close() rather than gating on node-osc's private _socket:
+  // if that internal field ever changes shape the UDP socket would silently
+  // leak. A close() on a half-constructed client just throws and is ignored.
+  // node-osc の内部フィールド _socket の有無で判定せず、常に close() を試みる。
+  // 内部実装が変わるとUDPソケットが黙ってリークするため。未初期化のクライアントに
+  // 対する close() は例外になるだけなので握りつぶす。
+  if (oscClient) {
     try {
       oscClient.close();
     } catch (e) {
