@@ -72,6 +72,13 @@ export const useOscSender = (
       const result = await sendOscMessage(textToSend, config.bridgeUrl);
 
       if (result.success) {
+        // Drop any pending trailing auto-send. Clearing the input below does not
+        // run handleInputEffect, so a queued throttle call would fire afterwards
+        // with the already-sent text and post it to VRChat a second time.
+        // 保留中の自動送信（trailing）を破棄する。下の入力クリアは handleInputEffect を
+        // 通らないため、そのままだと送信済みテキストで再度スロットルが発火し、
+        // VRChat に同じ文が二重送信される。
+        throttledAutoSend.cancel();
         // Record to send history before clearing input / 入力クリア前に送信履歴に記録
         if (onSendSuccess) onSendSuccess(textToSend);
         setLastSent(textToSend);

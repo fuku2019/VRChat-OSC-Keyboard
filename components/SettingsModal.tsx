@@ -143,6 +143,9 @@ const SettingsModal: FC<SettingsModalProps> = ({
   const setConfig = useConfigStore((state) => state.setConfig);
   const [localConfig, setLocalConfig] = useState(config);
   const [oscPortInput, setOscPortInput] = useState(String(config.oscPort));
+  const [historyMaxCountInput, setHistoryMaxCountInput] = useState(
+    String(config.historyMaxCount),
+  );
   const [checkStatus, setCheckStatus] = useState<string>('');
   const [updateUrl, setUpdateUrl] = useState<string>('');
   const { shouldRender, animationClass, modalAnimationClass } =
@@ -182,6 +185,7 @@ const SettingsModal: FC<SettingsModalProps> = ({
     if (isOpen && !wasOpenRef.current) {
       setLocalConfig(config);
       setOscPortInput(String(config.oscPort));
+      setHistoryMaxCountInput(String(config.historyMaxCount));
       setSteamVrAutoLaunchError('');
       if (
         !isPresetAccentColor(config.accentColor) &&
@@ -372,6 +376,32 @@ const SettingsModal: FC<SettingsModalProps> = ({
     if (e.key === 'Enter') {
       e.preventDefault();
       handleOscPortCommit();
+      e.currentTarget.blur();
+    }
+  };
+
+  // Commit history size on blur/Enter like the OSC port field. Validating on
+  // every keystroke rejected intermediate values, so a two-digit number could
+  // never be typed (pressing "5" of "50" was discarded as out of range).
+  // OSCポートと同じくフォーカスアウト/Enterで確定する。キー入力ごとに検証すると
+  // 途中の値が弾かれ、2桁の入力ができなかった（"50"の"5"が範囲外として捨てられた）。
+  const handleHistoryMaxCountCommit = () => {
+    const parsed = parseInt(historyMaxCountInput.trim(), 10);
+    if (!isNaN(parsed)) {
+      const clamped = Math.min(100, Math.max(10, parsed));
+      updateConfig('historyMaxCount', clamped);
+      setHistoryMaxCountInput(String(clamped));
+      return;
+    }
+    setHistoryMaxCountInput(String(localConfig.historyMaxCount));
+  };
+
+  const handleHistoryMaxCountKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement>,
+  ) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleHistoryMaxCountCommit();
       e.currentTarget.blur();
     }
   };
@@ -803,13 +833,10 @@ const SettingsModal: FC<SettingsModalProps> = ({
                       type='number'
                       min={10}
                       max={100}
-                      value={localConfig.historyMaxCount}
-                      onChange={(e) => {
-                        const val = parseInt(e.target.value, 10);
-                        if (!isNaN(val) && val >= 10 && val <= 100) {
-                          updateConfig('historyMaxCount', val);
-                        }
-                      }}
+                      value={historyMaxCountInput}
+                      onChange={(e) => setHistoryMaxCountInput(e.target.value)}
+                      onBlur={handleHistoryMaxCountCommit}
+                      onKeyDown={handleHistoryMaxCountKeyDown}
                       className='w-20 px-3 py-2 rounded-lg text-sm border dark:bg-slate-900/80 bg-white/80 dark:border-white/10 border-black/10 dark:text-slate-100 text-slate-800 focus:ring-1 focus:ring-primary-500/50 outline-none transition-all shadow-inner text-center'
                     />
                   </div>

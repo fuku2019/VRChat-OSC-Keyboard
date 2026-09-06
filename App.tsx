@@ -424,7 +424,7 @@ const App = () => {
           candidates={candidates}
           candidateIndex={candidateIndex}
           isConverting={isConverting}
-          onCommitCandidate={handleCommitCandidate}
+          onCommitCandidate={virtualKeyHandlers.onCommitCandidate}
           language={config.language}
           keySoundEnabled={config.keySoundEnabled}
           keySoundVariant={config.keySoundVariant}
