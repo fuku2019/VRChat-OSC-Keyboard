@@ -122,15 +122,19 @@ export const useKeyboardController = ({
       handleClear();
     } else if (e.key === 'ArrowUp' && !isConverting) {
       // Navigate to older history / 古い履歴へ移動
+      // Same path as the virtual ↑ key: recalled text replaces the input without
+      // an onChange, so the side effects must be fired explicitly.
+      // 仮想キーの↑と同じ経路を使う。呼び出した履歴は onChange を経ずに入力を
+      // 置き換えるため、副作用を明示的に発火させる必要がある。
       if (onHistoryUp) {
         e.preventDefault();
-        onHistoryUp();
+        handleVirtualKey(onHistoryUp);
       }
     } else if (e.key === 'ArrowDown' && !isConverting) {
       // Navigate to newer history / 新しい履歴へ移動
       if (onHistoryDown) {
         e.preventDefault();
-        onHistoryDown();
+        handleVirtualKey(onHistoryDown);
       }
     }
   };
@@ -203,6 +207,13 @@ export const useKeyboardController = ({
         handleSpace(lastCursorPosition.current ?? undefined),
       ),
     onToggleMode: () => handleVirtualKey(toggleMode),
+    // Route candidate clicks through the same path as the other virtual keys so
+    // the commit refocuses the textarea and runs the input side effects
+    // (typing indicator / auto-send) instead of silently updating state.
+    // 候補クリックも他の仮想キーと同じ経路に通し、確定時にテキストエリアへ
+    // フォーカスを戻し入力副作用（タイピング表示 / 自動送信）を発火させる。
+    onCommitCandidate: (index: number) =>
+      handleVirtualKey(() => handleCommitCandidate(index)),
     onHistoryUp: onHistoryUp
       ? () => handleVirtualKey(() => onHistoryUp())
       : undefined,

@@ -292,8 +292,8 @@ export const useIME = (
       const displayCursorPos =
         cursorPosition !== undefined ? cursorPosition : displayText.length;
 
-      const insertDirectChar = (text: string) => {
-        if (displayText.length + text.length > maxLength) return;
+      const insertDirectChar = (text: string): boolean => {
+        if (displayText.length + text.length > maxLength) return false;
         // Commit preedit first, then insert into input / preeditを先に確定してからinputに挿入
         const baseInput = bufferPosition !== null && preeditText
           ? input.slice(0, Math.min(bufferPosition, input.length)) + preeditText + input.slice(Math.min(bufferPosition, input.length))
@@ -303,6 +303,7 @@ export const useIME = (
           baseInput.slice(0, pos) + text + baseInput.slice(pos);
         setInput(nextText);
         clearAllPendingState();
+        return true;
       };
 
       if (isConverting && /^[1-9]$/.test(char)) {
@@ -322,7 +323,20 @@ export const useIME = (
         if (/^[a-z-]$/.test(char)) {
           clearConversionState();
         } else {
-          handleCommitCandidate();
+          // Commit the shown candidate and keep the typed character.
+          // insertDirectChar() folds preeditText (= the selected candidate) into
+          // the text, so returning early here dropped every symbol, digit 0 and
+          // uppercase letter typed while candidates were open.
+          // 表示中の候補を確定しつつ、入力された文字も残す。preeditText（選択中の候補）は
+          // insertDirectChar() が取り込むため、ここで return していた従来の実装では
+          // 候補表示中に打った記号・0・大文字がすべて消えていた。
+          if (!insertDirectChar(char)) return;
+          if (hasImeIpcApi()) {
+            void window.electronAPI?.imeCommitCandidate?.(candidateIndex, {
+              previousWord: extractPreviousWord(input),
+              currentInput: input,
+            });
+          }
           return;
         }
       }
@@ -387,6 +401,7 @@ export const useIME = (
       preeditText,
       displayText,
       isConverting,
+      candidateIndex,
       maxLength,
       clearAllPendingState,
       clearConversionState,
