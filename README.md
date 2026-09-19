@@ -22,7 +22,7 @@ VRモードでも **物理・仮想キーボード** で快適なチャットが
   [![platform-windows](https://img.shields.io/badge/windows-platform?label=platform&labelColor=333333&color=357EC7)](https://windows.com)
   ![new_view_count](https://gitviews.com/repo/fuku2019/VRChat-OSC-Keyboard.svg?label-color=333333&style=flat)
 
-  [![antiGravity](https://img.shields.io/badge/Google_Antigravity-274f92?label=&logo=googlegemini&logoColor=white&labelColor=4285f4)](https://antigravity.google)
+  <!-- [![antiGravity](https://img.shields.io/badge/Google_Antigravity-274f92?label=&logo=googlegemini&logoColor=white&labelColor=4285f4)](https://antigravity.google) -->
   [![dev](https://img.shields.io/badge/-@fuku_2019_vrc-e8439?label=&logo=X&logoColor=ffffff&color=6399AE&labelColor=00C2CB)](https://x.com/fuku_2019_vrc)
 
   [![latest_release](https://img.shields.io/badge/Latest_Release_Page-black?logo=github&logoColor=white)](https://github.com/fuku2019/VRChat-OSC-Keyboard/releases/latest)
@@ -161,11 +161,12 @@ npm run dist
 </table>
 
 **人工知能**
-> *本プロジェクトの開発には以下のAIサービスを活用しています。これは、各提供企業との提携や公式な関係を示すものではありません。*
+*本プロジェクトの開発にはAIサービスを活用しています。*
+<!-- > *本プロジェクトの開発には以下のAIサービスを活用しています。これは、各提供企業との提携や公式な関係を示すものではありません。* -->
 <table>
   <tr>
     <!-- <td><img width="32" height="32" alt="googlegemini" src="https://github.com/user-attachments/assets/bd0739aa-25b0-4d20-8737-0116c77c9cb8" /></td> -->
-    <td><img width="32" height="32" alt="googleantigravity" src="https://antigravity.google/assets/image/brand/antigravity-icon__full-color.png" /></td>
+    <!-- <td><img width="32" height="32" alt="googleantigravity" src="https://antigravity.google/assets/image/brand/antigravity-icon__full-color.png" /></td> -->
     <!-- <td><img width="64" height="64" alt="claude" src="https://github.com/user-attachments/assets/fa5201f0-533a-43b3-8d55-98d4879ae9ce" /> </td> 
     <td><img width="32" height="32" alt="githubcopilot" src="https://github.com/user-attachments/assets/a8fdac55-341e-4352-a25b-27ecc71429f2" /> </td> -->
   </tr>
