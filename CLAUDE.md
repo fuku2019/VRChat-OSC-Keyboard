@@ -1,59 +1,77 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+このファイルは、Claude Code (claude.ai/code)がこのリポジトリで作業する際のガイダンスを提供します。
 
-## What this is
+## プロジェクト概要
 
-VRChat OSC Keyboard — a Windows Electron + React app that lets VRChat players type (with full Japanese IME conversion) using a physical or virtual keyboard while in VR, and sends the text to VRChat's chatbox via OSC. It also renders itself as a SteamVR overlay so it's usable without leaving the headset, using a Rust/napi-rs native module for OpenVR access.
+VRChat OSC Keyboard — VRChatのプレイヤーがVR内にいながら物理キーボードまたは仮想キーボードで日本語IME変換込みの入力を行い、そのテキストをOSC経由でVRChatのチャットボックスへ送信するWindows専用のElectron + Reactアプリ。さらにSteamVRオーバーレイとして自身を描画することで、ヘッドセットを外さずに操作できる。OpenVRへのアクセスにはRust/napi-rs製のネイティブモジュールを使用している。
 
-## Commands
+## コマンド
 
 ```bash
-npm install                # install JS deps
-npm run build:native       # build the Rust native module (native/) and sync it into place — required after any change under native/
-npm run ime:build-dict     # regenerate Mozc dictionary shards (only needed after editing scripts/ime or the source dictionary)
+npm install                # JS 依存関係のインストール
+npm run build:native       # Rust ネイティブモジュール (native/) をビルドし、配置先へ同期する
+npm run ime:build-dict     # Mozc 辞書シャードの再生成 (scripts/ime または元辞書を変更した場合のみ必要)
 
-npm run dev                # vite dev server only (browser, no Electron/overlay/OSC-bridge-in-Electron)
-npm run electron:dev       # full app: vite + Electron together (electron.js loads http://localhost:5173)
-npm run build               # vite build only
-npm run dist                # vite build + electron-builder + rename-build-output.js -> release/
+npm run dev                # vite dev server のみ (ブラウザ動作。OSC は vite の dev ブリッジプラグイン経由)
+npm run electron:dev       # フル構成: vite + Electron を同時起動 (Electron が http://localhost:5173 を読み込む)
+npm run build              # vite build のみ
+npm run dist               # vite build + electron-builder + rename-build-output.js -> release/
 
-npm run test                # vitest watch mode
-npm run test:run            # vitest run once (CI-style)
-npx vitest run path/to/file.test.ts   # run a single test file
-npx vitest run -t "test name"         # run tests matching a name
+npm run test               # vitest ウォッチモード
+npm run test:run           # vitest を 1 回だけ実行 (CI 相当)
+npx vitest run path/to/file.test.ts   # 単一テストファイルの実行
+npx vitest run -t "test name"         # 名前が一致するテストのみ実行
 
-npm run typecheck           # tsc --noEmit
+npm run typecheck          # tsc --noEmit (allowJs が有効なため electron/*.js も対象)
+npm run native:check       # native/ に対する cargo clippy (-D warnings)
 ```
 
-There is no lint script configured. Building the native module requires Rust (rustup), the MSVC C++ build tools, and LLVM (for bindgen) — see README.md "手動ビルド" for the exact installer links; these are one-time environment setup, not something to install per task.
+`npm run native:check`がこのリポジトリで**唯一**のlintである。JS/TS側にはリンターもフォーマッターも存在しない(eslint/prettier/biome/rustfmtの設定ファイルはどこにもない)。編集時は周囲のファイルのスタイルに合わせること:インデント2スペース、シングルクォート、セミコロンあり、末尾カンマあり。
 
-Tests live next to the source file they cover (`Foo.ts` + `Foo.test.ts`), across both the renderer tree and `electron/`. Vitest uses jsdom (`vitest.config.ts`), so Electron-side tests mock `electron`/native bindings rather than running a real Electron process.
+`native/index.node`と生成される`.dll`/`.d.ts`は**gitignore対象**であるため、クローン直後の状態では`npm run build:native`が成功するまで`electron:dev`も`dist`も実行できない。このビルドにはrustup、MSVCの「C++によるデスクトップ開発」、およびLLVM (bindgen用)が必要 — インストーラのリンクはREADME.mdの「手動ビルド」を参照。これらは一度きりの環境構築であり、タスクごとに導入するものではない。`native/`配下を変更したら必ず再ビルドすること。
 
-## Architecture
+テストは対象ソースと同じ階層に配置する(`Foo.ts`に対して`Foo.test.ts`)。これはレンダラー側のツリーと`electron/`の両方で共通。Vitestはjsdom環境で動作するため(`vitest.config.ts`)、Electron側のテストは実際のElectronプロセスを起動せず`electron`とネイティブバインディングをモックする。`.agent/rules/testfile-guide.md`にはPlaywrightへの言及があるが、e2eテストの仕組みは実在しない。
 
-The app is two separate JS runtimes talking over Electron IPC, plus one native module:
+## CIはコード品質をゲートしない
 
-1. **Renderer (root-level `App.tsx`, `components/`, `hooks/`, `stores/`, `services/`, `constants/`, `types/`)** — a Vite/React 19 SPA. State is centralized in `stores/configStore.ts` (Zustand, persisted to `localStorage`, and synced to the main process for things like OSC port). Most app behavior lives in hooks composed together in `App.tsx`: `useIME` (kana buffer/conversion state), `useKeyboardController` (physical + virtual key routing), `useOscSender`, `useSendHistory`, `useTypingIndicator`, `useTheme`, `useVrScrollSelectionGuard`. `window.electronAPI` (defined in `electron/preload.js`) is the only bridge to the main process; when running outside Electron (`npm run dev`), that global is absent/no-ops and OSC instead goes through the dev-only WebSocket bridge started by the `oscBridgePlugin` in `vite.config.ts`.
+`.github/workflows/release.yml`は`v*`タグで起動し、`npm ci` → `build:native` → `dist`を実行するだけ。テストもtypecheckもclippyも**一切実行しない**ため、これらはローカル専用のゲートであり、コミット前に自分で走らせる必要がある。一方でCIが実際に強制しているのはインストーラのサイズゲートで、140MB超で警告、150MB超でリリースを失敗させる。アセットや辞書シャードを追加する際は注意すること(`sourcemap: false`、`removeLocales.cjs`、manualChunksが存在するのはこのため)。
 
-2. **Electron main process (`electron/`)** — owns app lifecycle (`main.js`), window creation (`services/WindowManager.js`), and all IPC handlers, split by concern under `electron/services/ipc/*IpcHandlers.js` and registered centrally in `electron/services/IpcHandlers.js`. Key subsystems:
-   - `services/OscBridgeService.js` — the production OSC bridge (equivalent to the vite dev plugin, but running in Electron).
-   - `services/ime/*` + `services/JapaneseConversionService.js` — the Japanese IME/conversion engine (Mozc-derived dictionary, segmentation, learning store). The renderer's `useIME` calls into this over IPC (`jp-ime:*` channels in `preload.js`); it does not run IME logic itself.
-   - `overlay.js` + `overlay/*` (`capture.js`, `native.js`, `transform.js`, `state.js`) — creates and drives the SteamVR overlay, captures the Electron window's rendered frames into it, and manages OpenVR handles via the native module.
-   - `input_handler.js` + `input/*` (`controllers.js`, `drag.js`, `events.js`, `mapping.js`, `smoothing.js`, `state.js`, `trigger.js`) — polls VR controller poses/triggers, computes overlay ray-intersection hits, and synthesizes mouse/cursor/scroll events that get sent to the renderer (see `onCursorMove`/`onTriggerState`/`onInputScroll` in `preload.js`) — this is how controllers "click" on the 2D UI rendered into the overlay.
-   - `services/SteamVrManifestService.js` / `SteamVrSettingsService.js` — registers the app as a SteamVR overlay app and manages its auto-launch/binding settings.
+`release.json`は`update-release-json.yml`が機械的に書き込むファイルで、`hooks/useUpdateChecker.ts`がこれをポーリングしている — 手動で編集しないこと。
 
-3. **`native/` (Rust, napi-rs)** — compiles to `native/index.node`, exposing OpenVR (overlay creation, D3D11 texture submission, controller pose/input queries) to the main process. Source is organized under `native/src/overlay/*` (manager, handles, texture/overlay/input ops, math, types). Building it (`npm run build:native`) runs `napi build` then `scripts/sync-native.cjs` to place the compiled binary where `electron/` expects it. Rebuild whenever anything under `native/` changes — the compiled `.node`/`.dll` files are committed as build artifacts, not derived at install time.
+## アーキテクチャ
 
-### Data flow for a typical keystroke
-Physical/virtual key → `useKeyboardController`/`useIME` (renderer) → if kana needs conversion, IPC to `JapaneseConversionService` (main) → `displayText` state → on send, `useOscSender` → WebSocket bridge (`OscBridgeService` in Electron, or the vite plugin in dev) → `node-osc` → VRChat's `/chatbox/input` OSC endpoint.
+Electron IPCで通信する2つのJSランタイムと、1つのネイティブモジュールで構成される:
 
-### Data flow for VR controller interaction
-SteamVR controller pose (native module, polled in `input_handler.js`) → ray/overlay intersection → cursor/trigger events sent over IPC → renderer's `CursorOverlay.tsx` + `useVrScrollSelectionGuard` render a synthetic cursor and translate trigger presses into clicks on the normal DOM UI (the same UI the desktop window shows, captured into the overlay by `overlay/capture.js`).
+1. **レンダラー(ルート直下の`App.tsx`、`components/`、`hooks/`、`stores/`、`services/`、`constants/`、`types/`)** — Vite/React 19のSPA。`src/`を持たないフラット構成で、パスエイリアス`@/*`はリポジトリルートを指す。状態は`stores/configStore.ts` (Zustand)に集約され、`localStorage`に永続化されるとともに、OSCポートなど一部はメインプロセスへ同期される。アプリの振る舞いの大半は`App.tsx`で合成されるフックにある: `useIME`、`useKeyboardController`、`useOscSender`、`useSendHistory`、`useTypingIndicator`、`useTheme`、`useVrScrollSelectionGuard`。メインプロセスへの橋渡しは`window.electronAPI` (`electron/preload.js`)のみ。Electron外(`npm run dev`)ではこのグローバルが存在せず、OSCは`vite.config.ts`の`oscBridgePlugin`が起動する開発専用WebSocketブリッジを経由する。
 
-## Notes specific to this repo
+2. **Electronメインプロセス(`electron/`、素のESM `.js`)** — アプリのライフサイクル(`main.js`)、ウィンドウ生成(`services/WindowManager.js`)、および関心ごとに`electron/services/ipc/*IpcHandlers.js`へ分割され`electron/services/IpcHandlers.js`で一括登録されるIPCハンドラを担う。主要サブシステム:
+   - `services/OscBridgeService.js` — 本番用のOSCブリッジ(vite devプラグインのElectron側相当)。
+   - `services/ime/*` + `services/JapaneseConversionService.js` — 日本語IME/変換エンジン(Mozc由来の辞書、分割処理、学習ストア)。変換は**メインプロセス側で動作する**。レンダラーの`useIME`は`jp-ime:*` IPCチャンネル経由でこれを呼び出すだけで、変換ロジック自体は持たない。
+   - `overlay.js` + `overlay/*` — SteamVRオーバーレイの生成と駆動、Electronウィンドウの描画フレームのキャプチャ、ネイティブモジュール経由のOpenVRハンドル管理。
+   - `input_handler.js` + `input/*` — VRコントローラーの姿勢とトリガーをポーリングし、オーバーレイとのレイ交差判定を計算して、カーソル/トリガー/スクロールのイベントをレンダラーへ送る(`preload.js`の`onCursorMove`/`onTriggerState`/`onInputScroll`)。コントローラーで2D UIを「クリック」できるのはこの仕組みによる。
+   - `services/SteamVrManifestService.js` / `SteamVrSettingsService.js` — SteamVRオーバーレイアプリとしての登録、自動起動およびバインディング設定の管理。
 
-- `debug.config.json` toggles `enableDebugMode`, read by both `main.js` (window title) and exposed to the renderer via `isDebugMode` IPC.
-- `release.json` and the `.github/workflows/*.yml` are about the GitHub Releases auto-update flow (`useUpdateChecker.ts` polls this); not something to hand-edit as part of feature work.
-- Mozc dictionary licensing is tracked in `THIRD_PARTY_MOZC_DICTIONARY_LICENSES.txt`; regenerating shards (`npm run ime:build-dict`) is only needed when the source dictionary changes.
-- Bilingual (Japanese/English) code comments are the existing convention throughout `electron/` and shared modules — match this style when editing those files.
+3. **`native/` (Rust, napi-rs)** — クレート名`vr-overlay-native`、`cdylib`、ターゲットは`x86_64-pc-windows-msvc`に固定。OpenVR (オーバーレイ生成、D3D11テクスチャ送出、コントローラーの姿勢・入力取得)をメインプロセスへ公開する。`Cargo.toml`で`unsafe_op_in_unsafe_fn = "deny"`を設定しているため、`unsafe fn`の内部であってもすべてのFFI呼び出しに明示的な`unsafe`ブロックが必要 — `unsafe`をgrepすれば未検査コードを網羅できる、という意図。`npm run build:native`は`napi build`の後に`scripts/sync-native.cjs`を実行する。
+
+### 通常のキー入力のデータフロー
+物理キー/仮想キー → `useKeyboardController`/`useIME` (レンダラー) → かな変換が必要ならIPCで`JapaneseConversionService` (メイン)へ → `displayText` state → 送信時に`useOscSender` → WebSocketブリッジ(Electronでは`OscBridgeService`、開発時はviteプラグイン) → `node-osc` → VRChatの`/chatbox/input`。
+
+### VRコントローラー操作のデータフロー
+コントローラーの姿勢(ネイティブモジュール、`input_handler.js`でポーリング) → レイとオーバーレイの交差判定 → IPCでカーソル/トリガーイベント送信 → `CursorOverlay.tsx`と`useVrScrollSelectionGuard`が疑似カーソルを描画し、トリガー押下をクリックへ変換。対象はデスクトップウィンドウと同一のDOM UIで、それを`overlay/capture.js`がオーバーレイへキャプチャしている。
+
+## ポートと実行時の前提
+
+- OSC送信先: UDP `127.0.0.1:9000` (VRChatのデフォルト)、`/chatbox/input`に`[text, direct, sound]`を送る。ポートはユーザーが設定可能だが、**誤ったポートでも無言で失敗する** — ユーザーには何も通知されない。
+- レンダラー ↔ ブリッジ: `127.0.0.1`上のWebSocket。`OscBridgeService.js`は8080〜8099を走査して空きポートを選ぶが、vite devプラグインは8080固定で`EADDRINUSE`時に警告を出すのみ。`npm run dev`と`npm run electron:dev`を同時に動かすと8080が競合する — `electron:dev`が`IS_ELECTRON=true`を設定しているのは、まさにviteプラグイン側を無効化するため。
+- `vite.config.ts`は`base: './'`を設定している。これを変更するとパッケージ済みビルドが壊れる。
+- チャットボックスの上限は`CHATBOX.MAX_LENGTH = 144`、120で警告。
+- ユーザー側でVRChatのOSCを有効化しておく必要がある(Action Menu → Options → OSC → Enabled)。
+- `.env`は不要。関与する環境変数は`IS_ELECTRON` (開発時)と`GH_TOKEN` (CI)のみ。
+
+## リポジトリの慣習
+
+- コメントは`electron/`、`constants/`、`vite.config.ts`、`native/`全体で**日本語と英語の併記**になっている — これらを編集する際は同じスタイルに合わせること。
+- コミットメッセージは日本語が大半で、内容を説明する形式。conventional commitsのプレフィックスは使っていない。
+- `debug.config.json`は`enableDebugMode`に加え、アップデートチェッカーのテスト用フラグ(`forceUpdateAvailable`、`mockLatestVersion`、`forceInstallerVersion`)を切り替える。
+- Mozc辞書のライセンスは`THIRD_PARTY_MOZC_DICTIONARY_LICENSES.txt`で管理している。`electron/assets/ime/mozc/shards/`配下のシャードは生成物であり、手で編集しない。
