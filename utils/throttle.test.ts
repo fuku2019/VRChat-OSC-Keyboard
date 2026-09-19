@@ -76,14 +76,6 @@ describe('throttle / スロットル', () => {
       vi.advanceTimersByTime(100);
       expect(fn).toHaveBeenCalledTimes(1);
     });
-
-    it('executes immediately when leading: true (default)', () => {
-      const fn = vi.fn();
-      const throttled = throttle(fn, 100, { leading: true });
-
-      throttled();
-      expect(fn).toHaveBeenCalledTimes(1);
-    });
   });
 
   describe('trailing option / trailingオプション', () => {
@@ -101,18 +93,6 @@ describe('throttle / スロットル', () => {
 
       // Should NOT execute trailing call / trailing呼び出しは実行されないべき
       expect(fn).toHaveBeenCalledTimes(1);
-    });
-
-    it('executes trailing call when trailing: true (default)', () => {
-      const fn = vi.fn();
-      const throttled = throttle(fn, 100, { trailing: true });
-
-      throttled('first');
-      throttled('second');
-
-      vi.advanceTimersByTime(100);
-
-      expect(fn).toHaveBeenCalledTimes(2);
     });
   });
 

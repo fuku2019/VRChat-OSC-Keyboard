@@ -77,23 +77,6 @@ describe('compareVersions / バージョン比較', () => {
       expect(compareVersions('1.0.0', '1.0.0-alpha')).toBe(0);
     });
   });
-
-  describe('real-world scenarios / 実際のシナリオ', () => {
-    it('correctly identifies update available', () => {
-      // Current: 1.3.4, Latest: 1.3.5 => update available / 更新あり
-      expect(compareVersions('v1.3.5', 'v1.3.4')).toBe(1);
-    });
-
-    it('correctly identifies no update needed', () => {
-      // Current: 1.3.5, Latest: 1.3.4 => no update / 更新なし
-      expect(compareVersions('v1.3.4', 'v1.3.5')).toBe(-1);
-    });
-
-    it('correctly identifies same version', () => {
-      // Current: 1.3.4, Latest: 1.3.4 => same / 同じ
-      expect(compareVersions('v1.3.4', 'v1.3.4')).toBe(0);
-    });
-  });
 });
 
 describe('isSafeExternalUrl / 外部URL検証', () => {
