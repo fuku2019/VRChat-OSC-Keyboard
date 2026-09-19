@@ -50,3 +50,6 @@ export interface OscConfig {
   historyMaxCount: number; // Max send history entries / 送信履歴の最大保持件数
   historyPersistEnabled: boolean; // Persist history on restart / 再起動時に履歴を保持
 }
+
+// Single-field config updater signature / 単一フィールド設定更新関数のシグネチャ
+export type UpdateConfigFn = <K extends keyof OscConfig>(key: K, value: OscConfig[K]) => void;

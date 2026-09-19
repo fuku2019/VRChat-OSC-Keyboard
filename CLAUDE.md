@@ -43,7 +43,7 @@ npm run native:check       # native/ に対する cargo clippy (-D warnings)
 
 Electron IPCで通信する2つのJSランタイムと、1つのネイティブモジュールで構成される:
 
-1. **レンダラー(ルート直下の`App.tsx`、`components/`、`hooks/`、`stores/`、`services/`、`constants/`、`types/`)** — Vite/React 19のSPA。`src/`を持たないフラット構成で、パスエイリアス`@/*`はリポジトリルートを指す。状態は`stores/configStore.ts` (Zustand)に集約され、`localStorage`に永続化されるとともに、OSCポートなど一部はメインプロセスへ同期される。アプリの振る舞いの大半は`App.tsx`で合成されるフックにある: `useIME`、`useKeyboardController`、`useOscSender`、`useSendHistory`、`useTypingIndicator`、`useTheme`、`useVrScrollSelectionGuard`。メインプロセスへの橋渡しは`window.electronAPI` (`electron/preload.js`)のみ。Electron外(`npm run dev`)ではこのグローバルが存在せず、OSCは`vite.config.ts`の`oscBridgePlugin`が起動する開発専用WebSocketブリッジを経由する。
+1. **レンダラー(ルート直下の`App.tsx`、`components/`、`hooks/`、`stores/`、`services/`、`constants/`、`types/`)** — Vite/React 19のSPA。`src/`を持たないフラット構成。`tsconfig.json`には`@/*`(リポジトリルート)の`paths`があるが、`vite.config.ts`にも`vitest.config.ts`にも`resolve.alias`がないため**実行時には解決されない**(型検査は通るがビルドで壊れる)。importは必ず相対パスで書くこと。状態は`stores/configStore.ts` (Zustand)に集約され、`localStorage`に永続化されるとともに、OSCポートなど一部はメインプロセスへ同期される。アプリの振る舞いの大半は`App.tsx`で合成されるフックにある: `useIME`、`useKeyboardController`、`useOscSender`、`useSendHistory`、`useTypingIndicator`、`useTheme`、`useVrScrollSelectionGuard`。メインプロセスへの橋渡しは`window.electronAPI` (`electron/preload.js`)のみ。Electron外(`npm run dev`)ではこのグローバルが存在せず、OSCは`vite.config.ts`の`oscBridgePlugin`が起動する開発専用WebSocketブリッジを経由する。
 
 2. **Electronメインプロセス(`electron/`、素のESM `.js`)** — アプリのライフサイクル(`main.js`)、ウィンドウ生成(`services/WindowManager.js`)、および関心ごとに`electron/services/ipc/*IpcHandlers.js`へ分割され`electron/services/IpcHandlers.js`で一括登録されるIPCハンドラを担う。主要サブシステム:
    - `services/OscBridgeService.js` — 本番用のOSCブリッジ(vite devプラグインのElectron側相当)。
@@ -59,6 +59,17 @@ Electron IPCで通信する2つのJSランタイムと、1つのネイティブ�
 
 ### VRコントローラー操作のデータフロー
 コントローラーの姿勢(ネイティブモジュール、`input_handler.js`でポーリング) → レイとオーバーレイの交差判定 → IPCでカーソル/トリガーイベント送信 → `CursorOverlay.tsx`と`useVrScrollSelectionGuard`が疑似カーソルを描画し、トリガー押下をクリックへ変換。対象はデスクトップウィンドウと同一のDOM UIで、それを`overlay/capture.js`がオーバーレイへキャプチャしている。
+
+### 設定モーダルの構成
+
+`components/SettingsModal/`はレンダラー内で唯一のサブディレクトリ構成で、`App.tsx`からは`'./components/SettingsModal'`(=`index.tsx`)としてdefault importされる。1ファイルに戻ると1000行超になるため、次の置き場所を守ること。
+
+- `index.tsx`は**シェルだけ**を持つ(サイドバー、タブ切替、`ConfirmDialog`、フックの合成)。設定項目そのもののUIは置かない。
+- 設定項目は該当タブ(`GeneralTab` / `AppearanceTab` / `ConnectivityTab` / `SoundTab`)へ追加する。`index.tsx`に直接足さない。
+- 行のUIとクラス定数は`settingsRows.tsx`の`ToggleRow` / `TextSwitchRow` / `SettingLabel` / `SECTION_LABEL_CLASS` / `selectedBtnClass`を再利用し、同じマークアップを新たに書かない。
+- stateと副作用は`index.tsx`やタブに書かず、`hooks/`の専用フックへ置く: `useSettingsDraft`(ドラフト設定と数値入力)、`useSteamVrSettings`(SteamVRの自動起動登録とバインディング表示)、`useUpdateCheckStatus`(手動アップデート確認)、`useModalFocusTrap`(Tab巡回とEscape)、`useOverlayScrollForward`(VRスクロール転送)。
+- `useSettingsDraft`のドラフトは**開いた瞬間にだけストアから再同期される一方、変更は即座にストアへ書き戻される**。この二重の挙動は`hooks/useSettingsDraft.test.ts`が固定しているので、変更するときはテストも確認すること。
+- 設定項目を1つ増やすだけなら通常は3箇所で済む: `types.ts`の`OscConfig`へフィールド追加(既定値は`constants/appConfig.ts`と`stores/configStore.ts`)、`constants/translations.ts`へ日英の文言追加、該当タブへ`ToggleRow`などを追加。
 
 ## ポートと実行時の前提
 
