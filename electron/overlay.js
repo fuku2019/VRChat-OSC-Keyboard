@@ -4,6 +4,8 @@ import { createOverlayManager, getAssetPath } from './overlay/native.js';
 import { state } from './overlay/state.js';
 import {
   addCaptureFrameListener,
+  pauseCapture,
+  resumeCapture,
   startCapture,
   stopCapture,
 } from './overlay/capture.js';
@@ -454,6 +456,7 @@ export function showOverlayAll() {
     state.backOverlayEnabled = true; // Mark as intuitively enabled
   }
   setOverlayVisible(true);
+  resumeCapture();
 }
 
 export function hideOverlayAll() {
@@ -463,6 +466,7 @@ export function hideOverlayAll() {
     state.overlayManager.hideOverlay(state.overlayHandleBack);
   }
   setOverlayVisible(false);
+  pauseCapture();
 }
 
 export function toggleOverlayAll() {

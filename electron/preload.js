@@ -6,6 +6,37 @@ const triggerStateListenerMap = new WeakMap();
 const inputScrollListenerMap = new WeakMap();
 const downloadProgressListenerMap = new WeakMap();
 
+// The settings window added three more push channels at once. This collapses
+// the subscribe/unsubscribe pair that each of them would otherwise repeat.
+// 設定ウィンドウの追加でプッシュ用チャンネルが一度に3つ増えた。それぞれで書き写す
+// ことになる購読/解除の組を、これでまとめる。
+function listenerPair(channel) {
+  const listenerMap = new WeakMap();
+  return {
+    on: (callback) => {
+      if (typeof callback !== 'function') return;
+      const previous = listenerMap.get(callback);
+      if (previous) {
+        ipcRenderer.removeListener(channel, previous);
+      }
+      const wrapped = (_event, data) => callback(data);
+      listenerMap.set(callback, wrapped);
+      ipcRenderer.on(channel, wrapped);
+    },
+    off: (callback) => {
+      if (typeof callback !== 'function') return;
+      const wrapped = listenerMap.get(callback);
+      if (!wrapped) return;
+      ipcRenderer.removeListener(channel, wrapped);
+      listenerMap.delete(callback);
+    },
+  };
+}
+
+const configBroadcast = listenerPair('config-broadcast');
+const showTutorialRequest = listenerPair('show-tutorial');
+const clearHistoryRequest = listenerPair('clear-history');
+
 // Expose protected methods to renderer process via contextBridge
 // contextBridge経由でレンダラープロセスに保護されたメソッドを公開
 contextBridge.exposeInMainWorld('electronAPI', {
@@ -161,4 +192,21 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openSteamVrBindingUi: () => ipcRenderer.invoke('open-steamvr-binding-ui'),
   // Check if running in debug mode  デバッグモードが有効か確認
   isDebugMode: () => ipcRenderer.invoke('is-debug-mode'),
+
+  // Cross-window config sync / ウィンドウ間の設定同期
+  broadcastConfig: (config) => ipcRenderer.send('config-changed', config),
+  onConfigBroadcast: configBroadcast.on,
+  removeConfigBroadcastListener: configBroadcast.off,
+
+  // Actions the settings window delegates to the keyboard window
+  // 設定ウィンドウがキーボードウィンドウへ委譲する操作
+  requestShowTutorial: () => ipcRenderer.invoke('request-show-tutorial'),
+  requestClearHistory: () => ipcRenderer.invoke('request-clear-history'),
+  onShowTutorial: showTutorialRequest.on,
+  removeShowTutorialListener: showTutorialRequest.off,
+  onClearHistory: clearHistoryRequest.on,
+  removeClearHistoryListener: clearHistoryRequest.off,
+
+  // Which window this is, and whether VR mode is active / 自分がどのウィンドウか、VRモードが有効か
+  getLaunchInfo: () => ipcRenderer.invoke('get-launch-info'),
 });

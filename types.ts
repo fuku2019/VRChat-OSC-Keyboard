@@ -33,6 +33,14 @@ export interface KeyConfig {
 // Update check interval type / 更新確認間隔の型
 export type UpdateCheckInterval = 'startup' | 'daily' | 'weekly' | 'manual';
 
+// How the keyboard window is rendered when the VR overlay is up.
+// 'auto' keeps the historical behaviour: the keyboard stays a normal desktop
+// window unless something explicitly asked for VR mode.
+// VRオーバーレイ起動時にキーボードウィンドウをどう描画するか。
+// 'auto' は従来の挙動を保つ。明示的にVRモードが要求されない限り、キーボードは
+// 通常のデスクトップウィンドウのままになる。
+export type VrOsrMode = 'auto' | 'always' | 'never';
+
 export interface OscConfig {
   bridgeUrl: string;
   oscPort: number; // VRChat OSC port (default: 9000) / VRChat OSCポート（デフォルト: 9000）
@@ -46,6 +54,7 @@ export interface OscConfig {
   accentColor: string;
   updateCheckInterval: UpdateCheckInterval;
   disableOverlay: boolean;
+  vrOsrMode: VrOsrMode;
   steamVrAutoLaunch: boolean;
   historyMaxCount: number; // Max send history entries / 送信履歴の最大保持件数
   historyPersistEnabled: boolean; // Persist history on restart / 再起動時に履歴を保持

@@ -1,4 +1,10 @@
 import { state } from './state.js';
+import {
+  perfNow,
+  recordDrop,
+  recordFrame,
+  recordStage,
+} from './perf.js';
 
 const DEFAULT_CAPTURE_FPS = 60;
 const MIN_CAPTURE_FPS = 1;
@@ -82,11 +88,21 @@ export function addCaptureFrameListener(listener) {
 function updateOverlayFromImage(image) {
   if (!state.overlayManager || state.overlayHandle === null) return false;
 
-  const size = image.getSize();
-  if (!size || size.width === 0 || size.height === 0) return false;
+  const frameStartedAt = perfNow();
 
+  const size = image.getSize();
+  if (!size || size.width === 0 || size.height === 0) {
+    recordDrop('empty-size');
+    return false;
+  }
+
+  const bitmapStartedAt = perfNow();
   const bgraBuffer = getBitmapBuffer(image);
-  if (!bgraBuffer || bgraBuffer.length === 0) return false;
+  recordStage('bitmap', bitmapStartedAt);
+  if (!bgraBuffer || bgraBuffer.length === 0) {
+    recordDrop('empty-buffer');
+    return false;
+  }
 
   let width = size.width;
   let height = size.height;
@@ -114,6 +130,7 @@ function updateOverlayFromImage(image) {
         );
         state.lastSizeMismatchTime = now;
       }
+      recordDrop('size-mismatch');
       return false;
     }
 
@@ -136,6 +153,7 @@ function updateOverlayFromImage(image) {
 
   // Update texture directly via D3D11 shared texture / D3D11共有テクスチャ経由で直接テクスチャを更新
   // Uses GPU memory sharing - no file I/O, minimal flickering / GPUメモリ共有を使用 - ファイルI/Oなし、点滅最小化
+  const submitStartedAt = perfNow();
   state.overlayManager.setOverlayTexturesD3D11(
     state.overlayHandle,
     state.overlayHandleBack ?? INVALID_OVERLAY_HANDLE,
@@ -143,6 +161,9 @@ function updateOverlayFromImage(image) {
     width,
     height,
   );
+  recordStage('submit', submitStartedAt);
+  recordStage('total', frameStartedAt);
+  recordFrame();
   notifyCaptureFrame({ width, height, timestamp: Date.now() });
   return true;
 }
@@ -227,6 +248,7 @@ export function startCapture(webContents, fps = 60) {
     };
 
     webContents.on('paint', state.paintHandler);
+    pauseWhileHidden();
     return;
   }
 
@@ -237,6 +259,7 @@ export function startCapture(webContents, fps = 60) {
       stopCapture();
       return;
     }
+    if (state.capturePaused) return;
     if (state.captureInProgress) {
       scheduleNext(1);
       return;
@@ -252,6 +275,7 @@ export function startCapture(webContents, fps = 60) {
       }
       updateOverlayFromImage(image);
     } catch (error) {
+      recordDrop('capture-error');
       if (!error.message?.includes('destroyed')) {
         console.error('Capture error:', error);
       } else {
@@ -274,7 +298,80 @@ export function startCapture(webContents, fps = 60) {
     state.captureTimer = setTimeout(tick, delayMs);
   }
 
+  // The polling loop lives in these closures, so resuming it needs a handle
+  // back into them. / ポーリングループはこのクロージャの中にあるため、再開には
+  // ここへ戻る手がかりが要る。
+  state.captureResume = () => scheduleNext(0);
+
   scheduleNext(0);
+  pauseWhileHidden();
+}
+
+/**
+ * The overlay is created hidden and only appears on the controller toggle, so
+ * capture starts idle rather than burning frames for something off screen.
+ * オーバーレイは非表示の状態で作られ、コントローラーのトグルで初めて現れる。
+ * そのためキャプチャは停止状態から始め、画面に出ていないもののためにフレームを
+ * 焼き続けないようにする。
+ */
+function pauseWhileHidden() {
+  if (!state.overlayVisible) {
+    pauseCapture();
+  }
+}
+
+/**
+ * Stop producing overlay frames while the overlay is hidden.
+ * オーバーレイが非表示の間、フレーム生成を止める。
+ *
+ * The overlay spends most of a session hidden behind the controller toggle, and
+ * until now it kept capturing and calling SetOverlayTexture the whole time for
+ * something nobody could see.
+ * オーバーレイはセッションの大半をコントローラーのトグルの向こう側で非表示のまま
+ * 過ごすが、これまではその間もキャプチャと SetOverlayTexture を回し続けており、
+ * 誰にも見えないものを描き続けていた。
+ */
+export function pauseCapture() {
+  if (!state.captureWebContents || state.capturePaused) return;
+  state.capturePaused = true;
+
+  if (state.captureTimer) {
+    clearTimeout(state.captureTimer);
+    state.captureTimer = null;
+  }
+  const webContents = state.captureWebContents;
+  if (state.paintHandler && typeof webContents.stopPainting === 'function') {
+    webContents.stopPainting();
+  }
+  console.log('Capture paused');
+}
+
+/**
+ * Resume frame production when the overlay comes back.
+ * オーバーレイが戻ったときにフレーム生成を再開する。
+ */
+export function resumeCapture() {
+  if (!state.captureWebContents || !state.capturePaused) return;
+  state.capturePaused = false;
+
+  const webContents = state.captureWebContents;
+  if (state.paintHandler) {
+    if (typeof webContents.startPainting === 'function') {
+      webContents.startPainting();
+    }
+    // Offscreen rendering only paints on damage, so without this the overlay
+    // would come back holding the frame from before it was hidden until
+    // something on the page happened to change.
+    // オフスクリーン描画は変化があったときしか描かないため、これがないと
+    // オーバーレイは非表示前のフレームを抱えたまま戻り、ページに何か変化が
+    // 起きるまでそのままになる。
+    if (typeof webContents.invalidate === 'function') {
+      webContents.invalidate();
+    }
+  } else if (state.captureResume) {
+    state.captureResume();
+  }
+  console.log('Capture resumed');
 }
 
 /**
@@ -328,6 +425,8 @@ export function stopCapture() {
   state.renderGoneHandler = null;
   state.captureWebContents = null;
   state.captureInProgress = false;
+  state.capturePaused = false;
+  state.captureResume = null;
   state.lastFrameBuffer = null;
   state.lastFrameImage = null;
   state.frameRetention.length = 0;

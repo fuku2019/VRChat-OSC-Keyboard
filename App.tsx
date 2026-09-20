@@ -267,6 +267,30 @@ const App = () => {
     checkDebugMode();
   }, []);
 
+  // Serve requests from the desktop settings window. In VR mode that window is
+  // the only one the user can click, but the tutorial and the send history live
+  // here, so it asks the main process to relay the action to us.
+  // デスクトップ設定ウィンドウからの依頼に応じる。VRモードではユーザーが操作できる
+  // のはあちらのウィンドウだけだが、チュートリアルと送信履歴はこちらにあるため、
+  // メインプロセスを経由して操作が中継されてくる。
+  useEffect(() => {
+    const api = window.electronAPI;
+    if (!api?.onShowTutorial || !api?.onClearHistory) return;
+
+    const showTutorial = () => {
+      setIsSettingsOpen(false);
+      setIsTutorialOpen(true);
+    };
+    const clearSendHistory = () => clearHistory();
+
+    api.onShowTutorial(showTutorial);
+    api.onClearHistory(clearSendHistory);
+    return () => {
+      api.removeShowTutorialListener?.(showTutorial);
+      api.removeClearHistoryListener?.(clearSendHistory);
+    };
+  }, [clearHistory]);
+
   // Handle textarea blur - stop typing indicator / textarea ブラー時 - タイピングインジケーターを停止
   const handleBlur = () => {
     cancelTypingTimeout();

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { OscConfig } from '../types';
+import { OscConfig, VrOsrMode } from '../types';
 import { STORAGE_KEYS, DEFAULT_CONFIG } from '../constants';
 import { sanitizeAccentColor } from '../utils/colorUtils';
 
@@ -16,9 +16,17 @@ const isValidKeySoundVariant = (
 ): value is 'soft' | 'mechanical' =>
   value === 'soft' || value === 'mechanical';
 
+const isValidVrOsrMode = (value: unknown): value is VrOsrMode =>
+  value === 'auto' || value === 'always' || value === 'never';
+
 // Store state type / ストアの状態型
 interface ConfigStore {
   config: OscConfig;
+  // Bumped when another window's change arrives, so components holding a draft
+  // copy of the config can re-sync from the store.
+  // 他ウィンドウの変更が届いたときに進む。設定のドラフトを持つコンポーネントが
+  // ストアから再同期するための目印。
+  externalRevision: number;
   setConfig: (config: OscConfig) => void;
   updateConfig: <K extends keyof OscConfig>(
     key: K,
@@ -57,6 +65,9 @@ const loadConfigFromStorage = (): OscConfig => {
           parsed.updateCheckInterval || DEFAULT_CONFIG.UPDATE_CHECK_INTERVAL,
         disableOverlay:
           parsed.disableOverlay ?? DEFAULT_CONFIG.DISABLE_OVERLAY,
+        vrOsrMode: isValidVrOsrMode(parsed.vrOsrMode)
+          ? parsed.vrOsrMode
+          : DEFAULT_CONFIG.VR_OSR_MODE,
         steamVrAutoLaunch:
           parsed.steamVrAutoLaunch ?? DEFAULT_CONFIG.STEAMVR_AUTO_LAUNCH,
         historyMaxCount:
@@ -83,6 +94,7 @@ const loadConfigFromStorage = (): OscConfig => {
     accentColor: DEFAULT_CONFIG.ACCENT_COLOR,
     updateCheckInterval: DEFAULT_CONFIG.UPDATE_CHECK_INTERVAL,
     disableOverlay: DEFAULT_CONFIG.DISABLE_OVERLAY,
+    vrOsrMode: DEFAULT_CONFIG.VR_OSR_MODE,
     steamVrAutoLaunch: DEFAULT_CONFIG.STEAMVR_AUTO_LAUNCH,
     historyMaxCount: DEFAULT_CONFIG.HISTORY_MAX_COUNT,
     historyPersistEnabled: DEFAULT_CONFIG.HISTORY_PERSIST_ENABLED,
@@ -101,6 +113,7 @@ const saveConfigToStorage = (config: OscConfig) => {
 // Create Zustand store / Zustandストアを作成
 export const useConfigStore = create<ConfigStore>((set, get) => ({
   config: loadConfigFromStorage(),
+  externalRevision: 0,
 
   // Set entire config / 設定全体を設定
   setConfig: (config) => {
@@ -140,8 +153,11 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
     if (electronAPI?.setOverlaySettings) {
       electronAPI.setOverlaySettings({
         disableOverlay: normalizedConfig.disableOverlay,
+        vrOsrMode: normalizedConfig.vrOsrMode,
       });
     }
+
+    electronAPI?.broadcastConfig?.(normalizedConfig);
   },
 
   // Update specific config field / 特定の設定フィールドを更新
@@ -174,11 +190,13 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
 
     // Sync overlay settings if changed / オーバーレイ設定を同期
     if (
-      key === 'disableOverlay' &&
+      (key === 'disableOverlay' || key === 'vrOsrMode') &&
       window.electronAPI?.setOverlaySettings
     ) {
       window.electronAPI.setOverlaySettings({ [key]: normalizedValue });
     }
+
+    window.electronAPI?.broadcastConfig?.(newConfig);
   },
 
   // Sync OSC port with Electron Main process / ElectronのMainプロセスとOSCポートを同期
@@ -188,6 +206,22 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
     }
   },
 }));
+
+// Adopt a change made in the other window / 他のウィンドウで行われた変更を取り込む
+if (typeof window !== 'undefined' && window.electronAPI?.onConfigBroadcast) {
+  window.electronAPI.onConfigBroadcast((incoming: OscConfig) => {
+    // Write straight to the store rather than going through setConfig: that
+    // would broadcast the value back and leave the two windows echoing it at
+    // each other forever.
+    // setConfig を経由せず直接ストアへ書く。経由すると値を送り返してしまい、
+    // 2つのウィンドウが延々とエコーし合うことになる。
+    saveConfigToStorage(incoming);
+    useConfigStore.setState((state) => ({
+      config: incoming,
+      externalRevision: state.externalRevision + 1,
+    }));
+  });
+}
 
 // Initialize OSC port sync once on module load / モジュール読み込み時に一度だけOSCポートを同期
 if (typeof window !== 'undefined' && window.electronAPI) {
@@ -202,6 +236,7 @@ if (typeof window !== 'undefined' && window.electronAPI) {
     if (window.electronAPI?.setOverlaySettings) {
       window.electronAPI.setOverlaySettings({
         disableOverlay: currentConfig.disableOverlay,
+        vrOsrMode: currentConfig.vrOsrMode,
       });
     }
 

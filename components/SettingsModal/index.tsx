@@ -31,6 +31,13 @@ const TABS = [
 ] as const;
 
 interface SettingsModalProps {
+  // 'panel' fills a window of its own instead of floating over the keyboard.
+  // Used by the desktop settings window in VR mode, where the keyboard is
+  // rendered offscreen and there is nothing to float over.
+  // 'panel' はキーボードの上に浮かぶ代わりに、専用ウィンドウ全体を占める。
+  // VRモードのデスクトップ設定ウィンドウが使う。キーボードはオフスクリーン描画
+  // されており、浮かぶ相手が存在しないためである。
+  variant?: 'modal' | 'panel';
   isOpen: boolean;
   onClose: () => void;
   onShowTutorial: () => void;
@@ -52,6 +59,7 @@ interface SettingsModalProps {
 }
 
 const SettingsModal: FC<SettingsModalProps> = ({
+  variant = 'modal',
   isOpen,
   onClose,
   onShowTutorial,
@@ -81,10 +89,17 @@ const SettingsModal: FC<SettingsModalProps> = ({
     handleHistoryMaxCountCommit,
     handleHistoryMaxCountKeyDown,
   } = useSettingsDraft(isOpen);
-  const { shouldRender, animationClass, modalAnimationClass } =
-    useModalAnimation(isOpen);
+  const isPanel = variant === 'panel';
+  const animation = useModalAnimation(isOpen);
+  // A panel owns its window, so it is always mounted and never animates in.
+  // パネルは自身のウィンドウを占有するため、常にマウントされ、出現アニメーションも行わない。
+  const shouldRender = isPanel ? true : animation.shouldRender;
+  const animationClass = isPanel ? '' : animation.animationClass;
+  const modalAnimationClass = isPanel ? '' : animation.modalAnimationClass;
   const { modalRef } = useModalFocusTrap(isOpen, shouldRender, onClose);
-  const { contentRef } = useOverlayScrollForward(isOpen);
+  // VR scroll forwarding only makes sense for the window the overlay captures.
+  // VRスクロールの転送はオーバーレイがキャプチャするウィンドウでのみ意味を持つ。
+  const { contentRef } = useOverlayScrollForward(!isPanel && isOpen);
 
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
   const [isHistoryClearConfirmOpen, setIsHistoryClearConfirmOpen] = useState(false);
@@ -126,7 +141,11 @@ const SettingsModal: FC<SettingsModalProps> = ({
 
   return (
     <div
-      className={`fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 ${animationClass}`}
+      className={
+        isPanel
+          ? 'fixed inset-0 z-[110] flex dark:bg-slate-950 pure-black:bg-black bg-slate-50'
+          : `fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 ${animationClass}`
+      }
     >
       <div
         ref={modalRef}
@@ -134,7 +153,11 @@ const SettingsModal: FC<SettingsModalProps> = ({
         aria-modal='true'
         aria-labelledby={SETTINGS_MODAL_TITLE_ID}
         tabIndex={-1}
-        className={`dark:bg-slate-900/80 pure-black:bg-black/80 bg-white/80 w-full max-w-4xl h-[85vh] flex rounded-2xl border dark:border-white/10 pure-black:border-slate-800 border-black/10 shadow-2xl overflow-hidden backdrop-blur-2xl transition-colors duration-300 ${modalAnimationClass}`}
+        className={
+          isPanel
+            ? 'dark:bg-slate-900/80 pure-black:bg-black/80 bg-white/80 w-full h-full flex overflow-hidden transition-colors duration-300'
+            : `dark:bg-slate-900/80 pure-black:bg-black/80 bg-white/80 w-full max-w-4xl h-[85vh] flex rounded-2xl border dark:border-white/10 pure-black:border-slate-800 border-black/10 shadow-2xl overflow-hidden backdrop-blur-2xl transition-colors duration-300 ${modalAnimationClass}`
+        }
       >
         {/* Sidebar */}
         <div className='w-64 border-r dark:border-white/10 border-black/10 flex flex-col bg-slate-100/30 dark:bg-slate-950/30'>

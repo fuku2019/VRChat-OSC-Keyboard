@@ -14,6 +14,8 @@ export const state = {
   paintHandler: null,
   captureWebContents: null,
   captureInProgress: false,
+  capturePaused: false,
+  captureResume: null,
   destroyedHandler: null,
   renderGoneHandler: null,
   lastSizeMismatchTime: 0,

@@ -77,6 +77,12 @@ pub struct OverlayManager {
     d3d11: Option<D3D11Context>,
     poses_cache: RefCell<Vec<vr::TrackedDevicePose_t>>,
     poses_timestamp: Cell<Option<Instant>>,
+    /// How far ahead of now poses are predicted, in seconds.
+    /// ポーズを現在からどれだけ先に予測するか (秒)。
+    pose_prediction_seconds: Cell<f32>,
+    /// Whether controllers that are asleep or set down are excluded.
+    /// 休止中・置かれたままのコントローラーを除外するかどうか。
+    filter_idle_controllers: Cell<bool>,
     input_cache: RefCell<InputActionCache>,
     _vr_token: Option<isize>,
     // Guards teardown against running twice (explicit dispose + Drop) / 明示的な dispose と Drop の二重解放を防ぐ
@@ -131,6 +137,31 @@ impl OverlayManager {
     /// Mark poses cache as freshly updated / ポーズキャッシュを更新済みとしてマーク
     pub(super) fn mark_poses_cache(&self) {
         self.poses_timestamp.set(Some(Instant::now()));
+    }
+
+    /// Whether idle controllers are filtered out / 休止中のコントローラーを除外するか
+    pub(super) fn filter_idle_controllers(&self) -> bool {
+        self.filter_idle_controllers.get()
+    }
+
+    /// Toggle filtering of idle controllers / 休止中コントローラーの除外を切り替える
+    pub(super) fn apply_idle_controller_filter(&self, enabled: bool) {
+        self.filter_idle_controllers.set(enabled);
+    }
+
+    /// Read the pose prediction horizon / ポーズ予測の先読み時間を読む
+    pub(super) fn pose_prediction_seconds(&self) -> f32 {
+        self.pose_prediction_seconds.get()
+    }
+
+    /// Set the pose prediction horizon / ポーズ予測の先読み時間を設定する
+    pub(super) fn set_pose_prediction(&self, seconds: f32) {
+        self.pose_prediction_seconds.set(seconds);
+        // Drop the cache so the next read is predicted with the new horizon
+        // rather than reusing a pose computed for the old one.
+        // 古い先読み時間で計算されたポーズを使い回さず、次の読み取りが新しい
+        // 先読み時間で予測されるようキャッシュを捨てる。
+        self.poses_timestamp.set(None);
     }
 
     pub(super) fn input(&self) -> napi::Result<&vr::VR_IVRInput_FnTable> {
@@ -311,6 +342,8 @@ impl OverlayManager {
                 d3d11: d3d11_ctx,
                 poses_cache: RefCell::new(create_poses_cache()),
                 poses_timestamp: Cell::new(None),
+                pose_prediction_seconds: Cell::new(0.0),
+                filter_idle_controllers: Cell::new(true),
                 input_cache: RefCell::new(InputActionCache::new()),
                 _vr_token: init_token,
                 disposed: false,

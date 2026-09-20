@@ -14,8 +14,12 @@ import {
   cleanup as cleanupBridge,
 } from './services/OscBridgeService.js';
 import {
-  createWindow,
-  getMainWindow,
+  createKeyboardWindow,
+  createSettingsWindow,
+  getKeyboardWindow,
+  getSettingsWindow,
+  getStoredLaunchMode,
+  setStoredLaunchMode,
   setAppTitle,
   getOverlaySettings,
   getSteamVrSettings,
@@ -38,8 +42,22 @@ import {
   startCapture,
   stopCapture,
 } from './overlay.js';
-import { startInputLoop, stopInputLoop } from './input_handler.js';
+import {
+  setCursorEpsilon,
+  setFilterIdleControllers,
+  setPointerFilter,
+  setPoseAheadSeconds,
+  startInputLoop,
+  stopInputLoop,
+} from './input_handler.js';
 import { isSteamVrRunningAsync } from './overlay/native.js';
+import { parseLaunchArgs } from './cli.js';
+import { loadDebugConfig } from './debugConfig.js';
+import { setPerfLogEnabled } from './overlay/perf.js';
+import {
+  resolveInitialWindowMode,
+  resolveFinalWindowMode,
+} from './services/launchMode.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -49,15 +67,36 @@ const packageJsonPath = path.join(__dirname, '../package.json');
 const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
 const APP_VERSION = packageJson.version;
 
+// Parse launch arguments first: everything below may depend on them.
+// 以降の処理が参照しうるので、起動引数を最初に解析する。
+const launchArgs = parseLaunchArgs(process.argv);
+
 // Load debug config  デバッグ設定ファイルを読み込む
-let debugConfig = { enableDebugMode: false };
-const debugConfigPath = path.join(__dirname, '../debug.config.json');
-if (fs.existsSync(debugConfigPath)) {
-  try {
-    debugConfig = JSON.parse(fs.readFileSync(debugConfigPath, 'utf-8'));
-  } catch (err) {
-    console.warn('Failed to load debug.config.json:', err.message);
-  }
+// app.getPath('userData') is available before app.whenReady().
+// app.getPath('userData') は app.whenReady() より前でも利用できる。
+const debugConfig = loadDebugConfig({
+  userDataDir: app.getPath('userData'),
+  appDir: path.join(__dirname, '..'),
+  launchArgs,
+});
+
+// Capture instrumentation is off unless --perf-log was passed.
+// --perf-log が渡されない限りキャプチャ計測は無効のままにする。
+setPerfLogEnabled(launchArgs.perfLog);
+
+// Pointer smoothing keeps its defaults unless --pointer-filter overrides them.
+// ポインタ平滑化は --pointer-filter で上書きされない限り既定値のままにする。
+if (launchArgs.pointerFilter) {
+  setPointerFilter(launchArgs.pointerFilter);
+}
+if (launchArgs.cursorEpsilon !== null) {
+  setCursorEpsilon(launchArgs.cursorEpsilon);
+}
+if (launchArgs.poseAheadSec !== null) {
+  setPoseAheadSeconds(launchArgs.poseAheadSec);
+}
+if (launchArgs.keepIdleCursors) {
+  setFilterIdleControllers(false);
 }
 
 let APP_TITLE = `VRChat OSC Keyboard v${APP_VERSION}`;
@@ -69,7 +108,17 @@ if (debugConfig.enableDebugMode) {
 setAppTitle(APP_TITLE);
 
 // Register IPC handlers / IPCハンドラを登録
-registerIpcHandlers(APP_VERSION, debugConfig);
+// The launch info is read lazily: the window mode is not decided until
+// app.whenReady(), well after this call.
+// 起動情報は遅延して読む。ウィンドウモードが決まるのは app.whenReady() のときで、
+// この呼び出しよりずっと後になる。
+registerIpcHandlers(APP_VERSION, debugConfig, {
+  getLaunchInfo: () => ({
+    windowMode: currentWindowMode,
+    isOsr: currentWindowMode === 'vr',
+    debug: debugConfig.enableDebugMode === true,
+  }),
+});
 
 // Disable Chromium background throttling for consistent VR Overlay FPS
 // VRオーバーレイのFPSを安定させるため、Chromiumのバックグラウンド最適化および隠蔽保護を無効化
@@ -77,6 +126,82 @@ app.commandLine.appendSwitch('disable-background-timer-throttling');
 app.commandLine.appendSwitch('disable-backgrounding-occluded-windows');
 app.commandLine.appendSwitch('disable-renderer-backgrounding');
 app.commandLine.appendSwitch('disable-features', 'CalculateNativeWinOcclusion');
+
+// The window mode currently in effect / 現在適用されているウィンドウモード
+let currentWindowMode = 'desktop';
+
+// Settings windows that already carry the quit hook / 終了フックを設置済みの設定ウィンドウ
+const settingsQuitHooked = new WeakSet();
+
+/**
+ * Apply --vr-osr / --no-vr-osr and refuse VR mode with the overlay disabled.
+ *
+ * Forcing offscreen on is the same request as VR mode, because an offscreen
+ * keyboard always comes with a settings window - without one there would be no
+ * visible window at all.
+ * --vr-osr / --no-vr-osr を適用し、オーバーレイ無効でのVRモードを拒否する。
+ *
+ * オフスクリーンを強制することはVRモードの要求と同じ意味になる。オフスクリーンの
+ * キーボードには必ず設定ウィンドウが伴うためで、これがないと可視ウィンドウが
+ * 一切なくなってしまう。
+ */
+function resolveWindowMode(baseMode) {
+  let mode = baseMode;
+  if (launchArgs.osr === true) mode = 'vr';
+  if (launchArgs.osr === false) mode = 'desktop';
+
+  if (mode === 'vr' && getOverlaySettings().disableOverlay) {
+    console.warn(
+      '[vr] VR window mode ignored: the VR overlay is disabled in settings.',
+    );
+    return 'desktop';
+  }
+  return mode;
+}
+
+/**
+ * Build the window set for a mode, replacing whatever is already open.
+ * あるモードに対応するウィンドウ一式を作る。既に開いているものは置き換える。
+ */
+function applyWindowMode(mode) {
+  const offscreen = mode === 'vr';
+
+  // Capture and the input loop are bound to a specific webContents, so they
+  // have to be torn down before the window they point at goes away.
+  // キャプチャと入力ループは特定の webContents に結び付いているため、参照先の
+  // ウィンドウが消える前に停止しなければならない。
+  const existing = getKeyboardWindow();
+  if (existing && !existing.isDestroyed()) {
+    stopCapture();
+    stopInputLoop();
+    existing.destroy();
+  }
+
+  currentWindowMode = mode;
+  createKeyboardWindow({ offscreen });
+
+  if (!offscreen) {
+    const settings = getSettingsWindow();
+    if (settings && !settings.isDestroyed()) settings.destroy();
+    return;
+  }
+
+  const settings = createSettingsWindow();
+  // In VR mode this is the only window the user can see or click, and
+  // window-all-closed never fires while the offscreen keyboard window is alive.
+  // Closing it therefore has to mean quitting, or the app becomes unkillable
+  // short of the task manager.
+  // VRモードではこれがユーザーに見えて操作できる唯一のウィンドウであり、
+  // オフスクリーンのキーボードウィンドウが生きている間 window-all-closed は
+  // 発火しない。そのため閉じる操作は終了を意味する必要がある。さもないと
+  // タスクマネージャー以外でアプリを終了できなくなる。
+  if (settings && !settingsQuitHooked.has(settings)) {
+    settingsQuitHooked.add(settings);
+    settings.once('closed', () => {
+      if (currentWindowMode === 'vr') app.quit();
+    });
+  }
+}
 
 // Let pending IPC and renderer work run between blocking startup steps.
 // ブロッキングな起動処理の合間に、保留中のIPCやレンダラーの処理を進めさせる。
@@ -149,11 +274,11 @@ async function bootstrapSteamVr() {
 }
 
 /**
- * Run the SteamVR bootstrap on the next event-loop tick, after createWindow() has
+ * Run the SteamVR bootstrap on the next event-loop tick, after applyWindowMode() has
  * returned control. This still lets the renderer's startup IPC interleave with the
  * bootstrap's blocking steps (each yields via yieldToEventLoop), without pushing VR
  * init all the way out to did-finish-load.
- * createWindow() が制御を返した直後、次のイベントループティックでSteamVR初期化を実行する。
+ * applyWindowMode() が制御を返した直後、次のイベントループティックでSteamVR初期化を実行する。
  * bootstrap内の各ブロッキング処理はyieldToEventLoopで制御を返すため、レンダラーの
  * 起動時IPCとの間で処理が交互に進む。VR初期化をdid-finish-loadまで遅延させはしない。
  */
@@ -164,13 +289,35 @@ function scheduleSteamVrBootstrap() {
       overlayHandles = await bootstrapSteamVr();
     } catch (error) {
       console.error('SteamVR bootstrap failed:', error);
-      return;
     }
+
+    // Now that the overlay has reported back, settle on the real mode. This is
+    // also the safety net for the reverse case: if the window was opened
+    // offscreen but the overlay never came up, it is rebuilt as a normal window
+    // so the user is not left with an invisible app.
+    // オーバーレイの結果が出たので本来のモードを確定する。ここは逆方向の安全網でも
+    // ある。オフスクリーンで開いたのにオーバーレイが起動しなかった場合は通常
+    // ウィンドウとして作り直し、ユーザーが見えないアプリを抱えないようにする。
+    const finalMode = resolveWindowMode(
+      resolveFinalWindowMode({
+        launchArgs,
+        vrOsrMode: getOverlaySettings().vrOsrMode,
+        overlayStarted: overlayHandles !== null,
+      }),
+    );
+    if (finalMode !== currentWindowMode) {
+      console.log(
+        '[vr] switching window mode: ' + currentWindowMode + ' -> ' + finalMode,
+      );
+      applyWindowMode(finalMode);
+    }
+    setStoredLaunchMode(finalMode);
+
     if (overlayHandles === null) {
       return;
     }
 
-    const window = getMainWindow();
+    const window = getKeyboardWindow();
     if (!window || window.isDestroyed()) {
       return;
     }
@@ -210,16 +357,34 @@ if (!gotTheLock) {
 } else {
   app.on('second-instance', (event, commandLine, workingDirectory) => {
     // Someone tried to run a second instance, we should focus our window. / 誰かが2つ目のインスタンスを実行しようとしたので、ウィンドウにフォーカスする必要がある。
-    const mainWindow = getMainWindow();
-    if (mainWindow && !mainWindow.isDestroyed()) {
-      if (mainWindow.isMinimized()) mainWindow.restore();
-      mainWindow.focus();
+    // Prefer the settings window: in VR mode the keyboard window is offscreen
+    // and cannot be focused at all.
+    // 設定ウィンドウを優先する。VRモードではキーボードウィンドウはオフスクリーンで、
+    // そもそもフォーカスできない。
+    const target = getSettingsWindow() ?? getKeyboardWindow();
+    if (target && !target.isDestroyed()) {
+      if (target.isMinimized()) target.restore();
+      target.focus();
     }
   });
 
   app.whenReady().then(() => {
     startBridge();
-    createWindow();
+
+    // Decide the starting mode from cheap synchronous inputs only. The VR
+    // bootstrap that could answer this properly takes seconds, and the window
+    // has to be on screen well before then.
+    // 起動時のモードは安価な同期入力だけで決める。これを正しく判定できるVR初期化は
+    // 数秒かかるが、ウィンドウはそれよりずっと早く画面に出す必要がある。
+    applyWindowMode(
+      resolveWindowMode(
+        resolveInitialWindowMode({
+          launchArgs,
+          storedLaunchMode: getStoredLaunchMode(),
+          overlaySettings: getOverlaySettings(),
+        }),
+      ),
+    );
 
     // The SteamVR bootstrap below spawns several external processes synchronously
     // (vrpathreg, tasklist) and calls VR_Init. Running it inline would block the main
@@ -236,7 +401,7 @@ if (!gotTheLock) {
 
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) {
-        createWindow();
+        applyWindowMode(currentWindowMode);
       }
     });
   });

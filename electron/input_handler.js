@@ -3,8 +3,15 @@ import {
   getActiveOverlayHandle,
   getOverlayManager,
 } from './overlay.js';
-import { CURSOR_MOVE_EPSILON } from './input/constants.js';
 import {
+  CURSOR_MOVE_EPSILON,
+  POINTER_MIN_CUTOFF,
+  POINTER_BETA,
+  POINTER_D_CUTOFF,
+} from './input/constants.js';
+import {
+  resetCursorThrottle,
+  setCursorEpsilon,
   sendCursorEvent,
   sendCursorHideEvent,
   sendMouseEnterEvent,
@@ -20,6 +27,99 @@ import { releaseTriggerForController } from './input/trigger.js';
 
 export { updateWindowSize } from './input/mapping.js';
 
+// Live filter tuning / 実行時に調整されるフィルタ設定
+const pointerFilter = {
+  minCutoff: POINTER_MIN_CUTOFF,
+  beta: POINTER_BETA,
+  dCutoff: POINTER_D_CUTOFF,
+};
+
+export { setCursorEpsilon };
+
+// Runtime tuning applied to the live overlay manager. Each value is remembered
+// here and re-applied on every startInputLoop, because the manager only exists
+// once the VR overlay is up - which happens after the launch flags are read.
+// 生きたオーバーレイマネージャーへ適用する実行時の調整値。マネージャーはVR
+// オーバーレイが立ち上がって初めて存在し、それは起動フラグを読んだ後になるため、
+// 値はここに保持して startInputLoop のたびに再適用する。
+let poseAheadSeconds = 0;
+let filterIdleControllers = true;
+
+/**
+ * Keep reporting controllers that are asleep or set down (--keep-idle-cursors).
+ * Only useful if a runtime reports activity levels badly enough that real
+ * controllers get filtered out.
+ * 休止中・置かれたままのコントローラーも報告し続ける (--keep-idle-cursors)。
+ * ランタイムのアクティビティレベル報告が不正確で、実在するコントローラーまで
+ * 除外されてしまう場合にのみ意味がある。
+ */
+export function setFilterIdleControllers(enabled) {
+  filterIdleControllers = enabled !== false;
+  applyIdleControllerFilter();
+}
+
+function applyIdleControllerFilter() {
+  const manager = state.overlayManager;
+  if (!manager || typeof manager.setFilterIdleControllers !== 'function') return;
+  try {
+    manager.setFilterIdleControllers(filterIdleControllers);
+    console.log('[input] idle controller filter: ' + filterIdleControllers);
+  } catch (e) {
+    console.warn('Failed to set idle controller filter:', e.message);
+  }
+}
+
+/**
+ * Ask OpenVR to predict controller poses this far ahead (--pose-ahead).
+ * A horizon of 0 asks for the pose as of now, which is already stale by the
+ * time the frame it drives reaches the headset.
+ * OpenVR にコントローラーのポーズをこの秒数だけ先読みさせる (--pose-ahead)。
+ * 先読み0は「今この瞬間」の姿勢を求めるが、それが駆動するフレームがヘッドセットに
+ * 届く頃には既に古い。
+ */
+export function setPoseAheadSeconds(seconds) {
+  if (!Number.isFinite(seconds) || seconds < 0) return;
+  poseAheadSeconds = seconds;
+  applyPoseAhead();
+}
+
+function applyPoseAhead() {
+  const manager = state.overlayManager;
+  if (!manager || typeof manager.setPosePredictionSeconds !== 'function') return;
+  try {
+    manager.setPosePredictionSeconds(poseAheadSeconds);
+    console.log('[input] pose prediction: ' + poseAheadSeconds + 's');
+  } catch (e) {
+    console.warn('Failed to set pose prediction:', e.message);
+  }
+}
+
+/**
+ * Override the pointer smoothing constants at runtime (--pointer-filter).
+ * Existing smoothers are dropped so the new values take effect immediately
+ * rather than after the next controller reconnect.
+ * ポインタ平滑化の定数を実行時に上書きする (--pointer-filter)。
+ * 次にコントローラーが再接続するまで待たずに反映させるため、既存のフィルタは破棄する。
+ */
+export function setPointerFilter({ minCutoff, beta, dCutoff } = {}) {
+  if (Number.isFinite(minCutoff) && minCutoff > 0) {
+    pointerFilter.minCutoff = minCutoff;
+  }
+  if (Number.isFinite(beta) && beta >= 0) {
+    pointerFilter.beta = beta;
+  }
+  if (Number.isFinite(dCutoff) && dCutoff > 0) {
+    pointerFilter.dCutoff = dCutoff;
+  }
+  state.inputSmoothers = {};
+  console.log(
+    '[input] pointer filter: minCutoff=' +
+      pointerFilter.minCutoff +
+      ' beta=' +
+      pointerFilter.beta,
+  );
+}
+
 /**
  * Start the input handling loop
  * @param {number} fps - Input polling rate (default: 120)
@@ -28,6 +128,8 @@ export { updateWindowSize } from './input/mapping.js';
 export function startInputLoop(fps = 120, webContents = null, options = {}) {
   state.overlayManager = getOverlayManager();
   state.targetWebContents = webContents;
+  applyPoseAhead();
+  applyIdleControllerFilter();
 
   if (!state.overlayManager) {
     console.warn('Overlay manager not available for input handling');
@@ -128,6 +230,7 @@ export function stopInputLoop() {
   state.lastTriggerPressedState = {};
   state.triggerDragState = {};
   state.inputSmoothers = {};
+  resetCursorThrottle();
   state.lastMouseHit = false;
   state.lastMouseControllerId = null;
   state.lastMousePosition = { x: 0, y: 0 };
@@ -180,9 +283,11 @@ function updateInput() {
         // --- Smoothing Logic Start ---
         if (!state.inputSmoothers[id]) {
           // Initialize smoothing filter for this controller / コントローラー用平滑化フィルターの初期化
-          // minCutoff=1.5: Reduced lag at low speed / 低速時の遅延を軽減
-          // beta=3.0: Smooth response at high speed / 高速移動時のスムーズな応答
-          state.inputSmoothers[id] = new PointerStabilizer(1.5, 3.0, 1.0);
+          state.inputSmoothers[id] = new PointerStabilizer(
+            pointerFilter.minCutoff,
+            pointerFilter.beta,
+            pointerFilter.dCutoff,
+          );
         }
         const smoothed = state.inputSmoothers[id].update(hit.u, hit.v, now);
         // Use smoothed coordinates for cursor events

@@ -10,6 +10,11 @@ export interface TranslationStrings {
     overlayTitle: string;
     disableOverlay: string;
     disableOverlayDesc: string;
+    vrOsrMode: string;
+    vrOsrModeDesc: string;
+    vrOsrModeAuto: string;
+    vrOsrModeAlways: string;
+    vrOsrModeNever: string;
     steamVrAutoLaunch: string;
     steamVrAutoLaunchDesc: string;
     steamVrAutoLaunchError: string;
@@ -134,6 +139,11 @@ export const TRANSLATIONS: TranslationsMap = {
       overlayTitle: 'VRオーバーレイ',
       disableOverlay: 'VRオーバーレイを起動しない',
       disableOverlayDesc: 'VR上に画面を表示しません（デスクトップ使用時など）。変更は再起動後に反映されます。',
+      vrOsrMode: 'VRモードのデスクトップ表示',
+      vrOsrModeDesc: 'VRオーバーレイ使用中にキーボードをデスクトップへ描画しないことで、表示の遅延を減らします。このとき設定はこの専用ウィンドウから操作します。変更は再起動後に反映されます。',
+      vrOsrModeAuto: '自動',
+      vrOsrModeAlways: '常に隠す',
+      vrOsrModeNever: '隠さない',
       steamVrAutoLaunch: 'SteamVRスタートアップに登録',
       steamVrAutoLaunchDesc: 'SteamVR未起動時でも steamvr.vrsettings を直接更新して反映します。',
       steamVrAutoLaunchError: 'SteamVRスタートアップ設定の更新に失敗しました。',
@@ -254,6 +264,11 @@ export const TRANSLATIONS: TranslationsMap = {
       overlayTitle: 'VR Overlay',
       disableOverlay: 'Disable VR Overlay',
       disableOverlayDesc: 'Do not launch VR overlay (for desktop use). Takes effect after restart.',
+      vrOsrMode: 'Desktop view in VR mode',
+      vrOsrModeDesc: 'Reduce display latency by not drawing the keyboard on the desktop while the VR overlay is in use. Settings are then handled from this dedicated window. Takes effect after restart.',
+      vrOsrModeAuto: 'Auto',
+      vrOsrModeAlways: 'Always hide',
+      vrOsrModeNever: 'Never hide',
       steamVrAutoLaunch: 'Register in SteamVR Startup Apps',
       steamVrAutoLaunchDesc: 'Directly updates steamvr.vrsettings even when SteamVR is not running.',
       steamVrAutoLaunchError: 'Failed to update SteamVR startup app setting.',

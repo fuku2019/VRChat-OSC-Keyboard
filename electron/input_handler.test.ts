@@ -4,6 +4,8 @@ let captureFrameListener: (() => void) | null = null;
 const unsubscribeMock = vi.fn();
 
 const overlayManagerMock = {
+  setPosePredictionSeconds: vi.fn(),
+  setFilterIdleControllers: vi.fn(),
   getControllerIds: vi.fn(),
   getControllerPose: vi.fn(),
   getControllerState: vi.fn(),
@@ -28,6 +30,8 @@ vi.mock('./input/drag.js', () => ({
 }));
 
 vi.mock('./input/events.js', () => ({
+  resetCursorThrottle: vi.fn(),
+  setCursorEpsilon: vi.fn(),
   sendClickEvent: vi.fn(),
   sendCursorEvent: vi.fn(),
   sendCursorHideEvent: vi.fn(),

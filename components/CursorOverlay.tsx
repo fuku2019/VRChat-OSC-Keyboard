@@ -9,7 +9,6 @@ const CursorOverlay = () => {
   const pressedControllersRef = useRef<Set<number>>(new Set());
 
   useEffect(() => {
-    const hideTimeouts: Record<number, NodeJS.Timeout> = {};
     let dprQuery: MediaQueryList | null = null;
 
     const addHover = (element: HTMLElement) => {
@@ -113,22 +112,21 @@ const CursorOverlay = () => {
         [id]: { u, v: flippedV, visible: true },
       }));
       updateHoverForController(id, u, v);
-
-      // Hide cursor if no movement for a short time
-      if (hideTimeouts[id]) {
-        clearTimeout(hideTimeouts[id]);
-      }
-      hideTimeouts[id] = setTimeout(() => {
-        setCursors((prev) => {
-          const current = prev[id];
-          if (!current) return prev;
-          return {
-            ...prev,
-            [id]: { ...current, visible: false },
-          };
-        });
-      }, 200);
     };
+
+    // There is deliberately no inactivity timeout here. The main process is
+    // authoritative about whether a controller is pointing at the overlay and
+    // sends input-cursor-hide the moment the ray stops hitting it. A timeout
+    // was a second, weaker answer to the same question, and once the main
+    // process started dropping sub-pixel movements it began firing while the
+    // controller was simply being held still - the cursor blinked out every
+    // couple of seconds, and each blink repainted the page.
+    // ここに無操作タイムアウトを置かないのは意図的である。コントローラーが
+    // オーバーレイを指しているかどうかの判断はメインプロセスが持ち、レイが外れた
+    // 瞬間に input-cursor-hide を送る。タイムアウトは同じ問いに対する二つ目の、
+    // しかも弱い答えでしかなかった。メインプロセスがサブピクセルの移動を捨てる
+    // ようになると、単に静止させているだけで発火し、カーソルが数秒おきに消えて
+    // そのたびにページが描き直されていた。
 
     if (window.electronAPI?.onCursorMove) {
         window.electronAPI.onCursorMove(handleCursorMove);
@@ -137,9 +135,6 @@ const CursorOverlay = () => {
     // Handle cursor hiding / カーソル非表示の処理
     const handleCursorHide = ({ controllerId }: { controllerId?: number }) => {
       const id = Number.isFinite(controllerId) ? Number(controllerId) : 0;
-      if (hideTimeouts[id]) {
-        clearTimeout(hideTimeouts[id]);
-      }
       clearHoverForController(id);
       clearPressedForController(id);
       setCursors((prev) => {
@@ -234,7 +229,6 @@ const CursorOverlay = () => {
         if (window.electronAPI?.removeTriggerStateListener) {
           window.electronAPI.removeTriggerStateListener(handleTriggerState);
         }
-        Object.values(hideTimeouts).forEach((timeoutId) => clearTimeout(timeoutId));
         Array.from(hoveredByControllerRef.current.keys()).forEach(clearHoverForController);
         Array.from(pressedByControllerRef.current.keys()).forEach(clearPressedForController);
     };

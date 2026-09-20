@@ -8,16 +8,18 @@ import { registerSystemIpcHandlers } from './ipc/SystemIpcHandlers.js';
 import { registerOverlayIpcHandlers } from './ipc/OverlayIpcHandlers.js';
 import { registerSteamVrIpcHandlers } from './ipc/SteamVrIpcHandlers.js';
 import { registerJapaneseImeIpcHandlers } from './ipc/JapaneseImeIpcHandlers.js';
+import { registerWindowIpcHandlers } from './ipc/WindowIpcHandlers.js';
 
 export { isSafeExternalUrl, compareVersions } from './ipc/SystemIpcHandlers.js';
 
 /**
  * Register all IPC handlers / すべてのIPCハンドラを登録
  */
-export function registerIpcHandlers(APP_VERSION, debugConfig) {
+export function registerIpcHandlers(APP_VERSION, debugConfig, windowOptions) {
   registerOscIpcHandlers();
   registerSystemIpcHandlers(APP_VERSION, debugConfig);
   registerOverlayIpcHandlers();
   registerSteamVrIpcHandlers();
   registerJapaneseImeIpcHandlers();
+  registerWindowIpcHandlers(windowOptions);
 }

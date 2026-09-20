@@ -2,6 +2,16 @@
 // This file defines global types and constants / このファイルはグローバル型と定数を定義
 
 import type { ImeContext, ImeResponse } from './ime';
+import type { OscConfig, VrOsrMode } from '../types';
+
+// Overlay settings the main process persists separately from localStorage,
+// because it has to read them before any renderer exists.
+// レンダラーが存在する前にメインプロセスが読む必要があるため、localStorage とは
+// 別に永続化されるオーバーレイ設定。
+interface OverlaySettings {
+  disableOverlay: boolean;
+  vrOsrMode: VrOsrMode;
+}
 
 // Electron API exposed via preload / preload経由で公開されるElectron API
 interface UpdateOscPortResult {
@@ -65,8 +75,8 @@ interface ElectronAPI {
     height: number;
     devicePixelRatio: number;
   }) => void;
-  getOverlaySettings: () => Promise<{ success: boolean; settings: { disableOverlay: boolean } }>;
-  setOverlaySettings: (settings: { disableOverlay?: boolean }) => Promise<{ success: boolean; settings: { disableOverlay: boolean } }>;
+  getOverlaySettings: () => Promise<{ success: boolean; settings: OverlaySettings }>;
+  setOverlaySettings: (settings: Partial<OverlaySettings>) => Promise<{ success: boolean; settings: OverlaySettings }>;
   getSteamVrAutoLaunch: () => Promise<SteamVrAutoLaunchResult>;
   setSteamVrAutoLaunch: (enabled: boolean) => Promise<SteamVrAutoLaunchResult>;
   getSteamVrBindings: () => Promise<{
@@ -90,6 +100,27 @@ interface ElectronAPI {
   removeTriggerStateListener: (callback: (data: { controllerId?: number; pressed?: boolean; value?: number }) => void) => void;
   onInputScroll: (callback: (data: { deltaY: number }) => void) => void;
   removeInputScrollListener: (callback: (data: { deltaY: number }) => void) => void;
+
+  // Cross-window config sync / ウィンドウ間の設定同期
+  broadcastConfig: (config: OscConfig) => void;
+  onConfigBroadcast: (callback: (config: OscConfig) => void) => void;
+  removeConfigBroadcastListener: (callback: (config: OscConfig) => void) => void;
+
+  // Actions the settings window delegates to the keyboard window
+  // 設定ウィンドウがキーボードウィンドウへ委譲する操作
+  requestShowTutorial: () => Promise<{ success: boolean }>;
+  requestClearHistory: () => Promise<{ success: boolean }>;
+  onShowTutorial: (callback: () => void) => void;
+  removeShowTutorialListener: (callback: () => void) => void;
+  onClearHistory: (callback: () => void) => void;
+  removeClearHistoryListener: (callback: () => void) => void;
+
+  // Which window this is, and whether VR mode is active / 自分がどのウィンドウか、VRモードが有効か
+  getLaunchInfo: () => Promise<{
+    windowMode: 'vr' | 'desktop';
+    isOsr: boolean;
+    debug: boolean;
+  }>;
 }
 
 declare global {
