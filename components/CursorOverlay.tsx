@@ -257,7 +257,7 @@ const CursorOverlay = () => {
             borderRadius: '50%',
             backgroundColor: 'rgb(var(--rgb-primary-500))',
             border: '2px solid rgb(var(--rgb-primary-500))',
-            boxShadow: '0 0 10px rgba(var(--rgb-primary-500), 0.5)',
+            boxShadow: '0 0 10px rgb(var(--rgb-primary-500) / 0.5)',
             transform: 'translate(-50%, -50%)',
             pointerEvents: 'none',
             zIndex: 9999,

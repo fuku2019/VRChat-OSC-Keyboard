@@ -100,8 +100,8 @@
   button.vr-hover,
   [role="button"].vr-hover {
     outline: none;
-    border-color: rgba(var(--rgb-primary-500), 0.5);
-    background-color: rgba(var(--rgb-primary-500), 0.1);
+    border-color: rgb(var(--rgb-primary-500) / 0.5);
+    background-color: rgb(var(--rgb-primary-500) / 0.1);
     filter: brightness(1.05);
   }
 

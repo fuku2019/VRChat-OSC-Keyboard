@@ -79,6 +79,28 @@ describe('useSettingsDraft', () => {
     expect(setConfig).toHaveBeenCalledTimes(1);
   });
 
+  it('keeps store fields synced after opening instead of reverting them', () => {
+    const { result } = renderDraft(true);
+
+    // The startup bridge-port sync lands while the modal is already open.
+    // モーダルを開いた後に、起動時のブリッジポート同期が反映される。
+    act(() => {
+      useConfigStore.getState().setConfig({
+        ...useConfigStore.getState().config,
+        bridgeUrl: 'ws://127.0.0.1:8085',
+      });
+    });
+
+    act(() => {
+      result.current.updateConfig('theme', 'light');
+    });
+
+    expect(useConfigStore.getState().config.theme).toBe('light');
+    expect(useConfigStore.getState().config.bridgeUrl).toBe(
+      'ws://127.0.0.1:8085',
+    );
+  });
+
   it('commits the history size on blur so a two-digit value can be typed', () => {
     const { result } = renderDraft(true);
 

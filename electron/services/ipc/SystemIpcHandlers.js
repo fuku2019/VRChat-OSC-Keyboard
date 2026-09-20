@@ -403,9 +403,20 @@ export function registerSystemIpcHandlers(
       }
 
       // #2: Validate destPath is within temp directory / destPathがtempディレクトリ内であることを検証
+      // Compare by path segments: a plain startsWith() also accepts a sibling
+      // directory whose name merely begins with the temp path (".../Temp2/x.exe"),
+      // and this spawns whatever it is handed.
+      // パスの区切り単位で比較する。startsWith() だけでは temp パスで始まるだけの
+      // 別ディレクトリ(".../Temp2/x.exe")も通ってしまい、ここは渡された実行ファイルを
+      // そのまま起動するため危険。
       const tempDir = app.getPath('temp');
       const resolvedPath = path.resolve(destPath);
-      if (!resolvedPath.startsWith(path.resolve(tempDir))) {
+      const relativeToTemp = path.relative(path.resolve(tempDir), resolvedPath);
+      if (
+        !relativeToTemp ||
+        relativeToTemp.startsWith('..') ||
+        path.isAbsolute(relativeToTemp)
+      ) {
         return { success: false, error: 'Invalid installer path' };
       }
 

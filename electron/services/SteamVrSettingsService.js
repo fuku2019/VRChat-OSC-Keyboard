@@ -106,6 +106,12 @@ function loadSettingsFile(settingsPath) {
   return parsed;
 }
 
+// Compare two settings objects as they would be serialized to disk.
+// ディスクに書き出した場合の内容が同じかどうかを比較する。
+function isSameSettings(a, b) {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
 function writeSettings(settingsPath, settings) {
   // This rewrites the whole steamvr.vrsettings, which holds settings unrelated
   // to this app, so it must never be left half-written.
@@ -241,10 +247,35 @@ export function setSteamVrAutoLaunch(appKey, enabled) {
 
     const errors = [];
     const updatedPaths = [];
+    const unchangedPaths = [];
     for (const settingsPath of writePaths) {
       try {
+        const exists = fs.existsSync(settingsPath);
+
+        // Disabling has nothing to turn off in a file that does not exist yet,
+        // and creating steamvr.vrsettings ourselves would hand SteamVR a file
+        // it never wrote.
+        // 存在しないファイルには無効化すべき設定がなく、こちらで
+        // steamvr.vrsettings を作ると SteamVR が書いていないファイルを渡すことになる。
+        if (!exists && !enabled) {
+          unchangedPaths.push(settingsPath);
+          continue;
+        }
+
         const current = loadSettingsFile(settingsPath);
         const nextSettings = applyAutoLaunchToSettings(current, appKey, enabled);
+
+        // Skip a no-op rewrite. main.js re-applies this setting on every launch
+        // and steamvr.vrsettings is owned by SteamVR, so rewriting the whole
+        // file each boot can clobber values SteamVR wrote in the meantime.
+        // 変更がない場合は書き戻さない。main.js が起動のたびにこの設定を再適用し、
+        // steamvr.vrsettings は SteamVR 所有のファイルであるため、毎回ファイル全体を
+        // 書き直すと その間に SteamVR が書いた値を上書きしうる。
+        if (exists && isSameSettings(current, nextSettings)) {
+          unchangedPaths.push(settingsPath);
+          continue;
+        }
+
         writeSettings(settingsPath, nextSettings);
         updatedPaths.push(settingsPath);
       } catch (error) {
@@ -252,15 +283,16 @@ export function setSteamVrAutoLaunch(appKey, enabled) {
       }
     }
 
-    if (updatedPaths.length === 0) {
+    if (updatedPaths.length === 0 && unchangedPaths.length === 0) {
       throw new Error(errors.join(' | '));
     }
 
     return {
       success: true,
       enabled,
-      path: updatedPaths[0],
+      path: updatedPaths[0] || unchangedPaths[0],
       paths: updatedPaths,
+      unchangedPaths: unchangedPaths.length > 0 ? unchangedPaths : undefined,
       warnings: errors.length > 0 ? errors : undefined,
     };
   } catch (error) {

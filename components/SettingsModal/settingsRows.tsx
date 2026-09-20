@@ -8,7 +8,7 @@ import { Info } from 'lucide-react';
 
 // Shared CSS class constants / 共通CSSクラス定数
 export const SECTION_LABEL_CLASS = 'block dark:text-slate-300 text-slate-600 mb-3 text-sm font-semibold uppercase tracking-wider';
-const BTN_ACTIVE_CLASS = 'dark:bg-primary-900/40 bg-primary-50 border-primary-500 dark:text-primary-300 text-primary-700 shadow-[0_0_15px_rgb(var(--color-primary-500)_/_0.15)]';
+const BTN_ACTIVE_CLASS = 'dark:bg-primary-900/40 bg-primary-50 border-primary-500 dark:text-primary-300 text-primary-700 shadow-[0_0_15px_rgb(var(--rgb-primary-500)_/_0.15)]';
 const BTN_INACTIVE_CLASS = 'dark:bg-slate-900 bg-slate-50 dark:border-slate-700 border-slate-300 dark:text-slate-400 text-slate-500 hover:border-slate-400 dark:hover:border-slate-500';
 export const selectedBtnClass = (active: boolean) =>
   `flex-1 py-3 px-4 rounded-xl border transition-all ${active ? BTN_ACTIVE_CLASS : BTN_INACTIVE_CLASS}`;

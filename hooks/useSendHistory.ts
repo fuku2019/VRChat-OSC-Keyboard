@@ -70,6 +70,20 @@ export const useSendHistory = () => {
   // 永続化設定の前回値。OFF -> ON の切り替わりを検出するために保持する
   const persistEnabledRef = useRef<boolean>(config.historyPersistEnabled);
 
+  // Apply a lowered limit to the entries already held. pushHistory only trims on
+  // the next send, so without this the old entries stayed navigable and persisted
+  // long after the user reduced the limit.
+  // 上限を下げた際に、既に保持しているエントリへも適用する。pushHistoryは次の送信時
+  // にしか切り詰めないため、これがないと上限を下げた後も古いエントリが走査対象および
+  // 保存対象のまま残り続ける。
+  useEffect(() => {
+    setHistory((prev) =>
+      prev.length > config.historyMaxCount
+        ? prev.slice(0, config.historyMaxCount)
+        : prev,
+    );
+  }, [config.historyMaxCount]);
+
   // Persist when history or persist setting changes / 履歴・永続化設定変更時に保存
   useEffect(() => {
     const wasEnabled = persistEnabledRef.current;

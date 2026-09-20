@@ -77,6 +77,24 @@ describe('useSendHistory', () => {
 
       expect(result.current.history).toEqual(['c', 'b']);
     });
+
+    it('trims entries already held when the max count is lowered', () => {
+      const { result } = renderHook(() => useSendHistory());
+
+      act(() => {
+        result.current.pushHistory('a');
+        result.current.pushHistory('b');
+        result.current.pushHistory('c');
+      });
+      expect(result.current.history).toEqual(['c', 'b', 'a']);
+
+      act(() => {
+        setConfig({ historyMaxCount: 2 });
+      });
+
+      expect(result.current.history).toEqual(['c', 'b']);
+      expect(JSON.parse(readStored() ?? 'null')).toEqual(['c', 'b']);
+    });
   });
 
   describe('persistence / 永続化', () => {

@@ -46,10 +46,16 @@ export const useSettingsDraft = (isOpen: boolean): UseSettingsDraftReturn => {
     DEFAULT_CUSTOM_ACCENT_COLOR,
   );
   const wasOpenRef = useRef(false);
+  // Mirror of the draft, so consecutive updates inside one handler build on each
+  // other without reading the draft from inside a state updater.
+  // ドラフトのミラー。1つのハンドラー内で連続して更新しても、state更新関数の
+  // 内部からドラフトを読まずに前の変更を引き継げるようにする。
+  const localConfigRef = useRef(localConfig);
 
   // Sync local state when opening / 開くときにローカル状態を同期する
   useEffect(() => {
     if (isOpen && !wasOpenRef.current) {
+      localConfigRef.current = config;
       setLocalConfig(config);
       setOscPortInput(String(config.oscPort));
       setHistoryMaxCountInput(String(config.historyMaxCount));
@@ -63,15 +69,39 @@ export const useSettingsDraft = (isOpen: boolean): UseSettingsDraftReturn => {
     wasOpenRef.current = isOpen;
   }, [isOpen, config]);
 
+  // The store write must stay outside the setState updater: React may call an
+  // updater more than once (StrictMode, a re-rendered attempt), which made
+  // setConfig run twice per change and warned about updating another component
+  // while rendering.
+  // ストアへの書き込みは setState の更新関数の外で行う。Reactは更新関数を複数回
+  // 呼ぶことがあり(StrictMode、レンダーの再試行)、1回の変更で setConfig が2度走って
+  // 「レンダー中に別コンポーネントを更新した」警告が出ていた。
   const saveConfigImmediately = (
     update: (currentConfig: OscConfig) => OscConfig,
   ) => {
-    setLocalConfig((currentConfig) => {
-      const nextConfig = update(currentConfig);
-      if (nextConfig === currentConfig) return currentConfig;
-      setConfig(nextConfig);
-      return nextConfig;
-    });
+    const currentConfig = localConfigRef.current;
+    const nextConfig = update(currentConfig);
+    if (nextConfig === currentConfig) return;
+    localConfigRef.current = nextConfig;
+    setLocalConfig(nextConfig);
+
+    // Write only the keys this edit actually changed, on top of the live store
+    // config. Pushing the whole draft would revert fields the app synced into
+    // the store after the modal opened - most importantly bridgeUrl, which the
+    // startup bridge-port sync resolves asynchronously. Reverting it points OSC
+    // at a dead WebSocket port and sending fails without any message.
+    // この編集で実際に変わったキーだけを、現在のストア設定に重ねて書き込む。
+    // ドラフト全体を書き戻すと、モーダルを開いた後にアプリがストアへ同期した値が
+    // 巻き戻る。特に bridgeUrl は起動時のブリッジポート同期が非同期に解決するため、
+    // 巻き戻ると OSC の宛先が死んだWebSocketポートになり、送信が無言で失敗する。
+    const changedKeys = (Object.keys(nextConfig) as (keyof OscConfig)[]).filter(
+      (key) => nextConfig[key] !== currentConfig[key],
+    );
+    const merged = { ...useConfigStore.getState().config };
+    for (const key of changedKeys) {
+      merged[key] = nextConfig[key] as never;
+    }
+    setConfig(merged);
   };
 
   // Generic single-field config updater / 汎用単一フィールド設定更新

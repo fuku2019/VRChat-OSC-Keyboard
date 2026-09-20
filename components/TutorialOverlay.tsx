@@ -95,7 +95,7 @@ const TutorialOverlay: FC<TutorialOverlayProps> = ({
 
         <button
           onClick={onClose}
-          className='group relative inline-flex items-center justify-center px-10 py-4 font-bold text-[rgb(var(--rgb-on-primary))] transition-all duration-200 bg-primary-600 font-pj rounded-2xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-600 hover:bg-primary-500 active:scale-95 shadow-[0_0_20px_rgb(var(--color-primary-600)_/_0.3)] opacity-0 animate-slide-up'
+          className='group relative inline-flex items-center justify-center px-10 py-4 font-bold text-[rgb(var(--rgb-on-primary))] transition-all duration-200 bg-primary-600 font-pj rounded-2xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-600 hover:bg-primary-500 active:scale-95 shadow-[0_0_20px_rgb(var(--rgb-primary-600)_/_0.3)] opacity-0 animate-slide-up'
           style={{ animationDelay: isOpen ? '750ms' : '0ms' }}
         >
           <CircleCheck className='mr-2' size={20} />
