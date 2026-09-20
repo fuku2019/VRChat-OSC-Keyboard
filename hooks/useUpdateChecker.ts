@@ -114,7 +114,7 @@ export const useUpdateChecker = (): UseUpdateCheckerReturn => {
               version: result.latestVersion,
               url:
                 result.url ||
-                'https://github.com/fuku2019/VRC-OSC-Keyboard/releases',
+                'https://github.com/fuku2019/VRChat-OSC-Keyboard/releases',
               isInstaller: result.isInstaller,
               installerUrl: result.installerUrl,
             };

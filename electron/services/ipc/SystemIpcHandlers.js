@@ -27,7 +27,7 @@ const isInstallerVersion = (debugConfig) => {
 };
 // GitHub repository info / GitHubリポジトリ情報
 const GITHUB_API_URL =
-  'https://api.github.com/repos/fuku2019/VRC-OSC-Keyboard/releases/latest';
+  'https://api.github.com/repos/fuku2019/VRChat-OSC-Keyboard/releases/latest';
 
 export function isSafeExternalUrl(url) {
   if (typeof url !== 'string' || !url.trim()) {
@@ -102,7 +102,7 @@ export function registerSystemIpcHandlers(
           success: true,
           updateAvailable: debugConfig.forceUpdateAvailable,
           latestVersion: debugConfig.mockLatestVersion,
-          url: 'https://github.com/fuku2019/VRC-OSC-Keyboard/releases',
+          url: 'https://github.com/fuku2019/VRChat-OSC-Keyboard/releases',
           isInstaller,
           installerUrl: isInstaller
             ? 'https://example.com/dummy-installer.exe'

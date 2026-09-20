@@ -62,10 +62,10 @@ export const THROTTLE = {
 // GitHub repository info / GitHubリポジトリ情報
 export const GITHUB = {
   REPO_OWNER: 'fuku2019',
-  REPO_NAME: 'VRC-OSC-Keyboard',
+  REPO_NAME: 'VRChat-OSC-Keyboard',
   API_URL:
-    'https://api.github.com/repos/fuku2019/VRC-OSC-Keyboard/releases/latest',
-  RELEASES_URL: 'https://github.com/fuku2019/VRC-OSC-Keyboard/releases',
+    'https://api.github.com/repos/fuku2019/VRChat-OSC-Keyboard/releases/latest',
+  RELEASES_URL: 'https://github.com/fuku2019/VRChat-OSC-Keyboard/releases',
 } as const;
 
 // Network defaults / ネットワークデフォルト

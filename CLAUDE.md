@@ -37,7 +37,7 @@ npm run native:check       # native/ に対する cargo clippy (-D warnings)
 
 `.github/workflows/release.yml`は`v*`タグで起動し、`npm ci` → `build:native` → `dist`を実行するだけ。テストもtypecheckもclippyも**一切実行しない**ため、これらはローカル専用のゲートであり、コミット前に自分で走らせる必要がある。一方でCIが実際に強制しているのはインストーラのサイズゲートで、140MB超で警告、150MB超でリリースを失敗させる。アセットや辞書シャードを追加する際は注意すること(`sourcemap: false`、`removeLocales.cjs`、manualChunksが存在するのはこのため)。
 
-`release.json`は`update-release-json.yml`が機械的に書き込むファイルで、`hooks/useUpdateChecker.ts`がこれをポーリングしている — 手動で編集しないこと。
+`release.json`は`update-release-json.yml`がReleaseワークフロー完了後にGitHub APIのレスポンスをそのまま書き込んでコミットするファイルである — 手動で編集しないこと。**アプリ側はこのファイルを一切読んでいない。** アップデート確認の経路は`hooks/useUpdateChecker.ts` → `check-for-update` IPC → `electron/services/ipc/SystemIpcHandlers.js`で、メインプロセスがGitHubのreleases APIを直接fetchしている。したがって`release.json`を更新してもアプリの挙動は変わらない。
 
 ## アーキテクチャ
 
