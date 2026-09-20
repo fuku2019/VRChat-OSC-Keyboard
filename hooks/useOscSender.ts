@@ -10,10 +10,10 @@ import { TRANSLATIONS, TIMEOUTS, THROTTLE } from '../constants';
  */
 export const useOscSender = (
   displayText: string,
-  setInput: (val: string) => void,
+  clearAll: () => void,
   sendTypingStatus: (isTyping: boolean) => void,
   cancelTypingTimeout: () => void,
-  commitBuffer: () => void,
+  commitPreedit: () => void,
   onSendSuccess?: (text: string) => void,
 ) => {
   const config = useConfigStore((state) => state.config);
@@ -54,16 +54,14 @@ export const useOscSender = (
     };
   }, [throttledAutoSend]);
 
-  const handleSend = async (
-    textareaRef: React.RefObject<HTMLTextAreaElement>,
-  ) => {
+  const handleSend = async () => {
     const textToSend = displayText;
 
     if (!textToSend.trim()) return;
 
     // Keep input state consistent with what is sent (flush pending IME buffer)
     // 送信テキストと状態を一致させるため、未確定バッファを確定
-    commitBuffer();
+    commitPreedit();
 
     setIsSending(true);
     setError(null);
@@ -82,7 +80,12 @@ export const useOscSender = (
         // Record to send history before clearing input / 入力クリア前に送信履歴に記録
         if (onSendSuccess) onSendSuccess(textToSend);
         setLastSent(textToSend);
-        setInput('');
+        // Clear the IME as well, not just the text. Clearing only the text left
+        // a conversion in flight, whose reply then rebuilt a preedit in the
+        // freshly emptied box.
+        // テキストだけでなくIMEもクリアする。テキストだけ消すと飛行中の変換が残り、
+        // その応答が空になったばかりの入力欄に未確定文字列を作り直していた。
+        clearAll();
         // Stop typing indicator on successful send / 送信成功時にタイピングインジケーターを停止
         sendTypingStatus(false);
         cancelTypingTimeout();
@@ -116,7 +119,6 @@ export const useOscSender = (
       );
     } finally {
       setIsSending(false);
-      textareaRef.current?.focus();
     }
   };
 

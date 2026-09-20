@@ -23,7 +23,6 @@ describe('useOscSender - manual send vs pending auto-send', () => {
   });
 
   it('does not re-send the text after a manual send flushes the input', async () => {
-    const textareaRef = { current: null } as React.RefObject<HTMLTextAreaElement>;
     const { result } = renderHook(() =>
       useOscSender('hello', vi.fn(), vi.fn(), vi.fn(), vi.fn()),
     );
@@ -38,7 +37,7 @@ describe('useOscSender - manual send vs pending auto-send', () => {
     expect(sendOscMessage).toHaveBeenCalledTimes(1);
 
     await act(async () => {
-      await result.current.handleSend(textareaRef);
+      await result.current.handleSend();
     });
     expect(sendOscMessage).toHaveBeenCalledTimes(2);
 

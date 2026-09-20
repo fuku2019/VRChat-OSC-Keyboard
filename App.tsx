@@ -3,7 +3,7 @@
  * メインアプリケーションコンポーネント
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Settings, Zap, ZapOff, Copy, RefreshCw } from 'lucide-react';
 import VirtualKeyboard from './components/VirtualKeyboard';
 import SettingsModal from './components/SettingsModal';
@@ -23,27 +23,67 @@ import { useVrScrollSelectionGuard } from './hooks/useVrScrollSelectionGuard';
 import { useSendHistory } from './hooks/useSendHistory';
 import { TRANSLATIONS, STORAGE_KEYS, TIMEOUTS, CHATBOX } from './constants';
 
+// Copy text to clipboard / クリップボードへテキストをコピー
+const copyTextToClipboard = async (text: string): Promise<boolean> => {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch (error) {
+    console.warn(
+      '[Clipboard] navigator.clipboard failed, fallback to execCommand:',
+      error,
+    );
+  }
+
+  let tempTextarea: HTMLTextAreaElement | null = null;
+  try {
+    tempTextarea = document.createElement('textarea');
+    tempTextarea.value = text;
+    tempTextarea.setAttribute('readonly', '');
+    tempTextarea.style.position = 'fixed';
+    tempTextarea.style.top = '-9999px';
+    document.body.appendChild(tempTextarea);
+    tempTextarea.focus();
+    tempTextarea.select();
+    return document.execCommand('copy');
+  } catch (error) {
+    console.error('[Clipboard] execCommand copy failed:', error);
+    return false;
+  } finally {
+    if (tempTextarea?.parentNode) {
+      tempTextarea.parentNode.removeChild(tempTextarea);
+    }
+  }
+};
+
 const App = () => {
   const config = useConfigStore((state) => state.config);
   const updateConfig = useConfigStore((state) => state.updateConfig);
   const {
-    input,
-    buffer,
     candidates,
     candidateIndex,
     isConverting,
     displayText,
+    displayCaret,
+    displaySelectionEnd,
+    caretRevision,
+    mutationSeq,
     mode,
     setMode,
-    setInput,
-    overwriteInput,
     handleCharInput,
     handleBackspace,
     handleClear,
     handleSpace,
     handleCommitCandidate,
     handleCancelConversion,
-    commitBuffer,
+    commitPreedit,
+    discardPreedit,
+    syncFromDom,
+    setSelection,
+    replaceAll,
+    clearAll,
   } = useIME(InputMode.HIRAGANA);
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -71,10 +111,10 @@ const App = () => {
     handleSend: triggerSend,
   } = useOscSender(
     displayText,
-    setInput,
+    clearAll,
     sendTypingStatus,
     cancelTypingTimeout,
-    commitBuffer,
+    commitPreedit,
     pushHistory,
   );
 
@@ -83,7 +123,9 @@ const App = () => {
 
   // Common handler for input side effects (Typing indicator, Auto-send)
   // 入力副作用の共通ハンドラ（タイピングインジケーター、自動送信）
-  const handleInputEffect = (text: string) => {
+  // Stable so the controller's mutation effect does not re-run on every render.
+  // コントローラの変異エフェクトが毎レンダー再実行されないよう安定化する。
+  const handleInputEffect = useCallback((text: string) => {
     // Editing the text leaves history navigation / テキストを編集したら履歴走査を抜ける
     notifyInputChanged(text);
 
@@ -107,7 +149,61 @@ const App = () => {
     if (config.autoSend) {
       throttledAutoSend(text, config.bridgeUrl);
     }
-  };
+  }, [
+    notifyInputChanged,
+    config.copyMode,
+    config.autoSend,
+    config.bridgeUrl,
+    cancelTypingTimeout,
+    sendTypingStatus,
+    resetTypingTimeout,
+    throttledAutoSend,
+  ]);
+
+  // Navigate history / 履歴を走査
+  //
+  // replaceAll returns the text that was actually applied. useSendHistory
+  // compares that against what it handed out, so passing the untrimmed string
+  // would make it think the user edited the text and drop out of navigation.
+  // replaceAll は実際に適用されたテキストを返す。useSendHistory はそれを自分が渡した
+  // 文字列と突き合わせるため、切り詰め前の文字列を渡すとユーザーが編集したと誤認され、
+  // 履歴走査から抜けてしまう。
+  const handleHistoryUp = useCallback(() => {
+    const text = navigateUp(displayText);
+    if (text !== null) replaceAll(text);
+  }, [navigateUp, displayText, replaceAll]);
+
+  const handleHistoryDown = useCallback(() => {
+    const text = navigateDown();
+    if (text !== null) replaceAll(text);
+  }, [navigateDown, replaceAll]);
+
+  // Handle primary action (Send or Copy) / プライマリアクション（送信またはコピー）の処理
+  const handlePrimaryAction = useCallback(async () => {
+    if (!config.copyMode) {
+      await triggerSend();
+      return;
+    }
+
+    if (!displayText.trim()) return;
+
+    const copied = await copyTextToClipboard(displayText);
+    if (!copied) {
+      console.error('[Clipboard] Copy failed');
+      return;
+    }
+
+    clearAll();
+    cancelTypingTimeout();
+    sendTypingStatus(false);
+  }, [
+    config.copyMode,
+    triggerSend,
+    displayText,
+    clearAll,
+    cancelTypingTimeout,
+    sendTypingStatus,
+  ]);
 
   // Use keyboard controller hook / キーボードコントローラーフックを使用
   const {
@@ -118,39 +214,32 @@ const App = () => {
     handleCompositionEnd,
     handleTextareaChange,
     handleSelect,
-    createVirtualKeyHandlers,
+    handlePointerDown,
+    virtualKeyHandlers,
   } = useKeyboardController({
-    input,
-    buffer,
     displayText,
+    displayCaret,
+    displaySelectionEnd,
+    caretRevision,
+    mutationSeq,
     isConverting,
     mode,
     setMode,
-    setInput,
-    overwriteInput,
     handleCharInput,
     handleBackspace,
     handleClear,
     handleSpace,
     handleCommitCandidate,
     handleCancelConversion,
-    commitBuffer,
+    commitPreedit,
+    discardPreedit,
+    syncFromDom,
+    setSelection,
     handlePrimaryAction,
     handleInputEffect,
-    onHistoryUp: () => {
-      // Navigate to older history / 古い履歴へ移動
-      const text = navigateUp(displayText);
-      if (text !== null) overwriteInput(text);
-    },
-    onHistoryDown: () => {
-      // Navigate to newer history / 新しい履歴へ移動
-      const text = navigateDown();
-      if (text !== null) overwriteInput(text);
-    },
+    onHistoryUp: handleHistoryUp,
+    onHistoryDown: handleHistoryDown,
   });
-
-  // Create virtual key handlers / 仮想キーハンドラーを作成
-  const virtualKeyHandlers = createVirtualKeyHandlers();
 
   // Get translations / 翻訳を取得
   const t = TRANSLATIONS[config.language];
@@ -217,62 +306,6 @@ const App = () => {
     updateConfig('copyMode', false);
     updateConfig('autoSend', config.autoSendBeforeCopyMode);
   };
-
-  // Copy text to clipboard / クリップボードへテキストをコピー
-  const copyTextToClipboard = async (text: string): Promise<boolean> => {
-    try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(text);
-        return true;
-      }
-    } catch (error) {
-      console.warn(
-        '[Clipboard] navigator.clipboard failed, fallback to execCommand:',
-        error,
-      );
-    }
-
-    let tempTextarea: HTMLTextAreaElement | null = null;
-    try {
-      tempTextarea = document.createElement('textarea');
-      tempTextarea.value = text;
-      tempTextarea.setAttribute('readonly', '');
-      tempTextarea.style.position = 'fixed';
-      tempTextarea.style.top = '-9999px';
-      document.body.appendChild(tempTextarea);
-      tempTextarea.focus();
-      tempTextarea.select();
-      return document.execCommand('copy');
-    } catch (error) {
-      console.error('[Clipboard] execCommand copy failed:', error);
-      return false;
-    } finally {
-      if (tempTextarea?.parentNode) {
-        tempTextarea.parentNode.removeChild(tempTextarea);
-      }
-    }
-  };
-
-  // Handle primary action (Send or Copy) / プライマリアクション（送信またはコピー）の処理
-  async function handlePrimaryAction() {
-    if (!config.copyMode) {
-      await triggerSend(textareaRef);
-      return;
-    }
-
-    if (!displayText.trim()) return;
-
-    const copied = await copyTextToClipboard(displayText);
-    if (!copied) {
-      console.error('[Clipboard] Copy failed');
-      return;
-    }
-
-    overwriteInput('');
-    cancelTypingTimeout();
-    sendTypingStatus(false);
-    textareaRef.current?.focus();
-  }
 
   return (
     <div className='h-full min-h-screen w-full dark:bg-slate-950/90 pure-black:bg-black bg-slate-50 flex flex-col items-center justify-center p-4 overflow-y-auto overflow-x-hidden transition-colors duration-300'>
@@ -408,6 +441,7 @@ const App = () => {
             onCompositionEnd={handleCompositionEnd}
             onBlur={handleBlur}
             onSelect={handleSelect}
+            onPointerDown={handlePointerDown}
             maxLength={CHATBOX.MAX_LENGTH}
             className='w-full h-full bg-transparent text-2xl md:text-4xl dark:text-white text-slate-900 font-medium resize-none outline-none mt-6 leading-tight break-all font-sans'
             spellCheck='false'

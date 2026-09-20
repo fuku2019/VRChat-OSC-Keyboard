@@ -194,7 +194,12 @@ describe('JapaneseConversionService / 日本語変換サービス', () => {
       expect(service.commit(2).committed).toBe('二本');
     });
 
-    it('records every segment with the previous surface as context', () => {
+    it('records only the active segment, not the untouched ones', () => {
+      // There is no UI to move the active segment, so every other segment is
+      // still on selectedIndex 0 - a pick the user never made. Learning those
+      // would reinforce whatever the dictionary ranked first.
+      // アクティブ文節を移動するUIが無いため、他の文節は selectedIndex 0 のまま
+      // ＝ユーザーが選んでいない候補である。学習すると辞書の先頭候補が強化される。
       const recordCommit = vi.fn();
       const service = createService(
         {
@@ -209,10 +214,64 @@ describe('JapaneseConversionService / 日本語変換サービス', () => {
 
       service.commit(undefined, { previousWord: 'わたし' });
 
-      expect(recordCommit.mock.calls).toEqual([
-        ['にほん', '日本', 'わたし'],
-        ['ご', 'ご', '日本'],
-      ]);
+      expect(recordCommit.mock.calls).toEqual([['にほん', '日本', 'わたし']]);
+    });
+
+    it("uses the preceding segment's surface as context for a later active segment", () => {
+      const recordCommit = vi.fn();
+      // withHiraganaCandidateFirst prepends the reading to every segment, so a
+      // segment only ends up with a single candidate when its dictionary entry
+      // IS the reading. That makes 'ご' the first segment with a real choice,
+      // and selectBestActiveSegment lands on it.
+      // withHiraganaCandidateFirst が全文節に読みを先頭追加するため、候補が1件になるのは
+      // 辞書項目が読みそのものの場合だけ。よって選択肢を持つ最初の文節は'ご'になり、
+      // selectBestActiveSegment はそこを選ぶ。
+      const service = createService(
+        {
+          にほん: [dictCandidate('にほん', 'にほん')],
+          ご: [dictCandidate('語', 'ご'), dictCandidate('午', 'ご')],
+        },
+        {},
+      );
+      (service.provider as any).learningStore = { recordCommit };
+      service.convert('にほんご');
+      service.nextCandidate(); // 語
+
+      service.commit(undefined, { previousWord: 'わたし' });
+
+      // Context is 'にほん' (the first segment's selection), not 'わたし'.
+      // 文脈語は 'わたし' ではなく先頭文節の選択 'にほん'。
+      expect(recordCommit.mock.calls).toEqual([['ご', '語', 'にほん']]);
+    });
+
+    it('skips learning when expectedText disagrees with the composed text', () => {
+      // Happens when the renderer dropped our IPC response and committed from
+      // its own local fallback list instead.
+      // レンダラーがIPC応答を破棄し、自前のローカル候補から確定した場合に起きる。
+      const recordCommit = vi.fn();
+      const service = createService({
+        にほん: [dictCandidate('日本', 'にほん'), dictCandidate('二本', 'にほん')],
+      });
+      (service.provider as any).learningStore = { recordCommit };
+      service.convert('にほん');
+
+      const { committed } = service.commit(1, { expectedText: 'ニホン' });
+
+      expect(committed).toBe('日本');
+      expect(recordCommit).not.toHaveBeenCalled();
+    });
+
+    it('learns when expectedText matches the composed text', () => {
+      const recordCommit = vi.fn();
+      const service = createService({
+        にほん: [dictCandidate('日本', 'にほん'), dictCandidate('二本', 'にほん')],
+      });
+      (service.provider as any).learningStore = { recordCommit };
+      service.convert('にほん');
+
+      service.commit(1, { expectedText: '日本' });
+
+      expect(recordCommit.mock.calls).toEqual([['にほん', '日本', '']]);
     });
 
     it('commits when the provider has no learning store', () => {

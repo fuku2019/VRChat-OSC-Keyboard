@@ -1,60 +1,68 @@
-import { useState, useCallback, useMemo, useRef } from 'react';
+/**
+ * useIME - Binds the pure IME state machine to React and to the main process.
+ * 純粋なIME状態機械をReactとメインプロセスへ結びつけるフック。
+ *
+ * All of the logic lives in imeReducer.ts. This hook only does the two things a
+ * reducer cannot: hold the state in React, and fire the IPC requests the
+ * reducer asks for through its `pending` slot.
+ * ロジックはすべて imeReducer.ts にある。このフックはリデューサにできない2点だけを担う。
+ * すなわち状態をReactで保持することと、リデューサが `pending` に置いた注文票に従って
+ * IPCを発射することである。
+ *
+ * Driving IPC from state rather than from the call sites is what keeps the
+ * generation counter honest: every action that throws work away bumps it inside
+ * the reducer, so a reply that arrives late can always be recognised and
+ * dropped. The old code kept that counter in a ref next to the state and missed
+ * several paths, which let stale conversions resurrect a committed preedit.
+ * 呼び出し側ではなく状態からIPCを駆動することで、世代カウンタが常に正しく保たれる。
+ * 作業を捨てるアクションはすべてリデューサ内でカウンタを進めるため、遅れて届いた応答を
+ * 必ず識別して破棄できる。旧実装はこのカウンタを状態の隣のrefに持ち、いくつかの経路で
+ * 進め忘れていたため、古い変換が確定済みの未確定文字列を復活させていた。
+ */
+
+import { useCallback, useEffect, useMemo, useReducer } from 'react';
 import { InputMode } from '../types';
-import {
-  toKana,
-  convertToKatakana,
-  katakanaToHiragana,
-  dedupeCandidates,
-  extractPreviousWord,
-} from '../utils/ime';
 import { CHATBOX } from '../constants';
-import type { ImeCandidate, ImeContext, ImeSegment, ImeState } from '../types/ime';
+import type { ImeCandidate } from '../types/ime';
+import {
+  createInitialImeState,
+  displayCaretOf,
+  displaySelectionEndOf,
+  displayTextOf,
+  imeReducer,
+} from './imeReducer';
 
-const LOCAL_MAX_CANDIDATES = 20;
-
-interface UseIMEReturn {
+export interface UseIMEReturn {
   input: string; // Committed text / 確定したテキスト
-  buffer: string; // Romaji typing buffer / ローマ字入力バッファ
-  rawKana: string; // Kana preedit before conversion / 変換前のかな
-  segments: ImeSegment[];
+  displayText: string; // What the textarea shows / テキストエリアに表示される文字列
+  displayCaret: number; // Caret in displayText coordinates / displayText座標系のキャレット
+  displaySelectionEnd: number;
+  caretRevision: number; // Bumped when the caret must be written back to the DOM / DOMへ書き戻すべきときに進む
+  mutationSeq: number; // Bumped when the user changed the text / ユーザーがテキストを変えたときに進む
   candidates: ImeCandidate[];
   candidateIndex: number;
   isConverting: boolean;
-  displayText: string; // Text for textarea / テキストエリア表示用文字列
-  bufferPosition: number | null; // Position where preedit is inserted / 未確定文字列の挿入位置
+  hasPreedit: boolean;
   mode: InputMode;
+
   setMode: (mode: InputMode) => void;
-  setInput: (text: string) => void;
-  overwriteInput: (text: string) => string; // For physical textarea sync / 物理テキストエリア同期用
-  handleCharInput: (char: string, cursorPosition?: number) => void;
-  handleBackspace: (cursorPosition?: number) => void;
+  handleCharInput: (char: string) => void;
+  handleBackspace: () => void;
+  handleSpace: () => void;
   handleClear: () => void;
-  handleSpace: (cursorPosition?: number) => void;
   handleCommitCandidate: (index?: number) => void;
   handleCancelConversion: () => void;
-  commitBuffer: () => void;
-}
+  commitPreedit: () => void;
+  discardPreedit: () => void;
 
-const buildLocalFallbackCandidates = (kana: string): ImeCandidate[] => {
-  const normalizedKana = katakanaToHiragana(kana);
-  const fallback: ImeCandidate[] = [
-    {
-      text: normalizedKana,
-      reading: normalizedKana,
-      source: 'fallback',
-      dictSource: 'fallback',
-      score: 10,
-    },
-    {
-      text: convertToKatakana(normalizedKana),
-      reading: normalizedKana,
-      source: 'fallback',
-      dictSource: 'fallback',
-      score: 9,
-    },
-  ];
-  return dedupeCandidates(fallback, LOCAL_MAX_CANDIDATES);
-};
+  // DOM-driven updates (physical keyboard / OS IME) / DOM由来の更新（物理キーボード / OS IME）
+  syncFromDom: (value: string, selectionStart: number, selectionEnd: number) => void;
+  setSelection: (start: number, end: number) => void;
+
+  // Wholesale replacement (history recall, send, copy mode) / 一括置換（履歴呼び出し・送信・コピーモード）
+  replaceAll: (text: string) => string;
+  clearAll: () => void;
+}
 
 const hasImeIpcApi = () => {
   if (typeof window === 'undefined') return false;
@@ -71,499 +79,142 @@ export const useIME = (
   initialMode: InputMode = InputMode.HIRAGANA,
   maxLength: number = CHATBOX.MAX_LENGTH,
 ): UseIMEReturn => {
-  const [input, setInput] = useState('');
-  const [buffer, setBuffer] = useState('');
-  const [rawKana, setRawKana] = useState('');
-  const [segments, setSegments] = useState<ImeSegment[]>([]);
-  const [candidates, setCandidates] = useState<ImeCandidate[]>([]);
-  const [candidateIndex, setCandidateIndex] = useState(0);
-  const [isConverting, setIsConverting] = useState(false);
-  const [bufferPosition, setBufferPosition] = useState<number | null>(null);
-  const [mode, setMode] = useState<InputMode>(initialMode);
-  const ipcRequestIdRef = useRef(0);
+  const [state, dispatch] = useReducer(imeReducer, undefined, () =>
+    createInitialImeState(initialMode, maxLength),
+  );
 
-  const preeditText = useMemo(() => {
-    if (isConverting) {
-      return candidates[candidateIndex]?.text || rawKana;
-    }
-    return rawKana + buffer;
-  }, [isConverting, candidates, candidateIndex, rawKana, buffer]);
+  const displayText = useMemo(() => displayTextOf(state), [state]);
+  const displayCaret = useMemo(() => displayCaretOf(state), [state]);
+  const displaySelectionEnd = useMemo(() => displaySelectionEndOf(state), [state]);
 
-  // Calculate display text with preedit inserted at the correct position.
-  // 未確定文字列を正しい位置に挿入した表示文字列を計算
-  const displayText = useMemo(() => {
-    if (!preeditText) return input;
-    if (bufferPosition === null) return input + preeditText;
-    const safePosition = Math.max(0, Math.min(bufferPosition, input.length));
-    return (
-      input.slice(0, safePosition) + preeditText + input.slice(safePosition)
-    );
-  }, [input, preeditText, bufferPosition]);
+  // Fire whatever the reducer queued. `pending` keeps its identity across
+  // unrelated state changes, so this runs exactly once per request.
+  // リデューサが積んだ注文票を発射する。`pending` は無関係な状態変化をまたいで
+  // 同一性を保つため、1リクエストにつき1回だけ走る。
+  const pending = state.pending;
+  useEffect(() => {
+    if (!pending) return;
 
-  const clearConversionState = useCallback(() => {
-    setSegments([]);
-    setCandidates([]);
-    setCandidateIndex(0);
-    setIsConverting(false);
-  }, []);
-
-  const clearAllPendingState = useCallback(() => {
-    setBuffer('');
-    setRawKana('');
-    clearConversionState();
-    setBufferPosition(null);
-  }, [clearConversionState]);
-
-  const applyImeState = useCallback((state?: ImeState) => {
-    if (!state) return;
-    setRawKana(state.rawKana || '');
-    setSegments(Array.isArray(state.segments) ? state.segments : []);
-    setCandidates(Array.isArray(state.candidates) ? state.candidates : []);
-    setCandidateIndex(
-      Number.isInteger(state.candidateIndex) ? state.candidateIndex : 0,
-    );
-    setIsConverting(Boolean(state.isConverting));
-  }, []);
-
-  const insertCommittedText = useCallback(
-    (text: string) => {
-      if (!text) return;
-      setInput((prev) => {
-        if (bufferPosition === null) return prev + text;
-        const safePosition = Math.max(0, Math.min(bufferPosition, prev.length));
-        return (
-          prev.slice(0, safePosition) + text + prev.slice(safePosition)
-        );
+    const settle = (state?: unknown, kana?: string) =>
+      dispatch({
+        type: 'IPC_RESULT',
+        requestId: pending.id,
+        kind: pending.kind,
+        state: (state as never) ?? null,
+        kana,
       });
-      clearAllPendingState();
-    },
-    [bufferPosition, clearAllPendingState],
-  );
 
-  const commitBuffer = useCallback(() => {
-    if (!preeditText) return;
-    if (isConverting && hasImeIpcApi()) {
-      void window.electronAPI?.imeCommitCandidate?.(candidateIndex, {
-        previousWord: extractPreviousWord(input),
-        currentInput: input,
-      });
-    }
-    insertCommittedText(preeditText);
-  }, [preeditText, isConverting, candidateIndex, input, insertCommittedText]);
-
-  // Called when typing directly into textarea (physical keyboard / native IME)
-  // テキストエリアへ直接入力時（物理キーボード / ネイティブIME）
-  const overwriteInput = useCallback(
-    (text: string): string => {
-      const currentValue = displayText;
-      if (
-        currentValue.length >= maxLength &&
-        text.length > currentValue.length
-      ) {
-        return currentValue;
-      }
-
-      const truncated =
-        text.length > maxLength ? text.slice(0, maxLength) : text;
-      setInput(truncated);
-      clearAllPendingState();
-      return truncated;
-    },
-    [displayText, maxLength, clearAllPendingState],
-  );
-
-  const startLocalConversion = useCallback(
-    (kana: string) => {
-      if (!kana) {
-        clearConversionState();
-        return;
-      }
-      const localCandidates = buildLocalFallbackCandidates(kana);
-      setRawKana(kana);
-      setCandidates(localCandidates);
-      setCandidateIndex(0);
-      setSegments([
-        {
-          raw: kana,
-          candidates: localCandidates,
-          selectedIndex: 0,
-        },
-      ]);
-      setIsConverting(true);
-    },
-    [clearConversionState],
-  );
-
-  const requestConversion = useCallback(
-    (kana: string, context: ImeContext = {}) => {
-      if (!kana) {
-        clearConversionState();
-        return;
-      }
-
-      if (hasImeIpcApi()) {
-        const requestId = ++ipcRequestIdRef.current;
-        void window.electronAPI
-          ?.imeConvert?.(kana, context)
-          .then((response) => {
-            if (requestId !== ipcRequestIdRef.current) return;
-            if (response?.success && response.state) {
-              applyImeState(response.state);
-            } else {
-              startLocalConversion(kana);
-            }
-          })
-          .catch(() => {
-            if (requestId !== ipcRequestIdRef.current) return;
-            startLocalConversion(kana);
-          });
-        return;
-      }
-
-      startLocalConversion(kana);
-    },
-    [applyImeState, clearConversionState, startLocalConversion],
-  );
-
-  const handleCommitCandidate = useCallback(
-    (index?: number) => {
-      if (!isConverting) {
-        commitBuffer();
-        return;
-      }
-
-      const safeIndex =
-        Number.isInteger(index) &&
-        index !== undefined &&
-        index >= 0 &&
-        index < candidates.length
-          ? index
-          : candidateIndex;
-      const committed = candidates[safeIndex]?.text || rawKana || preeditText;
-      const previousWord = extractPreviousWord(input);
-
-      if (hasImeIpcApi()) {
-        void window.electronAPI?.imeCommitCandidate?.(safeIndex, {
-          previousWord,
-          currentInput: input,
-        });
-      }
-
-      insertCommittedText(committed);
-    },
-    [
-      isConverting,
-      commitBuffer,
-      candidates,
-      candidateIndex,
-      rawKana,
-      preeditText,
-      input,
-      insertCommittedText,
-    ],
-  );
-
-  const handleCancelConversion = useCallback(() => {
-    if (!isConverting) return;
-
-    if (hasImeIpcApi()) {
-      const requestId = ++ipcRequestIdRef.current;
-      void window.electronAPI
-        ?.imeCancelConversion?.()
-        .then((response) => {
-          if (requestId !== ipcRequestIdRef.current) return;
-          if (response?.success && response.state) {
-            // Keep kana preedit after cancel for continued editing.
-            // キャンセル後はかな未確定文字を残す
-            setRawKana((prev) => prev || response.state?.rawKana || '');
-          }
-        })
-        .catch(() => {});
-    }
-
-    clearConversionState();
-  }, [isConverting, clearConversionState]);
-
-  // Called by virtual keyboard buttons / 仮想キーボードボタンから呼び出し
-  const handleCharInput = useCallback(
-    (char: string, cursorPosition?: number) => {
-      if (!char) return;
-
-      const displayCursorPos =
-        cursorPosition !== undefined ? cursorPosition : displayText.length;
-
-      const insertDirectChar = (text: string): boolean => {
-        if (displayText.length + text.length > maxLength) return false;
-        // Commit preedit first, then insert into input / preeditを先に確定してからinputに挿入
-        const baseInput = bufferPosition !== null && preeditText
-          ? input.slice(0, Math.min(bufferPosition, input.length)) + preeditText + input.slice(Math.min(bufferPosition, input.length))
-          : input + preeditText;
-        const pos = Math.max(0, Math.min(displayCursorPos, baseInput.length));
-        const nextText =
-          baseInput.slice(0, pos) + text + baseInput.slice(pos);
-        setInput(nextText);
-        clearAllPendingState();
-        return true;
-      };
-
-      if (isConverting && /^[1-9]$/.test(char)) {
-        handleCommitCandidate(Number(char) - 1);
-        return;
-      }
-
-      if (mode === InputMode.ENGLISH) {
-        insertDirectChar(char);
-        return;
-      }
-
-      if (isConverting) {
-        // Keep typing flow smooth: when user continues romaji input,
-        // stop candidate mode and continue building kana.
-        // ローマ字入力の継続時は候補状態を解除してかな構築を続ける
-        if (/^[a-z-]$/.test(char)) {
-          clearConversionState();
-        } else {
-          // Commit the shown candidate and keep the typed character.
-          // insertDirectChar() folds preeditText (= the selected candidate) into
-          // the text, so returning early here dropped every symbol, digit 0 and
-          // uppercase letter typed while candidates were open.
-          // 表示中の候補を確定しつつ、入力された文字も残す。preeditText（選択中の候補）は
-          // insertDirectChar() が取り込むため、ここで return していた従来の実装では
-          // 候補表示中に打った記号・0・大文字がすべて消えていた。
-          if (!insertDirectChar(char)) return;
-          if (hasImeIpcApi()) {
-            void window.electronAPI?.imeCommitCandidate?.(candidateIndex, {
-              previousWord: extractPreviousWord(input),
-              currentInput: input,
-            });
-          }
-          return;
-        }
-      }
-
-      if (/^[A-Z]$/.test(char)) {
-        insertDirectChar(char);
-        return;
-      }
-
-      if (!/^[a-z-]$/.test(char)) {
-        insertDirectChar(char);
-        return;
-      }
-
-      const preeditLength = preeditText.length; // Use actual display length / 実際の表示文字数を使用
-      const effectiveCursorPos =
-        cursorPosition !== undefined
-          ? bufferPosition !== null && cursorPosition > bufferPosition
-            ? Math.max(0, cursorPosition - preeditLength)
-            : cursorPosition
-          : input.length;
-
-      if (rawKana.length === 0 && buffer.length === 0) {
-        setBufferPosition(Math.min(effectiveCursorPos, input.length));
-      }
-
-      const res = toKana(char.toLowerCase(), buffer);
-      let nextRawKana = rawKana;
-
-      if (res.output) {
-        const out =
-          mode === InputMode.KATAKANA
-            ? convertToKatakana(res.output)
-            : res.output;
-        if (
-          input.length + rawKana.length + out.length + res.newBuffer.length >
-          maxLength
-        ) {
-          return;
-        }
-        nextRawKana = rawKana + out;
-        setRawKana(nextRawKana);
-      }
-      setBuffer(res.newBuffer);
-
-      // Auto-show candidates once kana syllables are formed in hiragana mode.
-      // ひらがなモードでかなが形成されたタイミングのみ候補を自動表示
-      if (
-        mode === InputMode.HIRAGANA &&
-        nextRawKana.length > 0 &&
-        res.newBuffer.length === 0
-      ) {
-        requestConversion(nextRawKana, { previousText: input });
-      }
-    },
-    [
-      mode,
-      input,
-      rawKana,
-      buffer,
-      bufferPosition,
-      preeditText,
-      displayText,
-      isConverting,
-      candidateIndex,
-      maxLength,
-      clearAllPendingState,
-      clearConversionState,
-      handleCommitCandidate,
-      requestConversion,
-    ],
-  );
-
-  const handleBackspace = useCallback(
-    (cursorPosition?: number) => {
-      if (isConverting) {
-        handleCancelConversion();
-        return; // Only cancel conversion, don't delete further / 変換キャンセルのみ行い、追加の削除はしない
-      }
-
-      if (buffer.length > 0) {
-        setBuffer((prev) => prev.slice(0, -1));
-        if (buffer.length === 1 && rawKana.length === 0) {
-          setBufferPosition(null);
-        }
-        return;
-      }
-
-      if (rawKana.length > 0) {
-        const nextRawKana = rawKana.slice(0, -1);
-        setRawKana(nextRawKana);
-        if (nextRawKana.length === 0) {
-          setBufferPosition(null);
-        }
-        clearConversionState();
-        return;
-      }
-
-      if (cursorPosition !== undefined && cursorPosition > 0) {
-        const pos = Math.min(cursorPosition - 1, input.length - 1);
-        if (pos >= 0) {
-          setInput(input.slice(0, pos) + input.slice(pos + 1));
-        }
-      } else {
-        setInput((prev) => prev.slice(0, -1));
-      }
-    },
-    [
-      isConverting,
-      handleCancelConversion,
-      buffer,
-      rawKana,
-      input,
-      clearConversionState,
-    ],
-  );
-
-  const handleClear = useCallback(() => {
-    if (isConverting) {
-      handleCancelConversion();
+    // Outside Electron (npm run dev) there is no main process to ask, so let
+    // the reducer fall back to its local candidate list straight away.
+    // Electron外(npm run dev)には問い合わせ先のメインプロセスが無いため、
+    // 即座にリデューサのローカル候補へフォールバックさせる。
+    if (!hasImeIpcApi()) {
+      settle(null, pending.kind === 'convert' ? pending.kana : undefined);
       return;
     }
-    clearAllPendingState();
-    setInput('');
-  }, [isConverting, handleCancelConversion, clearAllPendingState]);
 
-  const handleSpace = useCallback(
-    (cursorPosition?: number) => {
-      if (isConverting) {
-        if (hasImeIpcApi()) {
-          const requestId = ++ipcRequestIdRef.current;
-          void window.electronAPI
-            ?.imeNextCandidate?.()
-            .then((response) => {
-              if (requestId !== ipcRequestIdRef.current) return;
-              if (response?.success) {
-                applyImeState(response.state);
-              }
-            })
-            .catch(() => {});
-          return;
-        }
+    const api = window.electronAPI!;
+    const request =
+      pending.kind === 'convert'
+        ? api.imeConvert!(pending.kana, pending.context)
+        : pending.kind === 'next'
+          ? api.imeNextCandidate!()
+          : pending.kind === 'commit'
+            ? api.imeCommitCandidate!(pending.index, pending.context)
+            : api.imeCancelConversion!();
 
-        if (candidates.length === 0) return;
-        const next = (candidateIndex + 1) % candidates.length;
-        setCandidateIndex(next);
-        setSegments((prev) =>
-          prev.length === 0
-            ? prev
-            : [{ ...prev[0], selectedIndex: next }],
+    void request
+      .then((response) => {
+        settle(
+          response?.success ? response.state : null,
+          pending.kind === 'convert' ? pending.kana : undefined,
         );
-        return;
-      }
+      })
+      .catch(() => {
+        settle(null, pending.kind === 'convert' ? pending.kana : undefined);
+      });
+  }, [pending]);
 
-      if (mode === InputMode.HIRAGANA) {
-        // Flush remaining romaji buffer to kana before conversion / 変換前に残留ローマ字バッファをかなにフラッシュ
-        let kanaToConvert = rawKana;
-        let remaining = buffer;
-        if (remaining.length > 0) {
-          const res = toKana(remaining, '');
-          if (res.output) {
-            kanaToConvert += res.output;
-          }
-          // If buffer still has unresolvable chars, append as-is / 解決不可の文字はそのまま追加
-          if (res.newBuffer) {
-            kanaToConvert += res.newBuffer;
-          }
-        }
-        if (kanaToConvert.length > 0) {
-          if (bufferPosition === null) {
-            const safe = Math.max(0, Math.min(cursorPosition ?? input.length, input.length));
-            setBufferPosition(safe);
-          }
-          setRawKana(kanaToConvert);
-          setBuffer('');
-          requestConversion(kanaToConvert, { previousText: input });
-          return;
-        }
-      }
+  // dispatch is stable, so every handler below is stable too. That is what lets
+  // the virtual keyboard stay memoised. / dispatch は安定なので以下のハンドラも
+  // すべて安定する。仮想キーボードの memo が効くのはこのため。
+  const setMode = useCallback(
+    (mode: InputMode) => dispatch({ type: 'SET_MODE', mode }),
+    [],
+  );
+  const handleCharInput = useCallback(
+    (char: string) => dispatch({ type: 'CHAR_INPUT', char }),
+    [],
+  );
+  const handleBackspace = useCallback(() => dispatch({ type: 'BACKSPACE' }), []);
+  const handleSpace = useCallback(() => dispatch({ type: 'SPACE' }), []);
+  const handleClear = useCallback(() => dispatch({ type: 'CLEAR' }), []);
+  const handleCommitCandidate = useCallback(
+    (index?: number) => dispatch({ type: 'COMMIT_PREEDIT', index }),
+    [],
+  );
+  const handleCancelConversion = useCallback(
+    () => dispatch({ type: 'CANCEL_CONVERSION' }),
+    [],
+  );
+  const commitPreedit = useCallback(
+    () => dispatch({ type: 'COMMIT_PREEDIT' }),
+    [],
+  );
+  const discardPreedit = useCallback(
+    () => dispatch({ type: 'DISCARD_PREEDIT' }),
+    [],
+  );
+  const syncFromDom = useCallback(
+    (value: string, selectionStart: number, selectionEnd: number) =>
+      dispatch({ type: 'SYNC_FROM_DOM', value, selectionStart, selectionEnd }),
+    [],
+  );
+  const setSelection = useCallback(
+    (start: number, end: number) =>
+      dispatch({ type: 'SET_SELECTION', start, end }),
+    [],
+  );
+  const clearAll = useCallback(() => dispatch({ type: 'CLEAR_ALL' }), []);
 
-      // Insert space into input (not displayText) to avoid preedit duplication / preedit二重化を防ぐためinputに挿入
-      if (input.length >= maxLength) return;
-      const insertPos =
-        cursorPosition !== undefined
-          ? Math.max(0, Math.min(cursorPosition, input.length))
-          : input.length;
-      const nextText =
-        input.slice(0, insertPos) + ' ' + input.slice(insertPos);
-      setInput(nextText);
-      clearAllPendingState();
+  // Returns the text that was actually applied. History navigation compares it
+  // against what it handed us, so a silently trimmed value would make it think
+  // the user edited the text and drop out of history navigation.
+  // 実際に適用されたテキストを返す。履歴走査は渡した文字列と突き合わせるため、
+  // 黙って切り詰めるとユーザーが編集したと誤認され、履歴走査から抜けてしまう。
+  const replaceAll = useCallback(
+    (text: string) => {
+      dispatch({ type: 'REPLACE_ALL', text });
+      return text.length > maxLength ? text.slice(0, maxLength) : text;
     },
-    [
-      isConverting,
-      mode,
-      rawKana,
-      buffer,
-      bufferPosition,
-      input,
-      maxLength,
-      candidates,
-      candidateIndex,
-      applyImeState,
-      requestConversion,
-      clearAllPendingState,
-    ],
+    [maxLength],
   );
 
   return {
-    input,
-    buffer,
-    rawKana,
-    segments,
-    candidates,
-    candidateIndex,
-    isConverting,
+    input: state.input,
     displayText,
-    bufferPosition,
-    mode,
+    displayCaret,
+    displaySelectionEnd,
+    caretRevision: state.caretRevision,
+    mutationSeq: state.mutationSeq,
+    candidates: state.candidates,
+    candidateIndex: state.candidateIndex,
+    isConverting: state.isConverting,
+    hasPreedit: state.preeditStart !== null,
+    mode: state.mode,
+
     setMode,
-    setInput,
-    overwriteInput,
     handleCharInput,
     handleBackspace,
-    handleClear,
     handleSpace,
+    handleClear,
     handleCommitCandidate,
     handleCancelConversion,
-    commitBuffer,
+    commitPreedit,
+    discardPreedit,
+    syncFromDom,
+    setSelection,
+    replaceAll,
+    clearAll,
   };
 };

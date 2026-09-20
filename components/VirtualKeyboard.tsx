@@ -29,6 +29,12 @@ interface VirtualKeyboardProps {
   onHistoryDown?: () => void; // Navigate to newer history / 新しい履歴へ移動
 }
 
+// Candidates reachable by the number keys 1-9 in useIME. Showing fewer than
+// this made 6-9 commit a candidate that was never on screen.
+// useIME の数字キー1-9で到達できる候補数。これより少なく表示していたため、
+// 6-9 が画面に無い候補を確定していた。
+const MAX_VISIBLE_CANDIDATES = 9;
+
 const SOUND_SRC_MAP: Record<KeySoundVariant, string> = {
   soft: `${SOUND_BASE_URL}key-soft.mp3`,
   mechanical: `${SOUND_BASE_URL}key-mechanical.mp3`,
@@ -135,11 +141,16 @@ const VirtualKeyboard: FC<VirtualKeyboardProps> = ({
         <div className='flex-1 min-w-0 h-full overflow-x-auto overflow-y-hidden'>
           {isConverting && candidates.length > 0 && (
             <div className='inline-flex h-full items-center gap-2 pr-2'>
-              {candidates.slice(0, 5).map((candidate, index) => (
+              {candidates.slice(0, MAX_VISIBLE_CANDIDATES).map((candidate, index) => (
                 <button
                   key={`${candidate.text}-${index}`}
                   type='button'
                   onClick={() => handleCandidateCommit(index)}
+                  // Keep the textarea focused, same as Key.tsx. Without this the
+                  // candidate click blurs it and the caret jumps to the end.
+                  // Key.tsx と同じくテキストエリアのフォーカスを保つ。これが無いと
+                  // 候補クリックでblurし、キャレットが末尾へ飛ぶ。
+                  onMouseDown={(e) => e.preventDefault()}
                   className={`h-7 px-3 rounded-lg text-sm border transition-colors whitespace-nowrap ${
                     index === candidateIndex
                       ? 'bg-primary-500/20 border-primary-500 text-primary-700 dark:text-primary-200'

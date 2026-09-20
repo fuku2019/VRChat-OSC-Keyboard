@@ -351,25 +351,36 @@ export class JapaneseConversionService {
     return this.buildState();
   }
 
-  // Record selected candidates to learning store for future ranking / 将来のランキングのため選択された候補を学習ストアに記録
+  // Record the selected candidate to learning store for future ranking / 将来のランキングのため選択された候補を学習ストアに記録
+  //
+  // Only the active segment is learned. There is no UI or IPC channel to move
+  // the active segment, so every other segment still carries selectedIndex 0 -
+  // a pick the user never made. Learning those reinforced whatever the
+  // dictionary happened to rank first and made mis-conversions stickier.
+  // 学習対象はアクティブ文節のみ。アクティブ文節を移動するUIもIPCも存在しないため、
+  // 他の文節は selectedIndex 0 のまま = ユーザーが選んでいない候補である。それらを
+  // 学習すると辞書がたまたま先頭に置いた候補が強化され、誤変換が定着してしまう。
   recordLearning(context = {}) {
-    const previousWord = context.previousWord || '';
-    let rollingPrev = previousWord;
+    if (!this.provider?.learningStore?.recordCommit) return;
 
-    for (const segment of this.segments) {
-      const selectedCandidate =
-        segment.candidates?.[segment.selectedIndex]?.text || segment.raw;
-      const selectedReading =
-        segment.candidates?.[segment.selectedIndex]?.reading || segment.raw;
-      if (this.provider?.learningStore?.recordCommit) {
-        this.provider.learningStore.recordCommit(
-          selectedReading,
-          selectedCandidate,
-          rollingPrev,
-        );
-      }
-      rollingPrev = selectedCandidate;
-    }
+    const activeSegment = this.getActiveSegment();
+    if (!activeSegment) return;
+
+    // Context word = the committed surface of the segment right before the
+    // active one, or the caller-supplied previous word for the first segment.
+    // 文脈語 = アクティブ文節の直前の文節の確定表層形。先頭文節なら呼び出し側が渡した直前語。
+    const previousSegment = this.segments[this.activeSegmentIndex - 1];
+    const previousWord = previousSegment
+      ? previousSegment.candidates?.[previousSegment.selectedIndex]?.text ||
+        previousSegment.raw
+      : context.previousWord || '';
+
+    const selected = activeSegment.candidates?.[activeSegment.selectedIndex];
+    this.provider.learningStore.recordCommit(
+      selected?.reading || activeSegment.raw,
+      selected?.text || activeSegment.raw,
+      previousWord,
+    );
   }
 
   // Commit the current conversion and return committed text / 現在の変換を確定し確定テキストを返す
@@ -382,7 +393,21 @@ export class JapaneseConversionService {
     }
 
     const committed = this.composeSegmentText();
-    this.recordLearning(context);
+
+    // Learn only when the renderer tells us it committed this very text. The
+    // renderer owns the text it inserts and falls back to a local candidate
+    // list whenever an IPC response is dropped, so a mismatch means the two
+    // sides disagree about what was selected. Learning our own pick then would
+    // record a word the user never chose.
+    // レンダラーが「このテキストを確定した」と明示したときだけ学習する。挿入テキストの正は
+    // レンダラー側にあり、IPC応答が破棄されるとローカル候補へフォールバックするため、
+    // 不一致は両者の選択が食い違っていることを意味する。その状態でmain側の選択を学習すると、
+    // ユーザーが選んでいない語を記録してしまう。
+    const { expectedText } = context;
+    if (typeof expectedText !== 'string' || expectedText === committed) {
+      this.recordLearning(context);
+    }
+
     this.resetState();
     return { committed, state: this.buildState() };
   }
