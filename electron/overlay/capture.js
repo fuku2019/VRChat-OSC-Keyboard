@@ -11,6 +11,7 @@ const MIN_CAPTURE_FPS = 1;
 const MAX_CAPTURE_FPS = 120;
 const SIZE_MISMATCH_LOG_INTERVAL_MS = 5000;
 const MAX_FRAME_RETENTION = 3;
+const SETTLE_DELAY_MS = 120;
 const INVALID_OVERLAY_HANDLE = 0;
 const captureFrameListeners = new Set();
 
@@ -66,6 +67,70 @@ function retainFrame(buffer, image) {
   if (state.frameRetention.length > MAX_FRAME_RETENTION) {
     state.frameRetention.shift();
   }
+}
+
+/**
+ * Force one more frame once the page goes quiet.
+ * ページが静かになったら、もう1枚だけフレームを強制する。
+ *
+ * Offscreen rendering only paints on damage, so the last paint of a burst is
+ * the one the overlay is left holding. If that frame is dropped - an empty
+ * image, a size mismatch, a paint that arrives while the previous one is still
+ * being uploaded - the overlay keeps showing the frame before it until
+ * something else on the page happens to change. That is how a cursor that the
+ * renderer has already removed stays on screen. One forced repaint after the
+ * activity stops closes that window, and it is bounded: a forced frame does not
+ * itself trigger another.
+ * オフスクリーン描画は変化があったときしか描かないため、一連の描画の最後の1枚が
+ * そのままオーバーレイに残る絵になる。その1枚が落ちると (画像が空、サイズ不一致、
+ * 前の1枚を転送中に届いた等)、ページに次の変化が起きるまでオーバーレイは1つ前の
+ * 絵を表示し続ける。レンダラーが既に消したカーソルが画面に残るのはこれが理由である。
+ * 活動が止まった後に1枚だけ強制的に描き直せばこの隙間は塞がる。強制した1枚が
+ * さらに次を呼ぶことはないので、回数は増えない。
+ */
+function armSettleTimer() {
+  if (!state.captureWebContents || state.capturePaused) return;
+  if (state.settleTimer) clearTimeout(state.settleTimer);
+  state.settleTimer = setTimeout(runSettle, SETTLE_DELAY_MS);
+}
+
+function runSettle() {
+  state.settleTimer = null;
+  const webContents = state.captureWebContents;
+  if (!webContents || webContents.isDestroyed() || state.capturePaused) return;
+  // Nothing new since the last forced frame, so there is nothing to settle.
+  // 前回の強制フレーム以降に新しいものがないので、確定させる対象がない。
+  if (!state.sawRealFrameSinceSettle) return;
+
+  state.sawRealFrameSinceSettle = false;
+  state.settleFramePending = true;
+  if (typeof webContents.invalidate === 'function') {
+    webContents.invalidate();
+  }
+}
+
+function clearSettleState() {
+  if (state.settleTimer) {
+    clearTimeout(state.settleTimer);
+    state.settleTimer = null;
+  }
+  state.settleFramePending = false;
+  state.sawRealFrameSinceSettle = false;
+}
+
+/**
+ * Note that the pipeline did some work, whether or not a frame got through.
+ * A dropped frame counts, because a drop is exactly what leaves a stale image.
+ * フレームが通ったかどうかにかかわらず、パイプラインが動いたことを記録する。
+ * 取りこぼしも数える。古い絵が残る原因はまさに取りこぼしだからである。
+ */
+function noteFrameActivity() {
+  if (state.settleFramePending) {
+    state.settleFramePending = false;
+  } else {
+    state.sawRealFrameSinceSettle = true;
+  }
+  armSettleTimer();
 }
 
 function notifyCaptureFrame(info) {
@@ -244,6 +309,7 @@ export function startCapture(webContents, fps = 60) {
         }
       } finally {
         state.captureInProgress = false;
+        noteFrameActivity();
       }
     };
 
@@ -283,6 +349,7 @@ export function startCapture(webContents, fps = 60) {
       }
     } finally {
       state.captureInProgress = false;
+      noteFrameActivity();
       if (state.captureWebContents) {
         const now = Date.now();
         while (nextCaptureTime <= now) {
@@ -334,6 +401,7 @@ function pauseWhileHidden() {
 export function pauseCapture() {
   if (!state.captureWebContents || state.capturePaused) return;
   state.capturePaused = true;
+  clearSettleState();
 
   if (state.captureTimer) {
     clearTimeout(state.captureTimer);
@@ -427,6 +495,7 @@ export function stopCapture() {
   state.captureInProgress = false;
   state.capturePaused = false;
   state.captureResume = null;
+  clearSettleState();
   state.lastFrameBuffer = null;
   state.lastFrameImage = null;
   state.frameRetention.length = 0;

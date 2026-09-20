@@ -1,7 +1,6 @@
 import { state } from './state.js';
 import { mapUvToClient } from './mapping.js';
 import { CURSOR_SEND_EPSILON } from './constants.js';
-import { isPerfLogEnabled } from '../overlay/perf.js';
 
 // Last coordinates actually sent, per controller / コントローラーごとに実際に送った座標
 const lastSentCursor = new Map();
@@ -76,15 +75,6 @@ export function sendCursorEvent(controllerId, u, v) {
 export function sendCursorHideEvent(controllerId) {
   resetCursorThrottle(controllerId);
   const target = getTargetWebContents();
-  // Hide is sent once per ray exit, so logging it is cheap and it is the only
-  // way to tell a main-side miss from a renderer-side one.
-  // hide はレイが外れるたびに1回だけ送られるのでログは安価であり、main側で
-  // 送っていないのかレンダラー側で効いていないのかを見分ける唯一の手段になる。
-  if (isPerfLogEnabled()) {
-    console.log(
-      '[input] cursor hide -> controller=' + controllerId + ' sent=' + Boolean(target),
-    );
-  }
   if (!target) return;
   try {
     target.send('input-cursor-hide', { controllerId });

@@ -127,6 +127,62 @@ describe('startCapture on an offscreen webContents', () => {
   });
 });
 
+describe('settling after the page goes quiet', () => {
+  it('forces one more frame so a dropped last frame cannot stick', async () => {
+    const wc = makeWebContents({ offscreen: true });
+    startCapture(wc as never, 90);
+
+    // A frame that gets dropped is exactly the case that leaves the overlay
+    // holding a stale image. / 取りこぼされたフレームこそが、オーバーレイに古い絵を
+    // 残す当のケースである。
+    wc.emit('paint', {}, {}, makeImage(0, 0));
+    expect(setOverlayTexturesD3D11).not.toHaveBeenCalled();
+
+    await vi.advanceTimersByTimeAsync(200);
+    expect(wc.invalidate).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not let the forced frame trigger another one', async () => {
+    const wc = makeWebContents({ offscreen: true });
+    startCapture(wc as never, 90);
+
+    wc.emit('paint', {}, {}, makeImage(8, 4));
+    await vi.advanceTimersByTimeAsync(200);
+    expect(wc.invalidate).toHaveBeenCalledTimes(1);
+
+    // The repaint the forced frame produces must not arm another one.
+    // 強制フレームが生む描画が、さらにもう1回を呼んではならない。
+    wc.emit('paint', {}, {}, makeImage(8, 4));
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(wc.invalidate).toHaveBeenCalledTimes(1);
+  });
+
+  it('settles again once real activity resumes', async () => {
+    const wc = makeWebContents({ offscreen: true });
+    startCapture(wc as never, 90);
+
+    wc.emit('paint', {}, {}, makeImage(8, 4));
+    await vi.advanceTimersByTimeAsync(200);
+    wc.emit('paint', {}, {}, makeImage(8, 4)); // the forced frame
+    await vi.advanceTimersByTimeAsync(200);
+    expect(wc.invalidate).toHaveBeenCalledTimes(1);
+
+    wc.emit('paint', {}, {}, makeImage(8, 4)); // real activity again
+    await vi.advanceTimersByTimeAsync(200);
+    expect(wc.invalidate).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not force frames while the overlay is hidden', async () => {
+    const wc = makeWebContents({ offscreen: true });
+    startCapture(wc as never, 90);
+    wc.emit('paint', {}, {}, makeImage(8, 4));
+    pauseCapture();
+
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(wc.invalidate).not.toHaveBeenCalled();
+  });
+});
+
 describe('pausing while the overlay is hidden', () => {
   it.each([
     ['offscreen', true],
