@@ -10,7 +10,21 @@ const DEFAULT_CAPTURE_FPS = 60;
 const MIN_CAPTURE_FPS = 1;
 const MAX_CAPTURE_FPS = 120;
 const SIZE_MISMATCH_LOG_INTERVAL_MS = 5000;
-const MAX_FRAME_RETENTION = 3;
+// setOverlayTexturesD3D11 is synchronous: by the time it returns, Map/memcpy/
+// Unmap have completed and the native side is no longer looking at the buffer.
+// Retaining anything older than the frame being submitted therefore serves no
+// functional purpose, so one is enough.
+// This was also tried as a fix for the recurring ~6ms spike in the bitmap
+// stage. It is not one - the spike is unchanged at either setting, so whatever
+// causes it is not the garbage this used to hold. Do not read a performance
+// claim into this number.
+// setOverlayTexturesD3D11 は同期関数であり、戻った時点で Map/memcpy/Unmap は
+// 完了していてネイティブ側はもうバッファを見ていない。したがって転送中のフレーム
+// より古いものを保持しても機能上の意味はなく、1枚で足りる。
+// これは bitmap 区間に周期的に出る約6msのスパイクの対策としても試したが、効果は
+// なかった - どちらの設定でもスパイクは変わらないため、原因はここで抱えていた
+// ゴミではない。この数値に性能上の意味を読み込まないこと。
+const MAX_FRAME_RETENTION = 1;
 const SETTLE_DELAY_MS = 120;
 const INVALID_OVERLAY_HANDLE = 0;
 const captureFrameListeners = new Set();
@@ -216,12 +230,26 @@ function updateOverlayFromImage(image) {
   state.lastFrameImage = image;
   retainFrame(bgraBuffer, image);
 
+  // The back overlay is hidden in HMD-locked mode, yet every frame was handed
+  // to it anyway. SetOverlayTexture is not free - it passes the texture to
+  // vrcompositor for a cross-device copy - so submitting to a surface nobody
+  // can see doubled that cost for nothing. An invalid handle makes the native
+  // side skip the second submit entirely.
+  // 背面オーバーレイはHMD相対モードでは非表示であるにもかかわらず、毎フレーム
+  // 渡され続けていた。SetOverlayTexture はただではなく、テクスチャを vrcompositor
+  // へ渡してデバイス間コピーを行わせるため、誰にも見えない面への転送がそのコストを
+  // 無意味に倍にしていた。無効なハンドルを渡せばネイティブ側は2回目の転送を完全に
+  // 省く。
+  const backHandle = state.backOverlayEnabled
+    ? (state.overlayHandleBack ?? INVALID_OVERLAY_HANDLE)
+    : INVALID_OVERLAY_HANDLE;
+
   // Update texture directly via D3D11 shared texture / D3D11共有テクスチャ経由で直接テクスチャを更新
   // Uses GPU memory sharing - no file I/O, minimal flickering / GPUメモリ共有を使用 - ファイルI/Oなし、点滅最小化
   const submitStartedAt = perfNow();
   state.overlayManager.setOverlayTexturesD3D11(
     state.overlayHandle,
-    state.overlayHandleBack ?? INVALID_OVERLAY_HANDLE,
+    backHandle,
     bgraBuffer,
     width,
     height,
@@ -412,6 +440,31 @@ export function pauseCapture() {
     webContents.stopPainting();
   }
   console.log('Capture paused');
+}
+
+/**
+ * Force one frame regardless of whether the page changed.
+ * ページに変化があったかどうかに関わらず、フレームを1枚強制する。
+ *
+ * Needed by anything that changes *where* a frame goes rather than what it
+ * contains - enabling the back overlay, for one. Offscreen rendering paints on
+ * damage only, so a surface that becomes a target between two page changes
+ * would otherwise keep showing whatever it last received.
+ * フレームの中身ではなく「どこへ送るか」を変える処理に必要である - 背面オーバーレイ
+ * の有効化がその一例。オフスクリーン描画は変化があったときしか描かないため、
+ * ページの変化と変化の間に転送先になった面は、最後に受け取った絵を表示し続けて
+ * しまう。
+ */
+export function requestCaptureFrame() {
+  const webContents = state.captureWebContents;
+  if (!webContents || state.capturePaused) return;
+  if (typeof webContents.isDestroyed === 'function' && webContents.isDestroyed()) return;
+  // The polling path produces a frame on its own within one interval.
+  // ポーリング経路は1インターバル以内に自前でフレームを出す。
+  if (!state.paintHandler) return;
+  if (typeof webContents.invalidate === 'function') {
+    webContents.invalidate();
+  }
 }
 
 /**

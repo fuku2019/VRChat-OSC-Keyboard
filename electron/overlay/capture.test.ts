@@ -10,6 +10,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { state } from './state.js';
 import {
   pauseCapture,
+  requestCaptureFrame,
   resumeCapture,
   startCapture,
   stopCapture,
@@ -65,6 +66,7 @@ beforeEach(() => {
   state.overlayManager = { setOverlayTexturesD3D11 } as never;
   state.overlayHandle = 1 as never;
   state.overlayHandleBack = null;
+  state.backOverlayEnabled = false;
   state.rendererMetrics.pixelWidth = 0;
   state.rendererMetrics.pixelHeight = 0;
   // Capture only runs for a visible overlay; the hidden case has its own test.
@@ -228,6 +230,114 @@ describe('pausing while the overlay is hidden', () => {
     resumeCapture();
     await vi.advanceTimersByTimeAsync(1);
     expect(wc.capturePage).toHaveBeenCalled();
+  });
+});
+
+describe('submitting to the back overlay', () => {
+  const backHandleOf = (call: number) =>
+    setOverlayTexturesD3D11.mock.calls[call][1];
+
+  const paintOnce = (wc: ReturnType<typeof makeWebContents>) =>
+    wc.emit('paint', {}, {}, makeImage(8, 4));
+
+  it('skips the back overlay while it is disabled', () => {
+    state.overlayHandleBack = 2 as never;
+    state.backOverlayEnabled = false;
+    const wc = makeWebContents({ offscreen: true });
+    startCapture(wc as never, 90);
+
+    paintOnce(wc);
+
+    // An invalid handle is how the native side is told to skip the second
+    // SetOverlayTexture. / 無効なハンドルが、2回目のSetOverlayTextureを省く合図になる。
+    expect(backHandleOf(0)).toBe(0);
+  });
+
+  it('submits to the back overlay once it is enabled', () => {
+    state.overlayHandleBack = 2 as never;
+    state.backOverlayEnabled = true;
+    const wc = makeWebContents({ offscreen: true });
+    startCapture(wc as never, 90);
+
+    paintOnce(wc);
+
+    expect(backHandleOf(0)).toBe(2);
+  });
+
+  it('still skips it when enabled without a handle', () => {
+    state.overlayHandleBack = null;
+    state.backOverlayEnabled = true;
+    const wc = makeWebContents({ offscreen: true });
+    startCapture(wc as never, 90);
+
+    paintOnce(wc);
+
+    expect(backHandleOf(0)).toBe(0);
+  });
+});
+
+describe('requestCaptureFrame', () => {
+  it('forces a repaint so a newly enabled surface gets a real frame', () => {
+    const wc = makeWebContents({ offscreen: true });
+    startCapture(wc as never, 90);
+
+    requestCaptureFrame();
+
+    expect(wc.invalidate).toHaveBeenCalledTimes(1);
+  });
+
+  it('does nothing while capture is paused', () => {
+    const wc = makeWebContents({ offscreen: true });
+    startCapture(wc as never, 90);
+    pauseCapture();
+
+    requestCaptureFrame();
+
+    expect(wc.invalidate).not.toHaveBeenCalled();
+  });
+
+  it('leaves the polling path alone, which produces frames on its own', async () => {
+    const wc = makeWebContents({ offscreen: false });
+    startCapture(wc as never, 90);
+
+    requestCaptureFrame();
+
+    expect(wc.invalidate).not.toHaveBeenCalled();
+  });
+
+  it('does nothing when no capture is running', () => {
+    const wc = makeWebContents({ offscreen: true });
+    startCapture(wc as never, 90);
+    stopCapture();
+
+    expect(() => requestCaptureFrame()).not.toThrow();
+    expect(wc.invalidate).not.toHaveBeenCalled();
+  });
+});
+
+describe('frame retention', () => {
+  it('keeps only the current frame alive', () => {
+    const wc = makeWebContents({ offscreen: true });
+    startCapture(wc as never, 90);
+
+    // The native submit is synchronous, so retaining anything older than the
+    // frame being submitted serves no purpose.
+    // ネイティブ側の転送は同期的なので、転送中のフレームより古いものを保持しても
+    // 意味はない。
+    for (let i = 0; i < 5; i += 1) wc.emit('paint', {}, {}, makeImage(8, 4));
+
+    expect(state.frameRetention.length).toBe(1);
+  });
+
+  it('drops every retained frame on stopCapture', () => {
+    const wc = makeWebContents({ offscreen: true });
+    startCapture(wc as never, 90);
+    wc.emit('paint', {}, {}, makeImage(8, 4));
+
+    stopCapture();
+
+    expect(state.frameRetention.length).toBe(0);
+    expect(state.lastFrameBuffer).toBe(null);
   });
 });
 

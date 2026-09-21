@@ -5,6 +5,7 @@ import { state } from './overlay/state.js';
 import {
   addCaptureFrameListener,
   pauseCapture,
+  requestCaptureFrame,
   resumeCapture,
   startCapture,
   stopCapture,
@@ -440,6 +441,23 @@ export function getOverlayManager() {
   return state.overlayManager;
 }
 
+/**
+ * Turn the back overlay on and make sure a real frame reaches it.
+ * 背面オーバーレイを有効にし、実フレームが必ず届くようにする。
+ *
+ * Capture only submits to the back overlay while this flag is set, so a handle
+ * that is enabled between two page changes would keep showing whatever it last
+ * received - the logo it is given at startup.
+ * キャプチャはこのフラグが立っている間しか背面へ転送しないため、ページの変化と
+ * 変化の間に有効化されたハンドルは最後に受け取った絵 - 起動時に設定されるロゴ -
+ * を表示し続けてしまう。
+ */
+function enableBackOverlay() {
+  if (state.backOverlayEnabled) return;
+  state.backOverlayEnabled = true;
+  requestCaptureFrame();
+}
+
 export function showOverlayAll() {
   if (!state.overlayManager || state.overlayHandle === null) return;
   state.overlayManager.showOverlay(state.overlayHandle);
@@ -453,7 +471,7 @@ export function showOverlayAll() {
     // If we are in HMD-Locked mode, usually no.
     // But we will assume 'All' means 'All available'.
     state.overlayManager.showOverlay(state.overlayHandleBack);
-    state.backOverlayEnabled = true; // Mark as intuitively enabled
+    enableBackOverlay(); // Mark as intuitively enabled
   }
   setOverlayVisible(true);
   resumeCapture();
@@ -519,7 +537,7 @@ export function setOverlayTransformAbsoluteAll(matrixRow) {
     // The original code did: checks visible.
     if (state.overlayVisible) {
       state.overlayManager.showOverlay(state.overlayHandleBack);
-      state.backOverlayEnabled = true;
+      enableBackOverlay();
     }
   }
 }
