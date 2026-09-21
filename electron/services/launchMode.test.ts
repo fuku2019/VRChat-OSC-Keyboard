@@ -44,8 +44,70 @@ describe('resolveInitialWindowMode', () => {
     ).toBe('desktop');
   });
 
-  it('reuses the mode confirmed on the previous run', () => {
-    expect(resolveInitialWindowMode({ storedLaunchMode: 'vr' })).toBe('vr');
+  // Starting in desktop and letting the bootstrap correct it made the first
+  // launch after switching to 'always' flash a normal keyboard window and then
+  // tear it down. / desktopで開いて初期化処理に直させていたため、'always' へ
+  // 切り替えた直後の起動で通常のキーボードウィンドウが一瞬出て消えていた。
+  it('opens straight into VR when vrOsrMode is always, with no flag', () => {
+    expect(
+      resolveInitialWindowMode({
+        launchArgs: {},
+        storedLaunchMode: null,
+        overlaySettings: { vrOsrMode: 'always' },
+      }),
+    ).toBe('vr');
+  });
+
+  it('stays on desktop when vrOsrMode is never, even with a stored VR mode', () => {
+    expect(
+      resolveInitialWindowMode({
+        storedLaunchMode: 'vr',
+        overlaySettings: { vrOsrMode: 'never' },
+      }),
+    ).toBe('desktop');
+  });
+
+  it('refuses always when the overlay is disabled', () => {
+    expect(
+      resolveInitialWindowMode({
+        overlaySettings: { vrOsrMode: 'always', disableOverlay: true },
+      }),
+    ).toBe('desktop');
+  });
+
+  // Under 'auto' the stored mode cannot predict anything - 'auto' means "VR
+  // only when a flag asked for it". Honouring it there made one --vr run turn
+  // every later launch into a VR launch, and washing that out took two more.
+  // 'auto' では保存されたモードは何も先読みできない。'auto' は「フラグで要求された
+  // ときだけVR」という意味だからである。ここで従ったために、一度の --vr 起動が
+  // 以降のすべての起動をVRにし、それが解消するまでさらに2回の起動を要していた。
+  it.each([['auto'], ['never'], [undefined]])(
+    'ignores a stored VR mode when vrOsrMode is %s',
+    (vrOsrMode) => {
+      expect(
+        resolveInitialWindowMode({
+          storedLaunchMode: 'vr',
+          overlaySettings: { vrOsrMode: vrOsrMode as never },
+        }),
+      ).toBe('desktop');
+    },
+  );
+
+  it('does not let a stored VR mode survive a launch without the flag', () => {
+    // The exact sequence that was reported: --vr once, then plain launches.
+    // 報告された通りの手順: 一度 --vr で起動し、その後は素で起動する。
+    const afterVrRun = resolveInitialWindowMode({
+      launchArgs: {},
+      storedLaunchMode: 'vr',
+      overlaySettings: { vrOsrMode: 'auto' },
+    });
+    expect(afterVrRun).toBe('desktop');
+  });
+
+  it('reuses a stored desktop mode', () => {
+    expect(resolveInitialWindowMode({ storedLaunchMode: 'desktop' })).toBe(
+      'desktop',
+    );
   });
 
   it('lets an explicit flag override the stored mode', () => {

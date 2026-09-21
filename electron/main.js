@@ -36,6 +36,7 @@ import {
   ensureSteamVrManifestRegistered,
 } from './services/SteamVrManifestService.js';
 import {
+  getOverlayManager,
   initOverlay,
   initSplash,
   shutdownOverlay,
@@ -269,8 +270,47 @@ async function bootstrapSteamVr() {
   if (overlayHandles !== null) {
     initVrOverlayService();
     startVrOverlayPolling(60);
+    logSteamVrBindings();
   }
   return overlayHandles;
+}
+
+/**
+ * Report which SteamVR Input bindings actually resolved.
+ * SteamVR Input のバインディングが実際にどう解決されたかを報告する。
+ *
+ * Every OpenVR call in init_input is error checked, so a silent start means the
+ * action manifest was accepted and the handles are valid. That still leaves the
+ * case where SteamVR resolved no bindings for those handles, which looks
+ * identical from the app's side - the toggle simply never fires - and is
+ * otherwise invisible without the headset.
+ * init_input の各OpenVR呼び出しはすべてエラー検査されているので、何も出ずに起動した
+ * なら、アクションマニフェストは受理されハンドルも有効である。しかしそれでも、
+ * SteamVR がそのハンドルに対してバインディングを1つも解決していない場合が残る。
+ * これはアプリ側からは区別が付かず (単にトグルが発火しないだけ)、ヘッドセットなしでは
+ * 見ることもできない。
+ *
+ * Delayed because SteamVR resolves bindings asynchronously after the manifest
+ * is registered. / マニフェスト登録後、SteamVR は非同期にバインディングを解決する
+ * ため遅延させている。
+ */
+const BINDING_REPORT_DELAY_MS = 2000;
+function logSteamVrBindings() {
+  const timer = setTimeout(() => {
+    try {
+      const manager = getOverlayManager();
+      const bindings = manager?.getCurrentBindings?.();
+      if (!bindings) return;
+      console.log(
+        `[SteamVR Input] initialized=${bindings.initialized} ` +
+          `toggle=[${bindings.toggleOverlay.join(' | ')}] ` +
+          `triggerBound=${bindings.triggerBound} gripBound=${bindings.gripBound}`,
+      );
+    } catch (error) {
+      console.warn('[SteamVR Input] could not read bindings:', error);
+    }
+  }, BINDING_REPORT_DELAY_MS);
+  timer.unref?.();
 }
 
 /**
@@ -347,6 +387,7 @@ function shutdownServices() {
   shutdownOverlay();
   // Close bridge connections / ブリッジ接続を閉じる
   cleanupBridge();
+  console.log('[shutdown] services stopped');
 }
 
 // Single instance lock / 単一インスタンスロック
@@ -409,10 +450,20 @@ if (!gotTheLock) {
   // Also covers quit paths that never close a window (e.g. restart / installer).
   // ウィンドウを閉じずに終了する経路（再起動やインストーラ実行など）もここで拾う。
   app.on('before-quit', () => {
+    console.log('[shutdown] before-quit');
     shutdownServices();
   });
 
+  app.on('will-quit', () => {
+    console.log('[shutdown] will-quit');
+  });
+
+  app.on('quit', () => {
+    console.log('[shutdown] quit');
+  });
+
   app.on('window-all-closed', () => {
+    console.log('[shutdown] window-all-closed');
     if (process.platform !== 'darwin') {
       shutdownServices();
       app.quit();

@@ -21,7 +21,7 @@
  * @param {Object} options
  * @param {{windowMode?: WindowMode|null}} [options.launchArgs]
  * @param {WindowMode|null} [options.storedLaunchMode] - Mode confirmed on the previous run / 前回の起動で確定したモード
- * @param {{disableOverlay?: boolean}} [options.overlaySettings]
+ * @param {{disableOverlay?: boolean, vrOsrMode?: 'auto'|'always'|'never'}} [options.overlaySettings]
  * @returns {WindowMode}
  */
 export function resolveInitialWindowMode({
@@ -44,10 +44,47 @@ export function resolveInitialWindowMode({
 
   if (overlaySettings.disableOverlay === true) return 'desktop';
 
-  if (storedLaunchMode === 'vr' || storedLaunchMode === 'desktop') {
-    return storedLaunchMode;
-  }
+  // 'always' means the user has chosen VR as their normal way of running the
+  // app, so open that way immediately. Starting in desktop mode and letting the
+  // bootstrap correct it is what made the first launch after switching to
+  // 'always' flash a normal keyboard window and then tear it down.
+  // If SteamVR turns out not to be running, the bootstrap rebuilds as a desktop
+  // window - the same safety net, just pointing the other way.
+  // 'always' はユーザーがVRを常用の起動形態として選んだという意味なので、最初から
+  // その形で開く。desktopで開いてから初期化処理に直させていたことが、'always' へ
+  // 切り替えた直後の起動で通常のキーボードウィンドウが一瞬出て消える原因だった。
+  // SteamVRが動いていなかった場合は初期化処理がデスクトップウィンドウとして作り直す。
+  // 同じ安全網が逆向きに働くだけである。
+  if (overlaySettings.vrOsrMode === 'always') return 'vr';
+  if (overlaySettings.vrOsrMode === 'never') return 'desktop';
 
+  // The stored mode is a startup optimisation: it predicts what the bootstrap
+  // will settle on so the window does not have to be rebuilt. Under 'auto' it
+  // cannot predict anything, because 'auto' means "VR only when a flag asked
+  // for it" and the flag was already checked above. Trusting a stored 'vr'
+  // there made a single --vr run turn every later launch into a VR launch, and
+  // since the bootstrap then corrected it back to desktop and stored that, it
+  // took two more launches to wash out.
+  // 保存されたモードは起動時の最適化であり、初期化処理が最終的に選ぶモードを
+  // 先読みしてウィンドウの作り直しを避けるためのものである。'auto' では何も
+  // 先読みできない。'auto' は「フラグで要求されたときだけVR」という意味であり、
+  // そのフラグは既に上で判定済みだからである。ここで保存された 'vr' を信用したため、
+  // 一度 --vr で起動すると以降の起動がすべてVRになり、しかも初期化処理が desktop へ
+  // 戻して保存するため、正常化までにさらに2回の起動を要していた。
+  // Only 'auto' reaches this point, and under 'auto' the stored mode cannot
+  // predict anything: 'auto' means "VR only when a flag asked for it" and the
+  // flag was already handled above. Trusting a stored 'vr' here made a single
+  // --vr run turn every later launch into a VR launch, and since the bootstrap
+  // then corrected it back and stored that, it took two more launches to wash
+  // out. The value is kept in the store for diagnostics and for a future mode
+  // that can genuinely be predicted from it.
+  // ここへ到達するのは 'auto' だけであり、'auto' では保存されたモードは何も
+  // 先読みできない。'auto' は「フラグで要求されたときだけVR」という意味であり、
+  // そのフラグは既に上で処理済みだからである。ここで保存された 'vr' を信用した
+  // ために、一度の --vr 起動が以降のすべての起動をVRにし、しかも初期化処理が
+  // 戻して保存するため正常化までにさらに2回の起動を要していた。値は診断用と、
+  // 将来これで本当に先読みできるモードのためにストアへ残してある。
+  void storedLaunchMode;
   return 'desktop';
 }
 

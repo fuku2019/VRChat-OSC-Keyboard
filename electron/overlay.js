@@ -402,6 +402,12 @@ export function shutdownOverlay() {
   // Ensure splash is gone
   destroySplash();
 
+  // Each step here calls into OpenVR, and OpenVR can block when vrserver is
+  // busy or already gone. Naming the steps is what turns "the app hangs on
+  // exit" into a single identifiable call.
+  // ここの各ステップは OpenVR を呼ぶが、OpenVR は vrserver が取り込み中だったり
+  // 既に消えていたりするとブロックしうる。ステップに名前を付けることが、
+  // 「終了時にハングする」を特定可能な1つの呼び出しに変える。
   if (state.overlayHandleBack !== null) {
     try {
       manager.destroyOverlay(state.overlayHandleBack);
@@ -409,6 +415,7 @@ export function shutdownOverlay() {
       console.error('Failed to destroy back overlay:', e);
     }
   }
+  console.log('[shutdown] back overlay destroyed');
 
   if (state.overlayHandle !== null) {
     try {
@@ -417,6 +424,7 @@ export function shutdownOverlay() {
       console.error('Failed to destroy overlay:', e);
     }
   }
+  console.log('[shutdown] main overlay destroyed');
 
   state.overlayHandleBack = null;
   state.overlayHandle = null;
@@ -424,11 +432,17 @@ export function shutdownOverlay() {
   // Release VR/D3D11 resources deterministically. Dropping the JS reference alone
   // defers teardown until V8 finalizes the object.
   // VR/D3D11 リソースを確定的に解放する。JS の参照を外すだけでは V8 のファイナライズまで解放が遅延する。
+  // VR_ShutdownInternal lives at the end of this call. If the log stops here,
+  // the hang is inside OpenVR and no JavaScript timer can rescue it.
+  // この呼び出しの末尾に VR_ShutdownInternal がある。ログがここで止まるなら
+  // ハングは OpenVR の内側であり、JavaScriptのタイマーでは救済できない。
+  console.log('[shutdown] disposing overlay manager');
   try {
     manager.dispose?.();
   } catch (e) {
     console.error('Failed to dispose overlay manager:', e);
   }
+  console.log('[shutdown] overlay manager disposed');
 
   state.overlayManager = null;
   setOverlayVisible(false);
