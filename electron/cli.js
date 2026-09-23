@@ -106,7 +106,7 @@ export function parseLaunchArgs(argv) {
       case 'vr':
         args.windowMode = 'vr';
         break;
-      case 'desktop-keyboard':
+      case 'desktop':
         args.windowMode = 'desktop';
         break;
       case 'perf-log':
