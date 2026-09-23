@@ -18,6 +18,19 @@ interface UseSteamVrSettingsReturn {
   handleToggleSteamVrAutoLaunch: (value: boolean) => Promise<void>;
 }
 
+// SteamVR input is brought up by the VR bootstrap, which runs a second or two
+// after the window is already on screen. Asking before then is not an error and
+// must not be shown as one - in VR mode the settings window opens at startup
+// and always asks first, so the very first thing the user saw was "bindings
+// unavailable", which they then had to know to refresh away.
+// SteamVR入力はVR初期化処理が立ち上げるが、この処理はウィンドウが画面に出てから
+// 1〜2秒後に走る。それ以前の問い合わせはエラーではなく、エラーとして見せてはならない。
+// VRモードでは設定ウィンドウが起動時に開いて必ず先に問い合わせるため、ユーザーが
+// 最初に目にするのが「バインディングを利用できません」になり、更新を押せば直ると
+// 知っている必要があった。
+const BINDING_RETRY_INTERVAL_MS = 1000;
+const BINDING_RETRY_ATTEMPTS = 10;
+
 /**
  * Custom hook for SteamVR auto-launch registration and controller binding display.
  * SteamVRの自動起動登録とコントローラーバインディング表示を扱うカスタムフック。
@@ -39,7 +52,8 @@ export const useSteamVrSettings = (
   const [triggerBindings, setTriggerBindings] = useState<string[]>([]);
   const [gripBindings, setGripBindings] = useState<string[]>([]);
   const [initialized, setInitialized] = useState<boolean>(false);
-  const [loadingBindings, setLoadingBindings] = useState<boolean>(false);
+  const [fetchingBindings, setFetchingBindings] = useState<boolean>(false);
+  const [bindingRetriesLeft, setBindingRetriesLeft] = useState<number>(0);
   const [bindingError, setBindingError] = useState<string>('');
   const [triggerBound, setTriggerBound] = useState<boolean>(false);
   const [gripBound, setGripBound] = useState<boolean>(false);
@@ -113,13 +127,13 @@ export const useSteamVrSettings = (
 
   // The dependency is the translated string on purpose: switching language re-creates this callback and reloads bindings.
   // 依存に翻訳文字列を指定しているのは意図的: 言語を切り替えるとコールバックが再生成され、バインディングが再読み込みされる。
-  const loadBindings = useCallback(async () => {
+  const fetchBindings = useCallback(async () => {
     if (!window.electronAPI?.getSteamVrBindings) {
       resetBindings();
       return;
     }
 
-    setLoadingBindings(true);
+    setFetchingBindings(true);
     setBindingError('');
 
     try {
@@ -146,14 +160,63 @@ export const useSteamVrSettings = (
       resetBindings();
       setBindingError(getLocalizedSteamVrBindingsError());
     } finally {
-      setLoadingBindings(false);
+      setFetchingBindings(false);
     }
   }, [t.steamVrBindingsUnavailable]);
+
+  // Every caller outside the retry loop is a fresh attempt, so give it a full
+  // budget again. / リトライループ以外からの呼び出しはすべて仕切り直しなので、
+  // 再び満額の回数を与える。
+  const loadBindings = useCallback(async () => {
+    setBindingRetriesLeft(BINDING_RETRY_ATTEMPTS);
+    await fetchBindings();
+  }, [fetchBindings]);
 
   useEffect(() => {
     if (!isOpen) return;
     void loadBindings();
   }, [isOpen, loadBindings]);
+
+  // Keep asking while the answer is still "not initialized". A bounded budget
+  // is right for both outcomes: either the bootstrap finishes within a few
+  // seconds, or SteamVR genuinely is not there and the unavailable state is the
+  // truth. / 「未初期化」という答えが返る間は問い合わせ続ける。回数に上限を設けるのは
+  // どちらの結末にも適う。数秒で初期化が終わるか、SteamVRが本当に無く「利用できません」が
+  // 事実であるかのどちらかだからである。
+  // "Initialized" is not the finish line. SteamVR resolves the bindings for the
+  // action handles asynchronously, a second or two after the action manifest is
+  // accepted, so the first answer after initialization is typically
+  // initialized=true with nothing bound. Stopping there left the tab showing
+  // "no bindings assigned" plus a warning telling the user to go and set them
+  // up - for bindings that were already set up and arrived moments later.
+  // 「初期化済み」は終着点ではない。SteamVR はアクションマニフェストを受理してから
+  // 1〜2秒後に、アクションハンドルに対するバインディングを非同期に解決する。その
+  // ため初期化直後の最初の答えは、たいてい initialized=true かつ割り当てが空である。
+  // そこで止めていたため、タブには「現在の割り当てはありません」と、設定を促す警告が
+  // 表示されていた - 実際には設定済みで、直後に届くはずのバインディングに対して。
+  const bindingsResolved =
+    initialized && (toggleBindings.length > 0 || triggerBound || gripBound);
+
+  useEffect(() => {
+    if (!isOpen || bindingsResolved || bindingError || bindingRetriesLeft <= 0) return;
+    const timer = setTimeout(() => {
+      setBindingRetriesLeft((remaining) => remaining - 1);
+      void fetchBindings();
+    }, BINDING_RETRY_INTERVAL_MS);
+    return () => clearTimeout(timer);
+  }, [isOpen, bindingsResolved, bindingError, bindingRetriesLeft, fetchBindings]);
+
+  // Waiting - for the bootstrap, then for SteamVR to resolve the bindings - is a
+  // loading state, not a result. Folding it in here keeps the distinction out
+  // of the tab's markup. Once the budget runs out, whatever was last seen is the
+  // honest answer: unavailable, or genuinely nothing bound.
+  // 待機 - 初期化処理を、その後SteamVRのバインディング解決を - は結果ではなく
+  // 読み込み中である。ここで畳み込むことで、この区別をタブのマークアップへ
+  // 持ち込まずに済む。回数を使い切ったら、最後に見えたものが正直な答えになる。
+  // 利用できないか、本当に何も割り当てられていないかのどちらかである。
+  const loadingBindings =
+    fetchingBindings ||
+    (!bindingsResolved && !bindingError && bindingRetriesLeft > 0);
 
   const handleOpenBindingUi = async () => {
     if (!window.electronAPI?.openSteamVrBindingUi) return;
