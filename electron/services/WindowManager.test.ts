@@ -103,15 +103,16 @@ storeData.set('windowPosition', { x: 77, y: 88 });
 // ...and the remembered window mode an earlier build left behind.
 // ...あわせて、以前のビルドが残した前回のウィンドウモードも仕込む。
 storeData.set('launchMode', 'vr');
+// ...and the display settings the app no longer has.
+// ...あわせて、アプリにもう存在しない表示設定も仕込む。
+storeData.set('overlaySettings', { disableOverlay: true, vrOsrMode: 'never' });
 
 const {
-  createWindow,
   createKeyboardWindow,
   createSettingsWindow,
   getKeyboardWindow,
   getSettingsWindow,
   getAllAppWindows,
-  getMainWindow,
 } = await import('./WindowManager.js');
 
 // Snapshot the migration result now: beforeEach() rewrites windowPositions for
@@ -120,6 +121,7 @@ const {
 const migratedPositions = storeData.get('windowPositions') as Record<string, unknown>;
 const migratedLegacy = storeData.get('windowPosition');
 const leftoverLaunchMode = storeData.has('launchMode');
+const leftoverOverlaySettings = storeData.has('overlaySettings');
 
 const latestWindow = () =>
   FakeBrowserWindow.instances[FakeBrowserWindow.instances.length - 1];
@@ -155,44 +157,51 @@ describe('window-state migration', () => {
   it('drops the remembered window mode left by earlier builds', () => {
     expect(leftoverLaunchMode).toBe(false);
   });
+
+  // The app is VR-only: a stored disableOverlay: true would hide the only
+  // keyboard there is. / アプリはVR専用なので、保存された disableOverlay: true は
+  // 唯一のキーボードを隠してしまう。
+  it('drops the display settings left by earlier builds', () => {
+    expect(leftoverOverlaySettings).toBe(false);
+  });
 });
 
-describe('createWindow', () => {
+describe('createKeyboardWindow', () => {
   it('creates a normal desktop window by default', () => {
-    createWindow();
+    createKeyboardWindow();
     const win = latestWindow();
     expect(win.options.webPreferences.offscreen).toBeUndefined();
     expect(win.options.show).toBe(false);
   });
 
   it('marks the window offscreen when asked', () => {
-    createWindow({ offscreen: true });
+    createKeyboardWindow({ offscreen: true });
     expect(latestWindow().options.webPreferences.offscreen).toBe(true);
   });
 
   it('restores the saved position for a desktop window', () => {
-    createWindow();
+    createKeyboardWindow();
     const win = latestWindow();
     expect(win.options.x).toBe(300);
     expect(win.options.y).toBe(400);
   });
 
   it('ignores the saved position for an offscreen window', () => {
-    createWindow({ offscreen: true });
+    createKeyboardWindow({ offscreen: true });
     const win = latestWindow();
     expect(win.options.x).toBeUndefined();
     expect(win.options.y).toBeUndefined();
   });
 
   it('shows a desktop window once its content is ready', () => {
-    createWindow();
+    createKeyboardWindow();
     const win = latestWindow();
     win.emit('ready-to-show');
     expect(win.show).toHaveBeenCalled();
   });
 
   it('never shows an offscreen window', () => {
-    createWindow({ offscreen: true });
+    createKeyboardWindow({ offscreen: true });
     const win = latestWindow();
     expect(win.hasListener('ready-to-show')).toBe(false);
     expect(win.show).not.toHaveBeenCalled();
@@ -201,13 +210,13 @@ describe('createWindow', () => {
   it.each(['move', 'close'])(
     'does not register the %s position listener for an offscreen window',
     (event) => {
-      createWindow({ offscreen: true });
+      createKeyboardWindow({ offscreen: true });
       expect(latestWindow().hasListener(event)).toBe(false);
     },
   );
 
   it('still persists the position of a desktop window on close', () => {
-    createWindow();
+    createKeyboardWindow();
     const win = latestWindow();
     win.emit('close');
     expect(
@@ -216,7 +225,7 @@ describe('createWindow', () => {
   });
 
   it('opens detached DevTools for an offscreen window in development', () => {
-    createWindow({ offscreen: true });
+    createKeyboardWindow({ offscreen: true });
     expect(latestWindow().webContents.openDevTools).toHaveBeenCalledWith({
       mode: 'detach',
     });
@@ -227,16 +236,16 @@ describe('createWindow', () => {
     ['an offscreen window in a packaged build', true, true],
   ])('does not open DevTools for %s', (_label, offscreen, isPackaged) => {
     appMock.isPackaged = isPackaged;
-    createWindow({ offscreen });
+    createKeyboardWindow({ offscreen });
     expect(latestWindow().webContents.openDevTools).not.toHaveBeenCalled();
   });
 
   it('clears the reference once the window is closed', () => {
-    createWindow();
+    createKeyboardWindow();
     const win = latestWindow();
-    expect(getMainWindow()).toBe(win);
+    expect(getKeyboardWindow()).toBe(win);
     win.emit('closed');
-    expect(getMainWindow()).toBeNull();
+    expect(getKeyboardWindow()).toBeNull();
   });
 });
 
@@ -297,12 +306,11 @@ describe('window accessors', () => {
     expect(getAllAppWindows()).toEqual([keyboard, settings]);
   });
 
-  it('falls back to the settings window once the keyboard window is gone', () => {
+  it('keeps the settings window once the keyboard window is gone', () => {
     createKeyboardWindow();
     const settings = createSettingsWindow();
     getKeyboardWindow()!.emit('closed');
     expect(getKeyboardWindow()).toBeNull();
-    expect(getMainWindow()).toBe(settings);
     expect(getAllAppWindows()).toEqual([settings]);
   });
 });

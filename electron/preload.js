@@ -36,6 +36,7 @@ function listenerPair(channel) {
 const configBroadcast = listenerPair('config-broadcast');
 const showTutorialRequest = listenerPair('show-tutorial');
 const clearHistoryRequest = listenerPair('clear-history');
+const vrStatusChanged = listenerPair('vr-status-changed');
 
 // Expose protected methods to renderer process via contextBridge
 // contextBridge経由でレンダラープロセスに保護されたメソッドを公開
@@ -181,10 +182,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Reset overlay position / オーバーレイ位置のリセット
   resetOverlayPosition: () => ipcRenderer.invoke('reset-overlay-position'),
   restartApp: () => ipcRenderer.invoke('restart-app'),
-  // Overlay settings / オーバーレイ設定
-  getOverlaySettings: () => ipcRenderer.invoke('get-overlay-settings'),
-  setOverlaySettings: (settings) =>
-    ipcRenderer.invoke('set-overlay-settings', settings),
   getSteamVrAutoLaunch: () => ipcRenderer.invoke('get-steamvr-auto-launch'),
   setSteamVrAutoLaunch: (enabled) =>
     ipcRenderer.invoke('set-steamvr-auto-launch', enabled),
@@ -209,4 +206,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Which window this is, and whether VR mode is active / 自分がどのウィンドウか、VRモードが有効か
   getLaunchInfo: () => ipcRenderer.invoke('get-launch-info'),
+
+  // Whether the SteamVR overlay is up yet / SteamVR オーバーレイが立ち上がったか
+  getVrStatus: () => ipcRenderer.invoke('get-vr-status'),
+  onVrStatusChanged: vrStatusChanged.on,
+  removeVrStatusChangedListener: vrStatusChanged.off,
 });

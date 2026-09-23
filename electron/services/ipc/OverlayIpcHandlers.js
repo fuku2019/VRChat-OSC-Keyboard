@@ -1,7 +1,6 @@
 import { ipcMain } from 'electron';
 import { resetOverlayPosition, updateRendererMetrics } from '../../overlay.js';
 import { updateWindowSize } from '../../input_handler.js';
-import { getOverlaySettings, setOverlaySettings } from '../WindowManager.js';
 
 /**
  * Register Overlay related IPC handlers / オーバーレイ関連のIPCハンドラを登録
@@ -43,15 +42,5 @@ export function registerOverlayIpcHandlers() {
     if (Number.isFinite(width) && Number.isFinite(height)) {
       updateWindowSize(width, height);
     }
-  });
-
-  // Overlay settings / オーバーレイ設定
-  ipcMain.handle('get-overlay-settings', () => {
-    return { success: true, settings: getOverlaySettings() };
-  });
-
-  ipcMain.handle('set-overlay-settings', (event, settings) => {
-    setOverlaySettings(settings);
-    return { success: true, settings: getOverlaySettings() };
   });
 }

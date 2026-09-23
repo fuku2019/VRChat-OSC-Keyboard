@@ -1,7 +1,8 @@
 # VRChat-OSC-Keyboard
 
 Unleash your typing in VRChat.<br>
-Directly send messages to the Chatbox via OSC using physical or virtual keyboards.
+Directly send messages to the Chatbox via OSC using a virtual keyboard inside VR.<br>
+**VR-only:** SteamVR is required.
 
 ![logo](https://raw.githubusercontent.com/fuku2019/VRChat-OSC-Keyboard/refs/heads/main/docs/fake_logo_3.png)
 <br>
@@ -29,19 +30,25 @@ Directly send messages to the Chatbox via OSC using physical or virtual keyboard
 
 ## ✨ Features
 
-- **Flexible Input:** Supports both the built-in virtual keyboard (Kana/English) and physical keyboards.
-- **Seamless Japanese Input:** Leverage your preferred IME for Kanji conversion when using a physical keyboard. (Works for other languages too!)
+- **Dedicated VR Overlay:** Control the keyboard directly within SteamVR using your VR controllers.
 - **Offline Kana-Kanji Conversion:** Virtual keyboard conversion uses bundled data derived from Mozc dictionary_oss.
 - **Polished UI:** Features smooth animations and custom themes.
 - **Clipboard Integration:** Automatically copies typed text to your clipboard.
-- **Dedicated VR Overlay:** Control the keyboard directly within SteamVR.
 
 ## 🚀 Quick Start
 
 1. **Download:** Get the latest `.exe` from [Releases](https://github.com/fuku2019/VRChat-OSC-Keyboard/releases/latest).
 2. **Install:** Run the installer and follow the setup wizard.
 3. **Configure VRChat:** Enable OSC via Action Menu ➔ Options ➔ OSC ➔ Enabled.
-4. **Ready:** Type in the text box and hit send!
+4. **Launch:** Start the app with SteamVR running. A settings window appears on the desktop and the keyboard appears in VR.
+   - If you start the app before SteamVR, the settings window shows a notice. Just start SteamVR and the keyboard appears in VR automatically.
+5. **Ready:** Hold the right controller's stick to show the keyboard, type, and hit send!
+
+## ⚠️ Known Issues
+
+- Physical keyboard input is not available. The keyboard is drawn only inside VR, so it cannot receive Windows input focus (since v2.3.0).
+- If SteamVR exits while the app is running, restart the app as well.
+- The first-run tutorial is shown only inside VR.
 
 ## 🗺️ Roadmap
 

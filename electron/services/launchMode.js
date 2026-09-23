@@ -1,97 +1,34 @@
 /**
  * Window mode resolution / ウィンドウモードの解決
  *
- * The VR overlay bootstrap is asynchronous and slow (it shells out to vrpathreg
- * and tasklist, then calls VR_Init), while the window has to appear immediately.
- * So the mode is decided twice: once synchronously from cheap inputs to get a
- * window on screen, and once after the bootstrap reports whether the overlay
- * actually came up.
- * VRオーバーレイの初期化は非同期かつ低速である (vrpathreg と tasklist を起動し、
- * その後 VR_Init を呼ぶ) 一方、ウィンドウは即座に出す必要がある。そのためモードは
- * 2回決める。1回目は安価な入力だけから同期的に決めてウィンドウを出し、2回目は
- * 初期化がオーバーレイの起動可否を報告した後に決める。
+ * The app is VR-only: the keyboard lives in the SteamVR overlay and the desktop
+ * only shows the settings window. The desktop keyboard window survives as a
+ * debugging aid. The mode is decided once, from the launch flags and the debug
+ * setting alone - it no longer depends on whether SteamVR is running, which is
+ * what used to force a second decision after the VR bootstrap and a visible
+ * window rebuild in between.
+ * このアプリはVR専用である。キーボードはSteamVRオーバーレイの中にあり、
+ * デスクトップには設定ウィンドウだけが出る。デスクトップのキーボードウィンドウは
+ * デバッグ用として残している。モードは起動フラグとデバッグ設定だけから一度で
+ * 決まる。SteamVRが動いているかどうかには依存しない。以前はそれに依存していた
+ * ため、VR初期化の後にもう一度判定し、その間にウィンドウを目に見える形で
+ * 作り直す必要があった。
  */
 
 /** @typedef {'vr'|'desktop'} WindowMode */
 
 /**
- * Decide the mode to start with, before anything asynchronous has run.
- * 非同期処理が走る前の、起動時点のモードを決める。
- *
  * @param {Object} options
  * @param {{windowMode?: WindowMode|null}} [options.launchArgs]
- * @param {{disableOverlay?: boolean, vrOsrMode?: 'auto'|'always'|'never'}} [options.overlaySettings]
+ * @param {boolean} [options.debug] - Debug mode (--debug or enableDebugMode) / デバッグモード
  * @returns {WindowMode}
  */
-export function resolveInitialWindowMode({
-  launchArgs = {},
-  overlaySettings = {},
-} = {}) {
-  // An explicit flag always wins - it is how SteamVR and manual debugging ask
-  // for a specific mode. / 明示的なフラグが常に優先される。SteamVR と手動デバッグは
-  // これでモードを指定する。
+export function resolveWindowMode({ launchArgs = {}, debug = false } = {}) {
+  // An explicit flag always wins, so VR mode can still be exercised while
+  // debugging. / 明示的なフラグが常に優先される。デバッグ中でもVRモードを試せる
+  // ようにするため。
   if (launchArgs.windowMode === 'vr' || launchArgs.windowMode === 'desktop') {
-    // ...except that VR mode with the overlay switched off would leave no
-    // visible window at all. / ただしオーバーレイを切った状態のVRモードは、
-    // 可視ウィンドウが一切ない状態を生むので許さない。
-    if (launchArgs.windowMode === 'vr' && overlaySettings.disableOverlay === true) {
-      return 'desktop';
-    }
     return launchArgs.windowMode;
   }
-
-  if (overlaySettings.disableOverlay === true) return 'desktop';
-
-  // 'always' means the user has chosen VR as their normal way of running the
-  // app, so open that way immediately. Starting in desktop mode and letting the
-  // bootstrap correct it is what made the first launch after switching to
-  // 'always' flash a normal keyboard window and then tear it down.
-  // If SteamVR turns out not to be running, the bootstrap rebuilds as a desktop
-  // window - the same safety net, just pointing the other way.
-  // 'always' はユーザーがVRを常用の起動形態として選んだという意味なので、最初から
-  // その形で開く。desktopで開いてから初期化処理に直させていたことが、'always' へ
-  // 切り替えた直後の起動で通常のキーボードウィンドウが一瞬出て消える原因だった。
-  // SteamVRが動いていなかった場合は初期化処理がデスクトップウィンドウとして作り直す。
-  // 同じ安全網が逆向きに働くだけである。
-  if (overlaySettings.vrOsrMode === 'always') return 'vr';
-  if (overlaySettings.vrOsrMode === 'never') return 'desktop';
-
-  // 'auto' without a flag: 'auto' means "VR only when a flag asks for it", and
-  // the flag was handled above. Do not add a remembered previous mode here - an
-  // earlier version did, and a single --vr run turned every later launch into a
-  // VR launch.
-  // フラグなしの 'auto'。'auto' は「フラグで要求されたときだけVR」という意味で、
-  // フラグは上で処理済みである。ここに前回のモードの記憶を足してはならない。以前の
-  // 版はそうしていて、一度の --vr 起動が以降のすべての起動をVRにしていた。
-  return 'desktop';
-}
-
-/**
- * Decide the mode to settle on once the overlay bootstrap has reported back.
- * オーバーレイの初期化が結果を返した後に落ち着くべきモードを決める。
- *
- * @param {Object} options
- * @param {{windowMode?: WindowMode|null}} [options.launchArgs]
- * @param {'auto'|'always'|'never'} [options.vrOsrMode] - User setting / ユーザー設定
- * @param {boolean} [options.overlayStarted] - Whether the VR overlay came up / VRオーバーレイが起動したか
- * @returns {WindowMode}
- */
-export function resolveFinalWindowMode({
-  launchArgs = {},
-  vrOsrMode = 'auto',
-  overlayStarted = false,
-} = {}) {
-  // Without a live overlay there is nothing to render into, so VR mode would
-  // hide the UI with no replacement. / 生きたオーバーレイがなければ描画先がなく、
-  // VRモードは代わりのないままUIを隠すだけになる。
-  if (!overlayStarted) return 'desktop';
-
-  if (vrOsrMode === 'never') return 'desktop';
-  if (vrOsrMode === 'always') return 'vr';
-
-  // 'auto': only go VR when something explicitly asked for it, so existing
-  // installs keep behaving exactly as before.
-  // 'auto': 明示的に要求されたときだけVRにする。これにより既存の環境の挙動は
-  // 従来とまったく変わらない。
-  return launchArgs.windowMode === 'vr' ? 'vr' : 'desktop';
+  return debug ? 'desktop' : 'vr';
 }

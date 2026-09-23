@@ -14,6 +14,7 @@
 
 import { FC } from 'react';
 import SettingsModal from './SettingsModal';
+import VrStatusBanner from './VrStatusBanner';
 import { useConfigStore } from '../stores/configStore';
 import { useTheme } from '../hooks/useTheme';
 import { useUpdateChecker } from '../hooks/useUpdateChecker';
@@ -42,34 +43,39 @@ const SettingsWindow: FC = () => {
   } = useUpdateChecker();
 
   return (
-    <div className='h-screen w-screen overflow-hidden dark:bg-slate-950 pure-black:bg-black bg-slate-50'>
-      <SettingsModal
-        key={externalRevision}
-        variant='panel'
-        isOpen
-        onClose={() => window.close()}
-        onShowTutorial={() => {
-          void window.electronAPI?.requestShowTutorial?.();
-        }}
-        updateAvailable={updateAvailable}
-        onUpdateAvailable={(version, url, isInstaller, installerUrl) => {
-          if (version === null) {
-            setUpdateAvailable(null);
-          } else if (url) {
-            setUpdateAvailable({ version, url, isInstaller, installerUrl });
-          }
-        }}
-        isDownloading={isDownloading}
-        downloadProgress={downloadProgress}
-        downloadError={downloadError}
-        downloadedPath={downloadedPath}
-        startDownload={startDownload}
-        cancelDownload={cancelDownload}
-        installUpdate={installUpdate}
-        onClearHistory={() => {
-          void window.electronAPI?.requestClearHistory?.();
-        }}
-      />
+    <div className='h-screen w-screen overflow-hidden flex flex-col dark:bg-slate-950 pure-black:bg-black bg-slate-50'>
+      {/* Outside the keyed panel so a config remount does not reset it.
+          キー付きのパネルの外に置き、設定による再マウントでリセットされないようにする。 */}
+      <VrStatusBanner />
+      <div className='relative flex-1 min-h-0'>
+        <SettingsModal
+          key={externalRevision}
+          variant='panel'
+          isOpen
+          onClose={() => window.close()}
+          onShowTutorial={() => {
+            void window.electronAPI?.requestShowTutorial?.();
+          }}
+          updateAvailable={updateAvailable}
+          onUpdateAvailable={(version, url, isInstaller, installerUrl) => {
+            if (version === null) {
+              setUpdateAvailable(null);
+            } else if (url) {
+              setUpdateAvailable({ version, url, isInstaller, installerUrl });
+            }
+          }}
+          isDownloading={isDownloading}
+          downloadProgress={downloadProgress}
+          downloadError={downloadError}
+          downloadedPath={downloadedPath}
+          startDownload={startDownload}
+          cancelDownload={cancelDownload}
+          installUpdate={installUpdate}
+          onClearHistory={() => {
+            void window.electronAPI?.requestClearHistory?.();
+          }}
+        />
+      </div>
     </div>
   );
 };

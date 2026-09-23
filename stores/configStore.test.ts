@@ -25,10 +25,18 @@ window.electronAPI = {
   // reject し、実行結果を汚す。
   logConfigChange: vi.fn(),
   updateOscPort: vi.fn(),
-  setOverlaySettings: vi.fn(),
   getSteamVrAutoLaunch: vi.fn(async () => ({ success: false })),
   getBridgePort: vi.fn(async () => ({ port: null })),
 } as unknown as typeof window.electronAPI;
+
+// A config saved by an older build, still carrying the display settings that
+// were removed when the app became VR-only.
+// 古いビルドが保存した設定。アプリがVR専用になったときに削除した表示設定を
+// まだ含んでいる。
+localStorage.setItem(
+  STORAGE_KEYS.OSC_CONFIG,
+  JSON.stringify({ language: 'ja', disableOverlay: true, vrOsrMode: 'never' }),
+);
 
 const { useConfigStore } = await import('./configStore');
 
@@ -40,16 +48,20 @@ beforeEach(() => {
   useConfigStore.setState({ config: initialConfig, externalRevision: 0 });
 });
 
-describe('vrOsrMode', () => {
-  it('defaults to auto, which preserves the previous behaviour', () => {
-    expect(useConfigStore.getState().config.vrOsrMode).toBe('auto');
+describe('loading a config saved by an older build', () => {
+  it('drops the removed display settings instead of carrying them forward', () => {
+    expect(initialConfig).not.toHaveProperty('disableOverlay');
+    expect(initialConfig).not.toHaveProperty('vrOsrMode');
+    expect(initialConfig.language).toBe('ja');
   });
+});
 
-  it('is persisted and broadcast when changed', () => {
-    useConfigStore.getState().updateConfig('vrOsrMode', 'always');
-    expect(useConfigStore.getState().config.vrOsrMode).toBe('always');
+describe('local changes', () => {
+  it('are persisted and broadcast to the other window', () => {
+    useConfigStore.getState().updateConfig('language', 'en');
+    expect(useConfigStore.getState().config.language).toBe('en');
     expect(broadcastConfig).toHaveBeenCalledWith(
-      expect.objectContaining({ vrOsrMode: 'always' }),
+      expect.objectContaining({ language: 'en' }),
     );
   });
 });
@@ -60,12 +72,12 @@ describe('cross-window broadcast', () => {
   });
 
   it('adopts an incoming config and bumps externalRevision', () => {
-    const incoming = { ...initialConfig, language: 'en' as const, vrOsrMode: 'never' as const };
+    const incoming = { ...initialConfig, language: 'en' as const, theme: 'light' as const };
     broadcastListener!(incoming);
 
     const state = useConfigStore.getState();
     expect(state.config.language).toBe('en');
-    expect(state.config.vrOsrMode).toBe('never');
+    expect(state.config.theme).toBe('light');
     expect(state.externalRevision).toBe(1);
   });
 

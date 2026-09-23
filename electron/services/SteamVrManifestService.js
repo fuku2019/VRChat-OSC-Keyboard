@@ -4,7 +4,6 @@ import { execFileSync } from 'child_process';
 import { app } from 'electron';
 import { getAssetPath } from '../overlay/native.js';
 import { writeFileAtomicSync } from './atomicWrite.js';
-import { getOverlaySettings } from './WindowManager.js';
 
 const MANIFEST_FILE_NAME = 'vrchat-osc-keyboard.vrmanifest';
 const ACTIONS_FILE_NAME = 'actions.json';
@@ -148,7 +147,6 @@ export function ensureSteamVrInputFiles() {
 
 function buildManifestContent() {
   const { appKey, actionsPath, bindingsDir } = ensureSteamVrInputFiles();
-  const vrModeByDefault = getOverlaySettings().vrOsrMode === 'always';
   const bindings = CONTROLLER_TYPES.map((controllerType) => ({
     controller_type: controllerType,
     binding_url: `file://${path.join(bindingsDir, `${controllerType}.json`).replace(/\\/g, '/')}`,
@@ -166,15 +164,6 @@ function buildManifestContent() {
           en_us: { name: STEAMVR_APP_NAME },
           ja_jp: { name: STEAMVR_APP_NAME },
         },
-        // Only passed when the user asked for VR mode to be the default. The
-        // app can reach VR mode without it - it just costs one window rebuild
-        // on the first such launch - so nothing depends on SteamVR honouring
-        // this field, which has not been verified on a real runtime.
-        // ユーザーがVRモードを既定に設定したときだけ渡す。これがなくてもアプリは
-        // VRモードに到達でき、初回起動時にウィンドウを1度作り直すコストがかかる
-        // だけである。したがって SteamVR がこのフィールドを尊重するかどうかに
-        // 依存する機能はない。実ランタイムでの検証は未実施。
-        ...(vrModeByDefault ? { arguments: '--vr' } : {}),
         action_manifest_path: actionsPath,
         default_bindings: bindings,
       },

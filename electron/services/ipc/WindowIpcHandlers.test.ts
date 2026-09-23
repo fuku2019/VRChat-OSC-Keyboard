@@ -34,7 +34,9 @@ vi.mock('../WindowManager.js', () => ({
   getKeyboardWindow: () => keyboard,
 }));
 
-const { registerWindowIpcHandlers } = await import('./WindowIpcHandlers.js');
+const { broadcastVrStatus, registerWindowIpcHandlers } = await import(
+  './WindowIpcHandlers.js'
+);
 
 beforeEach(() => {
   onHandlers.clear();
@@ -112,5 +114,34 @@ describe('get-launch-info', () => {
       isOsr: false,
       debug: false,
     });
+  });
+});
+
+describe('SteamVR overlay status', () => {
+  it('get-vr-status returns what the main process reports', async () => {
+    registerWindowIpcHandlers({ getVrStatus: () => 'waiting' });
+    expect(await invokeHandlers.get('get-vr-status')!()).toBe('waiting');
+  });
+
+  it('get-vr-status answers starting when nothing was supplied', async () => {
+    registerWindowIpcHandlers();
+    expect(await invokeHandlers.get('get-vr-status')!()).toBe('starting');
+  });
+
+  // Unlike config-changed there is no sender to skip: the status comes from
+  // the main process itself. / config-changed と違い除外すべき送信元はない。
+  // 状態はメインプロセス自身が出すものだからである。
+  it('broadcastVrStatus reaches every window', () => {
+    const settings = makeWindow(1);
+    const keyboardWindow = makeWindow(2);
+    appWindows = [settings, keyboardWindow];
+
+    broadcastVrStatus('running');
+
+    expect(settings.webContents.send).toHaveBeenCalledWith('vr-status-changed', 'running');
+    expect(keyboardWindow.webContents.send).toHaveBeenCalledWith(
+      'vr-status-changed',
+      'running',
+    );
   });
 });

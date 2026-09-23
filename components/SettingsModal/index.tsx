@@ -143,7 +143,7 @@ const SettingsModal: FC<SettingsModalProps> = ({
     <div
       className={
         isPanel
-          ? 'fixed inset-0 z-[110] flex dark:bg-slate-950 pure-black:bg-black bg-slate-50'
+          ? 'absolute inset-0 flex dark:bg-slate-950 pure-black:bg-black bg-slate-50'
           : `fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 ${animationClass}`
       }
     >

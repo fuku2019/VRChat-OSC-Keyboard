@@ -19,8 +19,6 @@
  * @typedef {Object} LaunchArgs
  * @property {boolean} debug            Force debug mode on / デバッグモードを強制的に有効化
  * @property {'vr'|'desktop'|null} windowMode  Explicit window mode / ウィンドウモードの明示指定
- * @property {boolean|null} osr         Offscreen rendering override / オフスクリーン描画の上書き
- * @property {boolean|null} sharedTexture  GPU shared texture override / GPU共有テクスチャの上書き
  * @property {boolean} perfLog          Enable capture perf logging / キャプチャ計測ログを有効化
  * @property {number|null} poseAheadSec Controller pose prediction / コントローラーのポーズ予測秒数
  * @property {{minCutoff: number, beta: number}|null} pointerFilter  1e filter tuning / 1€フィルタの調整値
@@ -33,8 +31,6 @@ function createDefaults() {
   return {
     debug: false,
     windowMode: null,
-    osr: null,
-    sharedTexture: null,
     perfLog: false,
     poseAheadSec: null,
     pointerFilter: null,
@@ -112,18 +108,6 @@ export function parseLaunchArgs(argv) {
         break;
       case 'desktop-keyboard':
         args.windowMode = 'desktop';
-        break;
-      case 'vr-osr':
-        args.osr = true;
-        break;
-      case 'no-vr-osr':
-        args.osr = false;
-        break;
-      case 'shared-texture':
-        args.sharedTexture = true;
-        break;
-      case 'no-shared-texture':
-        args.sharedTexture = false;
         break;
       case 'perf-log':
         args.perfLog = true;

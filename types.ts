@@ -33,13 +33,11 @@ export interface KeyConfig {
 // Update check interval type / 更新確認間隔の型
 export type UpdateCheckInterval = 'startup' | 'daily' | 'weekly' | 'manual';
 
-// How the keyboard window is rendered when the VR overlay is up.
-// 'auto' keeps the historical behaviour: the keyboard stays a normal desktop
-// window unless something explicitly asked for VR mode.
-// VRオーバーレイ起動時にキーボードウィンドウをどう描画するか。
-// 'auto' は従来の挙動を保つ。明示的にVRモードが要求されない限り、キーボードは
-// 通常のデスクトップウィンドウのままになる。
-export type VrOsrMode = 'auto' | 'always' | 'never';
+// Where the SteamVR overlay stands. The app is VR-only, so until this reaches
+// 'running' there is no keyboard anywhere the user can see it.
+// SteamVR オーバーレイの状態。このアプリはVR専用なので、これが 'running' に
+// なるまで、ユーザーに見える場所にキーボードは存在しない。
+export type VrStatus = 'waiting' | 'starting' | 'running' | 'failed';
 
 export interface OscConfig {
   bridgeUrl: string;
@@ -53,8 +51,6 @@ export interface OscConfig {
   theme: 'light' | 'dark' | 'pure-black';
   accentColor: string;
   updateCheckInterval: UpdateCheckInterval;
-  disableOverlay: boolean;
-  vrOsrMode: VrOsrMode;
   steamVrAutoLaunch: boolean;
   historyMaxCount: number; // Max send history entries / 送信履歴の最大保持件数
   historyPersistEnabled: boolean; // Persist history on restart / 再起動時に履歴を保持

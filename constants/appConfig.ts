@@ -23,8 +23,6 @@ export const DEFAULT_CONFIG = {
   THEME: 'dark' as const,
   ACCENT_COLOR: 'cyan',
   UPDATE_CHECK_INTERVAL: 'weekly' as const,
-  DISABLE_OVERLAY: false,
-  VR_OSR_MODE: 'auto' as const,
   STEAMVR_AUTO_LAUNCH: false,
   HISTORY_MAX_COUNT: 30, // Max send history entries / 送信履歴の最大保持件数
   HISTORY_PERSIST_ENABLED: true, // Persist history on restart / 再起動時に履歴を保持

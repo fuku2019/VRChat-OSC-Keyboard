@@ -12,7 +12,7 @@ import {
   isValidCustomAccentColor,
   normalizeCustomAccentColor,
 } from '../../utils/colorUtils';
-import { SECTION_LABEL_CLASS, selectedBtnClass, SettingLabel, ToggleRow } from './settingsRows';
+import { SECTION_LABEL_CLASS, selectedBtnClass } from './settingsRows';
 
 interface AppearanceTabProps {
   t: TranslationStrings['settings'];
@@ -87,41 +87,6 @@ const AppearanceTab: FC<AppearanceTabProps> = ({
             </div>
           </div>
         )}
-      </section>
-
-      <section className='pt-6 border-t dark:border-white/10 border-black/10'>
-        <label className={`${SECTION_LABEL_CLASS} !mb-2`}>{t.overlayTitle}</label>
-        <div className='p-4 rounded-xl border dark:border-white/10 border-black/10 dark:bg-slate-800/30 bg-white/50 shadow-sm'>
-          <ToggleRow
-            label={t.disableOverlay}
-            description={t.disableOverlayDesc}
-            enabled={localConfig.disableOverlay}
-            onToggle={(value) => updateConfig('disableOverlay', value)}
-          />
-
-          <div className='pt-4 mt-4 border-t dark:border-white/10 border-black/10'>
-            <SettingLabel label={t.vrOsrMode} description={t.vrOsrModeDesc} />
-            <div className='bg-gray-100/50 dark:bg-slate-900/50 rounded-xl p-1 mt-3 flex gap-1 overflow-x-auto border dark:border-white/10 border-black/10 backdrop-blur-sm'>
-              {[
-                { id: 'auto' as const, label: t.vrOsrModeAuto },
-                { id: 'always' as const, label: t.vrOsrModeAlways },
-                { id: 'never' as const, label: t.vrOsrModeNever },
-              ].map((option) => (
-                <button
-                  key={option.id}
-                  onClick={() => updateConfig('vrOsrMode', option.id)}
-                  className={`flex-1 py-2 px-2 text-xs rounded-lg transition-all whitespace-nowrap ${
-                    localConfig.vrOsrMode === option.id
-                      ? 'bg-white dark:bg-primary-600 text-primary-600 dark:text-white shadow-sm'
-                      : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
-                  }`}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
       </section>
     </div>
   );

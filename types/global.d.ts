@@ -2,16 +2,7 @@
 // This file defines global types and constants / このファイルはグローバル型と定数を定義
 
 import type { ImeContext, ImeResponse } from './ime';
-import type { OscConfig, VrOsrMode } from '../types';
-
-// Overlay settings the main process persists separately from localStorage,
-// because it has to read them before any renderer exists.
-// レンダラーが存在する前にメインプロセスが読む必要があるため、localStorage とは
-// 別に永続化されるオーバーレイ設定。
-interface OverlaySettings {
-  disableOverlay: boolean;
-  vrOsrMode: VrOsrMode;
-}
+import type { OscConfig, VrStatus } from '../types';
 
 // Electron API exposed via preload / preload経由で公開されるElectron API
 interface UpdateOscPortResult {
@@ -75,8 +66,6 @@ interface ElectronAPI {
     height: number;
     devicePixelRatio: number;
   }) => void;
-  getOverlaySettings: () => Promise<{ success: boolean; settings: OverlaySettings }>;
-  setOverlaySettings: (settings: Partial<OverlaySettings>) => Promise<{ success: boolean; settings: OverlaySettings }>;
   getSteamVrAutoLaunch: () => Promise<SteamVrAutoLaunchResult>;
   setSteamVrAutoLaunch: (enabled: boolean) => Promise<SteamVrAutoLaunchResult>;
   getSteamVrBindings: () => Promise<{
@@ -121,6 +110,11 @@ interface ElectronAPI {
     isOsr: boolean;
     debug: boolean;
   }>;
+
+  // Whether the SteamVR overlay is up yet / SteamVR オーバーレイが立ち上がったか
+  getVrStatus: () => Promise<VrStatus>;
+  onVrStatusChanged: (callback: (status: VrStatus) => void) => void;
+  removeVrStatusChangedListener: (callback: (status: VrStatus) => void) => void;
 }
 
 declare global {

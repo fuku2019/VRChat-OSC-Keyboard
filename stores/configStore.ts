@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { OscConfig, VrOsrMode } from '../types';
+import { OscConfig } from '../types';
 import { STORAGE_KEYS, DEFAULT_CONFIG } from '../constants';
 import { sanitizeAccentColor } from '../utils/colorUtils';
 
@@ -15,9 +15,6 @@ const isValidKeySoundVariant = (
   value: unknown,
 ): value is 'soft' | 'mechanical' =>
   value === 'soft' || value === 'mechanical';
-
-const isValidVrOsrMode = (value: unknown): value is VrOsrMode =>
-  value === 'auto' || value === 'always' || value === 'never';
 
 // Store state type / ストアの状態型
 interface ConfigStore {
@@ -63,11 +60,6 @@ const loadConfigFromStorage = (): OscConfig => {
         ),
         updateCheckInterval:
           parsed.updateCheckInterval || DEFAULT_CONFIG.UPDATE_CHECK_INTERVAL,
-        disableOverlay:
-          parsed.disableOverlay ?? DEFAULT_CONFIG.DISABLE_OVERLAY,
-        vrOsrMode: isValidVrOsrMode(parsed.vrOsrMode)
-          ? parsed.vrOsrMode
-          : DEFAULT_CONFIG.VR_OSR_MODE,
         steamVrAutoLaunch:
           parsed.steamVrAutoLaunch ?? DEFAULT_CONFIG.STEAMVR_AUTO_LAUNCH,
         historyMaxCount:
@@ -93,8 +85,6 @@ const loadConfigFromStorage = (): OscConfig => {
     theme: DEFAULT_CONFIG.THEME,
     accentColor: DEFAULT_CONFIG.ACCENT_COLOR,
     updateCheckInterval: DEFAULT_CONFIG.UPDATE_CHECK_INTERVAL,
-    disableOverlay: DEFAULT_CONFIG.DISABLE_OVERLAY,
-    vrOsrMode: DEFAULT_CONFIG.VR_OSR_MODE,
     steamVrAutoLaunch: DEFAULT_CONFIG.STEAMVR_AUTO_LAUNCH,
     historyMaxCount: DEFAULT_CONFIG.HISTORY_MAX_COUNT,
     historyPersistEnabled: DEFAULT_CONFIG.HISTORY_PERSIST_ENABLED,
@@ -149,14 +139,6 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
       electronAPI.updateOscPort(normalizedConfig.oscPort);
     }
 
-    // Sync overlay settings with Electron / オーバーレイ設定をElectronに同期
-    if (electronAPI?.setOverlaySettings) {
-      electronAPI.setOverlaySettings({
-        disableOverlay: normalizedConfig.disableOverlay,
-        vrOsrMode: normalizedConfig.vrOsrMode,
-      });
-    }
-
     electronAPI?.broadcastConfig?.(normalizedConfig);
   },
 
@@ -186,14 +168,6 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
     // Sync OSC port if changed / OSCポートが変更された場合のみ同期
     if (key === 'oscPort' && window.electronAPI) {
       window.electronAPI.updateOscPort(normalizedValue as number);
-    }
-
-    // Sync overlay settings if changed / オーバーレイ設定を同期
-    if (
-      (key === 'disableOverlay' || key === 'vrOsrMode') &&
-      window.electronAPI?.setOverlaySettings
-    ) {
-      window.electronAPI.setOverlaySettings({ [key]: normalizedValue });
     }
 
     window.electronAPI?.broadcastConfig?.(newConfig);
@@ -230,14 +204,6 @@ if (typeof window !== 'undefined' && window.electronAPI) {
     const currentConfig = useConfigStore.getState().config;
     if (currentConfig.oscPort) {
       window.electronAPI!.updateOscPort(currentConfig.oscPort);
-    }
-
-    // Sync overlay settings on startup / 起動時にオーバーレイ設定を同期
-    if (window.electronAPI?.setOverlaySettings) {
-      window.electronAPI.setOverlaySettings({
-        disableOverlay: currentConfig.disableOverlay,
-        vrOsrMode: currentConfig.vrOsrMode,
-      });
     }
 
     // Sync SteamVR startup registration from actual SteamVR settings on every app launch.

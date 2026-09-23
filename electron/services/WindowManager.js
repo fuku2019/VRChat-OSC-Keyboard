@@ -39,10 +39,6 @@ const store = new Store({
       keyboard: null, // { x: number, y: number } or null
       settings: null,
     },
-    overlaySettings: {
-      disableOverlay: false,
-      vrOsrMode: 'auto',
-    },
     steamVrSettings: {
       autoLaunch: false,
     },
@@ -68,6 +64,14 @@ const store = new Store({
 // 一度の --vr 起動が以降のすべての起動をVRにしていた。今は誰も読まないので、
 // 再び信用されないよう削除しておく。
 store.delete('launchMode');
+
+// Held "disable the overlay" and the old window-mode setting. The app is
+// VR-only now, so neither exists; a stored disableOverlay: true from an older
+// build must not come back to hide the only keyboard there is.
+// 「オーバーレイを起動しない」と旧来のウィンドウモード設定を保持していた。現在の
+// アプリはVR専用なのでどちらも存在しない。古いビルドで保存された
+// disableOverlay: true が、唯一のキーボードを隠す形で復活してはならない。
+store.delete('overlaySettings');
 
 /**
  * Set app title / アプリタイトルを設定
@@ -98,46 +102,6 @@ export function getAllAppWindows() {
   return [keyboardWindow, settingsWindow].filter(
     (win) => win && !win.isDestroyed(),
   );
-}
-
-/**
- * Get main window instance / メインウィンドウインスタンスを取得
- *
- * Kept for callers that predate the split. Prefer getKeyboardWindow() when the
- * caller specifically needs the capture and input target.
- * 分割前からの呼び出し元のために残している。キャプチャや入力の対象が必要な場合は
- * getKeyboardWindow() を使うこと。
- */
-export function getMainWindow() {
-  return keyboardWindow ?? settingsWindow;
-}
-
-/**
- * Get overlay settings / オーバーレイ設定を取得
- */
-export function getOverlaySettings() {
-  const settings = store.get('overlaySettings');
-  const disableOverlay =
-    settings && typeof settings.disableOverlay === 'boolean'
-      ? settings.disableOverlay
-      : false;
-  const vrOsrMode =
-    settings &&
-    (settings.vrOsrMode === 'auto' ||
-      settings.vrOsrMode === 'always' ||
-      settings.vrOsrMode === 'never')
-      ? settings.vrOsrMode
-      : 'auto';
-  return { disableOverlay, vrOsrMode };
-}
-
-/**
- * Update overlay settings / オーバーレイ設定を更新
- */
-export function setOverlaySettings(partial) {
-  const current = getOverlaySettings();
-  const next = { ...current, ...partial };
-  store.set('overlaySettings', next);
 }
 
 /**
@@ -335,8 +299,8 @@ export function createKeyboardWindow(options = {}) {
     attachPositionPersistence(keyboardWindow, 'keyboard');
   }
 
-  // Drop the reference so getMainWindow() never hands out a destroyed window
-  // 破棄済みウィンドウを getMainWindow() が返さないよう参照を解放する
+  // Drop the reference so getKeyboardWindow() never hands out a destroyed window
+  // 破棄済みウィンドウを getKeyboardWindow() が返さないよう参照を解放する
   keyboardWindow.on('closed', () => {
     keyboardWindow = null;
   });
@@ -366,15 +330,6 @@ export function createKeyboardWindow(options = {}) {
   }
 
   return keyboardWindow;
-}
-
-/**
- * Create main window / メインウィンドウを作成
- *
- * Thin alias kept so existing callers keep working. / 既存の呼び出し元が動き続けるよう残した薄い別名。
- */
-export function createWindow(options = {}) {
-  return createKeyboardWindow(options);
 }
 
 /**

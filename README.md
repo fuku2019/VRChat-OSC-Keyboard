@@ -8,7 +8,7 @@
 # VRChat-OSC-Keyboard
 
 🕊️ **VRChatのチャットをもっと自由に！！** <br>
-VRモードでも **物理・仮想キーボード** で快適なチャットができる**オープンソースフリーウェア**
+VRの中から **仮想キーボード** で快適なチャットができる**オープンソースフリーウェア**
 
 <div align="center">
 
@@ -46,24 +46,25 @@ VRモードでも **物理・仮想キーボード** で快適なチャットが
 ## 💡 解決すべき問題と解決策
 VRChatはVRモードでプレイすると、テキストチャットが不便<br><br>
 このソフトウェアは、VR画面に仮想キーボードをフローティング表示させることで、自由なチャット入力を可能にします。<br>
-(VRモードでない場合にも使えますが、フローティング表示はできません)
+**VR専用のソフトウェアです。** 利用にはSteamVRが必要です。
 
 ![app_img_0](docs/app_img_0.webp)
 ![zm_vok_0](https://github.com/user-attachments/assets/e7d60988-36bf-4302-9654-9d8162f98422)
 <em>ソフトウェアのデザインや機能はバージョンによって異なる場合があります。</em>
 
 ## ✨ 機能・特徴
-+ **マルチ入力対応:** 内蔵キーボード（かな・カナ・英）＆物理キーボードの両方に対応。
-+ **日本語入力に強い:** アプリ内キーボード、物理キーボードどちらでも漢字変換が可能。
++ **専用のVRオーバーレイ:** SteamVR上から、VRコントローラーで直接キーボードを操作可能。
++ **日本語入力に強い:** 内蔵キーボード（かな・カナ・英）で漢字変換が可能。
 + **洗練されたUI:** 美しいアニメーションとカスタムテーマ機能を搭載。
 + **クリップボードにコピー:** チャットを送信するだけでなく、入力した文字をクリップボードにコピーすることができます。
-+ **専用のVRオーバーレイ:** SteamVR上から直接キーボードを操作可能。
 
 ## 🚀 クイックスタート
 1. ダウンロード: [Releases](https://github.com/fuku2019/VRChat-OSC-Keyboard/releases/latest) から最新の .exe をダウンロード。
 2. インストール: 実行してウィザードに従いインストールを完了。
 3. VRChatの設定: アクションメニュー ➔ Options ➔ OSC ➔ Enabled を選択。
-4. 準備完了: 本ツールのテキストボックスに入力し、送信ボタンを押してください！
+4. 起動: SteamVRを起動した状態で本ツールを起動します。デスクトップには設定ウィンドウが表示され、キーボードはVR内に表示されます。
+   + SteamVRより先に本ツールを起動した場合は、設定ウィンドウに案内が表示されます。そのままSteamVRを起動すれば、自動でVR内にキーボードが表示されます。
+5. 準備完了: 右コントローラーのスティックを長押しでキーボードを表示し、入力して送信ボタンを押してください！
 
 ## 🗺️ ロードマップ
 + カスタムレイアウト
@@ -71,7 +72,7 @@ VRChatはVRモードでプレイすると、テキストチャットが不便<br
 + テンプレート機能
 
 ## 既知の問題
-なし
++ 初回起動時のチュートリアルはVR内にのみ表示されます。
 
 ## 👀 デモ・紹介
 
@@ -167,7 +168,7 @@ npm run dist
   <tr>
     <!-- <td><img width="32" height="32" alt="googlegemini" src="https://github.com/user-attachments/assets/bd0739aa-25b0-4d20-8737-0116c77c9cb8" /></td> -->
     <!-- <td><img width="32" height="32" alt="googleantigravity" src="https://antigravity.google/assets/image/brand/antigravity-icon__full-color.png" /></td> -->
-    <!-- <td><img width="64" height="64" alt="claude" src="https://github.com/user-attachments/assets/fa5201f0-533a-43b3-8d55-98d4879ae9ce" /> </td> 
+    <!-- <td><img width="64" height="64" alt="claude" src="https://github.com/user-attachments/assets/fa5201f0-533a-43b3-8d55-98d4879ae9ce" /> </td>
     <td><img width="32" height="32" alt="githubcopilot" src="https://github.com/user-attachments/assets/a8fdac55-341e-4352-a25b-27ecc71429f2" /> </td> -->
   </tr>
 </table>

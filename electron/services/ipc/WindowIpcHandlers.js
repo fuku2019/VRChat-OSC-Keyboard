@@ -26,10 +26,30 @@ function sendToKeyboard(channel, payload) {
 }
 
 /**
+ * Tell every window where the SteamVR overlay stands. The settings window shows
+ * it, because while SteamVR is not running there is otherwise nothing on screen
+ * that explains why no keyboard has appeared.
+ * SteamVR オーバーレイの状態を全ウィンドウへ知らせる。表示するのは設定ウィンドウで、
+ * SteamVR が動いていない間、キーボードが出てこない理由を説明するものが画面上に
+ * ほかに何もないためである。
+ *
+ * @param {'waiting'|'starting'|'running'|'failed'} status
+ */
+export function broadcastVrStatus(status) {
+  for (const win of getAllAppWindows()) {
+    win.webContents.send('vr-status-changed', status);
+  }
+}
+
+/**
  * @param {Object} [options]
  * @param {() => {windowMode: string, isOsr: boolean, debug: boolean}} [options.getLaunchInfo]
+ * @param {() => string} [options.getVrStatus] - Current SteamVR overlay status / 現在の SteamVR オーバーレイの状態
  */
-export function registerWindowIpcHandlers({ getLaunchInfo = null } = {}) {
+export function registerWindowIpcHandlers({
+  getLaunchInfo = null,
+  getVrStatus = null,
+} = {}) {
   // Relay a config change to every other window. Echoing it back to the sender
   // would make the two stores bounce the same value between them forever.
   // 設定変更を他のすべてのウィンドウへ中継する。送信元へ送り返すと、2つのストアが
@@ -61,4 +81,10 @@ export function registerWindowIpcHandlers({ getLaunchInfo = null } = {}) {
       ? getLaunchInfo()
       : { windowMode: 'desktop', isOsr: false, debug: false },
   );
+
+  // A window that opens after a status change has to be able to ask for the
+  // current value, since it missed the broadcast.
+  // 状態が変わった後に開いたウィンドウは配信を聞き逃しているため、現在の値を
+  // 問い合わせられなければならない。
+  ipcMain.handle('get-vr-status', () => (getVrStatus ? getVrStatus() : 'starting'));
 }

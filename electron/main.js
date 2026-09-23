@@ -19,10 +19,10 @@ import {
   getKeyboardWindow,
   getSettingsWindow,
   setAppTitle,
-  getOverlaySettings,
   getSteamVrSettings,
 } from './services/WindowManager.js';
 import { registerIpcHandlers } from './services/IpcHandlers.js';
+import { broadcastVrStatus } from './services/ipc/WindowIpcHandlers.js';
 import {
   init as initVrOverlayService,
   startPolling as startVrOverlayPolling,
@@ -53,10 +53,8 @@ import { isSteamVrRunningAsync } from './overlay/native.js';
 import { parseLaunchArgs } from './cli.js';
 import { loadDebugConfig } from './debugConfig.js';
 import { setPerfLogEnabled } from './overlay/perf.js';
-import {
-  resolveInitialWindowMode,
-  resolveFinalWindowMode,
-} from './services/launchMode.js';
+import { resolveWindowMode } from './services/launchMode.js';
+import { VR_STATUS, watchForSteamVr } from './services/steamVrWatcher.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -117,6 +115,7 @@ registerIpcHandlers(APP_VERSION, debugConfig, {
     isOsr: currentWindowMode === 'vr',
     debug: debugConfig.enableDebugMode === true,
   }),
+  getVrStatus: () => vrStatus,
 });
 
 // Disable Chromium background throttling for consistent VR Overlay FPS
@@ -132,30 +131,17 @@ let currentWindowMode = 'desktop';
 // Settings windows that already carry the quit hook / 終了フックを設置済みの設定ウィンドウ
 const settingsQuitHooked = new WeakSet();
 
-/**
- * Apply --vr-osr / --no-vr-osr and refuse VR mode with the overlay disabled.
- *
- * Forcing offscreen on is the same request as VR mode, because an offscreen
- * keyboard always comes with a settings window - without one there would be no
- * visible window at all.
- * --vr-osr / --no-vr-osr を適用し、オーバーレイ無効でのVRモードを拒否する。
- *
- * オフスクリーンを強制することはVRモードの要求と同じ意味になる。オフスクリーンの
- * キーボードには必ず設定ウィンドウが伴うためで、これがないと可視ウィンドウが
- * 一切なくなってしまう。
- */
-function resolveWindowMode(baseMode) {
-  let mode = baseMode;
-  if (launchArgs.osr === true) mode = 'vr';
-  if (launchArgs.osr === false) mode = 'desktop';
+// Where the SteamVR overlay stands. Starts as 'starting' because the first
+// check is already on its way by the time any window can ask.
+// SteamVR オーバーレイの状態。ウィンドウが問い合わせられる頃には最初の確認が
+// 既に始まっているため、'starting' から始める。
+let vrStatus = VR_STATUS.STARTING;
+let stopWatchingSteamVr = null;
 
-  if (mode === 'vr' && getOverlaySettings().disableOverlay) {
-    console.warn(
-      '[vr] VR window mode ignored: the VR overlay is disabled in settings.',
-    );
-    return 'desktop';
-  }
-  return mode;
+function setVrStatus(status) {
+  vrStatus = status;
+  console.log('[vr] SteamVR overlay: ' + status);
+  broadcastVrStatus(status);
 }
 
 /**
@@ -207,12 +193,12 @@ function applyWindowMode(mode) {
 const yieldToEventLoop = () => new Promise((resolve) => setImmediate(resolve));
 
 /**
- * Register the SteamVR manifest, sync auto-launch, and bring up the VR overlay.
- * Returns the overlay handles, or null when the overlay was not started.
- * SteamVRマニフェストの登録、自動起動設定の同期、VRオーバーレイの起動を行う。
- * オーバーレイハンドルを返す。起動しなかった場合は null。
+ * Register the SteamVR manifest and sync auto-launch. Runs once at start-up,
+ * whether or not SteamVR is running - it only writes files and registry state.
+ * SteamVRマニフェストの登録と自動起動設定の同期を行う。SteamVR が動いているかに
+ * 関わらず起動時に一度だけ実行する。ファイルとレジストリの状態を書くだけである。
  */
-async function bootstrapSteamVr() {
+async function registerSteamVrApp() {
   const manifestRegistration = ensureSteamVrManifestRegistered();
   if (!manifestRegistration.success) {
     console.warn(
@@ -247,28 +233,33 @@ async function bootstrapSteamVr() {
       );
     }
   }
-  await yieldToEventLoop();
+}
 
-  const settings = getOverlaySettings();
-  if (settings.disableOverlay) {
-    console.log('VR Overlay is disabled by settings.');
-    return null;
-  }
-
-  if (!(await isSteamVrRunningAsync())) {
-    console.log('SteamVR is not running. Skipping VR overlay initialization.');
-    return null;
-  }
-
-  // Init Splash Overlay (Head-locked) first / 最初にスプラッシュオーバーレイ（ヘッドロック）を初期化する
-  initSplash();
-
-  // Init Main Overlay (Hidden by default) / メインオーバーレイを初期化する（デフォルトでは非表示）
+/**
+ * Bring up the VR overlay and point capture and input at the keyboard window.
+ * Returns the overlay handles, or null so the watcher retries later.
+ * VRオーバーレイを立ち上げ、キャプチャと入力をキーボードウィンドウへ向ける。
+ * オーバーレイハンドルを返す。null を返すと監視側が後で再試行する。
+ */
+function startVrOverlay() {
+  // Main overlay first (it is created hidden). Doing the splash first would
+  // flash the logo on every retry while vrserver is still coming up.
+  // メインオーバーレイを先に作る (非表示で作られる)。スプラッシュを先にすると、
+  // vrserver の起動待ちで再試行するたびにロゴが出てしまう。
   const overlayHandles = initOverlay();
-  if (overlayHandles !== null) {
-    initVrOverlayService();
-    startVrOverlayPolling(60);
-    logSteamVrBindings();
+  if (overlayHandles === null) return null;
+
+  initSplash();
+  initVrOverlayService();
+  startVrOverlayPolling(60);
+  logSteamVrBindings();
+
+  const window = getKeyboardWindow();
+  if (window && !window.isDestroyed()) {
+    // Start capturing window content to VR overlay / ウィンドウ内容のVRオーバーレイへのキャプチャを開始
+    startCapture(window.webContents, 90); // 90 FPS target for smoother rendering
+    startInputLoop(120, window.webContents, { syncWithCapture: false }); // Decouple input from capture for lowest latency
+    console.log('VR overlay capture started');
   }
   return overlayHandles;
 }
@@ -312,57 +303,34 @@ function logSteamVrBindings() {
 }
 
 /**
- * Run the SteamVR bootstrap on the next event-loop tick, after applyWindowMode() has
- * returned control. This still lets the renderer's startup IPC interleave with the
- * bootstrap's blocking steps (each yields via yieldToEventLoop), without pushing VR
- * init all the way out to did-finish-load.
- * applyWindowMode() が制御を返した直後、次のイベントループティックでSteamVR初期化を実行する。
- * bootstrap内の各ブロッキング処理はyieldToEventLoopで制御を返すため、レンダラーの
- * 起動時IPCとの間で処理が交互に進む。VR初期化をdid-finish-loadまで遅延させはしない。
+ * Register with SteamVR, then wait for it and bring the overlay up when it
+ * appears. Runs on the next event-loop tick, after applyWindowMode() has
+ * returned, so the renderer's startup IPC interleaves with the blocking steps
+ * (each yields via yieldToEventLoop) instead of queuing behind them.
+ * SteamVR へ登録し、その後 SteamVR を待って、現れたらオーバーレイを立ち上げる。
+ * applyWindowMode() が制御を返した直後の次のティックで実行するため、レンダラーの
+ * 起動時IPCはブロッキング処理 (それぞれ yieldToEventLoop で制御を返す) の後ろに
+ * 並ばず、交互に処理される。
+ *
+ * The window mode does not depend on any of this. The keyboard window already
+ * exists; only the overlay waits. / ウィンドウモードはこの処理に一切依存しない。
+ * キーボードウィンドウは既に存在しており、待つのはオーバーレイだけである。
  */
-function scheduleSteamVrBootstrap() {
+function startSteamVrLifecycle() {
   const run = async () => {
-    let overlayHandles = null;
     try {
-      overlayHandles = await bootstrapSteamVr();
+      await registerSteamVrApp();
     } catch (error) {
-      console.error('SteamVR bootstrap failed:', error);
+      console.error('SteamVR registration failed:', error);
     }
+    await yieldToEventLoop();
+    if (servicesShutdown) return;
 
-    // Now that the overlay has reported back, settle on the real mode. This is
-    // also the safety net for the reverse case: if the window was opened
-    // offscreen but the overlay never came up, it is rebuilt as a normal window
-    // so the user is not left with an invisible app.
-    // オーバーレイの結果が出たので本来のモードを確定する。ここは逆方向の安全網でも
-    // ある。オフスクリーンで開いたのにオーバーレイが起動しなかった場合は通常
-    // ウィンドウとして作り直し、ユーザーが見えないアプリを抱えないようにする。
-    const finalMode = resolveWindowMode(
-      resolveFinalWindowMode({
-        launchArgs,
-        vrOsrMode: getOverlaySettings().vrOsrMode,
-        overlayStarted: overlayHandles !== null,
-      }),
-    );
-    if (finalMode !== currentWindowMode) {
-      console.log(
-        '[vr] switching window mode: ' + currentWindowMode + ' -> ' + finalMode,
-      );
-      applyWindowMode(finalMode);
-    }
-
-    if (overlayHandles === null) {
-      return;
-    }
-
-    const window = getKeyboardWindow();
-    if (!window || window.isDestroyed()) {
-      return;
-    }
-
-    // Start capturing window content to VR overlay / ウィンドウ内容のVRオーバーレイへのキャプチャを開始
-    startCapture(window.webContents, 90); // 90 FPS target for smoother rendering
-    startInputLoop(120, window.webContents, { syncWithCapture: false }); // Decouple input from capture for lowest latency
-    console.log('VR overlay capture started');
+    stopWatchingSteamVr = watchForSteamVr({
+      isRunning: isSteamVrRunningAsync,
+      start: startVrOverlay,
+      onStatus: setVrStatus,
+    });
   };
 
   setImmediate(run);
@@ -378,6 +346,10 @@ let servicesShutdown = false;
 function shutdownServices() {
   if (servicesShutdown) return;
   servicesShutdown = true;
+  if (stopWatchingSteamVr) {
+    stopWatchingSteamVr();
+    stopWatchingSteamVr = null;
+  }
   stopInputLoop();
   stopCapture();
   stopVrOverlayService();
@@ -408,32 +380,26 @@ if (!gotTheLock) {
   app.whenReady().then(() => {
     startBridge();
 
-    // Decide the starting mode from cheap synchronous inputs only. The VR
-    // bootstrap that could answer this properly takes seconds, and the window
-    // has to be on screen well before then.
-    // 起動時のモードは安価な同期入力だけで決める。これを正しく判定できるVR初期化は
-    // 数秒かかるが、ウィンドウはそれよりずっと早く画面に出す必要がある。
+    // The app is VR-only; the desktop keyboard is a debugging aid. The mode is
+    // settled here, once, and never rebuilt.
+    // このアプリはVR専用で、デスクトップのキーボードはデバッグ用である。モードは
+    // ここで一度だけ決まり、作り直されることはない。
     applyWindowMode(
-      resolveWindowMode(
-        resolveInitialWindowMode({
-          launchArgs,
-          overlaySettings: getOverlaySettings(),
-        }),
-      ),
+      resolveWindowMode({
+        launchArgs,
+        debug: debugConfig.enableDebugMode === true,
+      }),
     );
 
-    // The SteamVR bootstrap below spawns several external processes synchronously
-    // (vrpathreg, tasklist) and calls VR_Init. Running it inline would block the main
-    // process for seconds while the renderer is mounting and awaiting its startup IPC,
-    // which is what made the window appear long before its content. Push it to the
-    // next tick and yield to the event loop between its blocking steps so the
-    // renderer's startup IPC can interleave with it instead of queuing behind it.
-    // 以下のSteamVR初期化は外部プロセスを同期的に複数起動し (vrpathreg, tasklist)、
-    // VR_Init も呼ぶ。ここで直接実行するとレンダラーのマウント中および起動時IPCの待機中に
-    // メインプロセスを数秒ブロックし、ウィンドウだけ先に出て中身が遅れる原因になる。
-    // 次のティックへ回し、ブロッキング処理の合間にイベントループへ制御を返すことで、
-    // レンダラーの起動時IPCがその後ろに並ばず交互に処理されるようにする。
-    scheduleSteamVrBootstrap();
+    // The SteamVR work spawns external processes synchronously (vrpathreg,
+    // tasklist) and calls VR_Init. Running it inline would block the main
+    // process for seconds while the renderer is mounting and awaiting its
+    // startup IPC, which is what made the window appear long before its content.
+    // SteamVR まわりの処理は外部プロセスを同期的に起動し (vrpathreg, tasklist)、
+    // VR_Init も呼ぶ。ここで直接実行するとレンダラーのマウント中および起動時IPCの
+    // 待機中にメインプロセスを数秒ブロックし、ウィンドウだけ先に出て中身が遅れる
+    // 原因になる。
+    startSteamVrLifecycle();
 
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) {

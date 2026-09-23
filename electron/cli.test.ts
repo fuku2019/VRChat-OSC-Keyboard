@@ -15,8 +15,6 @@ describe('parseLaunchArgs', () => {
     expect(parseLaunchArgs([...PACKAGED_ARGV])).toEqual({
       debug: false,
       windowMode: null,
-      osr: null,
-      sharedTexture: null,
       perfLog: false,
       poseAheadSec: null,
       pointerFilter: null,
@@ -38,10 +36,6 @@ describe('parseLaunchArgs', () => {
   it.each([
     ['--vr', 'windowMode', 'vr'],
     ['--desktop-keyboard', 'windowMode', 'desktop'],
-    ['--vr-osr', 'osr', true],
-    ['--no-vr-osr', 'osr', false],
-    ['--shared-texture', 'sharedTexture', true],
-    ['--no-shared-texture', 'sharedTexture', false],
     ['--debug', 'debug', true],
     ['--perf-log', 'perfLog', true],
     ['--keep-idle-cursors', 'keepIdleCursors', true],
