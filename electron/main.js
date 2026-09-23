@@ -326,6 +326,16 @@ function startSteamVrLifecycle() {
     await yieldToEventLoop();
     if (servicesShutdown) return;
 
+    // The desktop keyboard is a debugging aid that works without SteamVR, so it
+    // does not wait: check once, and attach the overlay only if SteamVR is up.
+    // デスクトップのキーボードは SteamVR なしで動くデバッグ用なので待機しない。
+    // 一度だけ確認し、SteamVR が動いているときだけオーバーレイを付ける。
+    if (currentWindowMode === 'desktop' && !(await isSteamVrRunningAsync())) {
+      console.log('[vr] SteamVR is not running; desktop keyboard without overlay');
+      return;
+    }
+    if (servicesShutdown) return;
+
     stopWatchingSteamVr = watchForSteamVr({
       isRunning: isSteamVrRunningAsync,
       start: startVrOverlay,

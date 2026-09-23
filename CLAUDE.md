@@ -92,7 +92,7 @@ Electron IPCで通信する2つのJSランタイムと、1つのネイティブ�
 
 モードは`electron/services/launchMode.js`の`resolveWindowMode`が**起動時に一度だけ**決める(`--vr` > `--desktop-keyboard` > デバッグならdesktop > vr)。SteamVRが動いているかには依存しないので、起動後にウィンドウを作り直すことはない。以前は「SteamVRがなければdesktopに作り直す」2段階の判定があり、起動のたびにウィンドウがちらついていた。**判定をSteamVRの状態や前回のモードの記憶に依存させないこと**。表示切替の設定(`vrOsrMode`)と「オーバーレイを起動しない」(`disableOverlay`)も削除済みで、古いビルドが残した値は`WindowManager.js`が起動時にストアから消している。
 
-SteamVRより先に起動するのは普通の手順である。キーボードウィンドウは起動時に作られ、待つのはオーバーレイだけ。`electron/services/steamVrWatcher.js`がSteamVRをポーリングし(`isSteamVrRunningAsync`、3秒間隔)、起動を検知したら`main.js`の`startVrOverlay()`でオーバーレイを立ち上げる。vrserverのプロセスは`VR_Init`が通るようになる数秒前に現れるので、立ち上げに失敗しても上限回数まで再試行する。状態(`waiting`/`starting`/`running`/`failed`)は`vr-status-changed`で全ウィンドウへ送られ、設定ウィンドウの`components/VrStatusBanner.tsx`が表示する。起動中にSteamVRが終了した場合の再待機は未実装(既知の制限)。
+SteamVRより先に起動するのは普通の手順である。キーボードウィンドウは起動時に作られ、待つのはオーバーレイだけ。`electron/services/steamVrWatcher.js`がSteamVRをポーリングし(`isSteamVrRunningAsync`、3秒間隔)、起動を検知したら`main.js`の`startVrOverlay()`でオーバーレイを立ち上げる。vrserverのプロセスは`VR_Init`が通るようになる数秒前に現れるので、立ち上げに失敗しても上限回数まで再試行する。状態(`waiting`/`starting`/`running`/`failed`)は`vr-status-changed`で全ウィンドウへ送られ、設定ウィンドウの`components/VrStatusBanner.tsx`が表示する。待機するのはvrモードだけで、デバッグ用のdesktopモードは起動時に一度だけ確認し、SteamVRがなければ待たずにオーバーレイなしで動く。起動中にSteamVRが終了した場合の再待機は未実装(既知の制限)。
 
 - 起動引数は`electron/cli.js`: `--vr` `--desktop-keyboard` `--debug` `--perf-log` `--pose-ahead` `--pointer-filter` `--cursor-epsilon` `--keep-idle-cursors`。
 - レンダラーの分岐はルートの`index.tsx`で行う(`?mode=settings`なら`components/SettingsWindow.tsx`)。**`App.tsx`の中で分岐しないこと**。`App`はOSCブリッジとIME IPCを無条件に開くので、設定ウィンドウに2つ目のコピーができて衝突する。
