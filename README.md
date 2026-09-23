@@ -40,7 +40,7 @@ VRの中から **仮想キーボード** で快適なチャットができる**�
 ***
 
 > [!WARNING]
-> 一般VRChatterが、AntigravityやCodexを使って**適当に作った実験的**なツールです。
+> 一般VRChatterが、AntigravityやCodex、ClaudeCodeを使って**適当に作った実験的**なツールです。
 > このソフトの使用によって発生したトラブルについては、自己責任でお願いします。
 
 ## 💡 解決すべき問題と解決策
@@ -61,7 +61,7 @@ VRChatはVRモードでプレイすると、テキストチャットが不便<br
 ## 🚀 クイックスタート
 1. ダウンロード: [Releases](https://github.com/fuku2019/VRChat-OSC-Keyboard/releases/latest) から最新の .exeをダウンロード。
 2. インストール: 実行してウィザードに従いインストールを完了。
-3. VRChatの設定: アクションメニュー ➔ Options ➔ OSC ➔ Enabled を選択。
+3. VRChatの設定: アクションメニュー ➔ Options ➔ OSC ➔ Enabledを選択。
 4. 起動: SteamVRを起動した状態で本ツールを起動します。デスクトップには設定ウィンドウが表示され、キーボードはVR内に表示されます。
    + SteamVRより先に本ツールを起動した場合は、設定ウィンドウに案内が表示されます。そのままSteamVRを起動すれば、自動でVR内にキーボードが表示されます。
 5. 準備完了: 右コントローラーのスティックを長押しでキーボードを表示し、入力して送信ボタンを押してください！
@@ -127,7 +127,7 @@ VRChatはVRモードでプレイすると、テキストチャットが不便<br
 ### 1. 事前準備
 以下の環境が必要です。
 
-- **Node.js**: [Node.js](https://nodejs.org/ja/download)をインストールしてください。LTS バージョン推奨
+- **Node.js**: [Node.js](https://nodejs.org/ja/download)をインストールしてください。LTSバージョン推奨
 - **Rust**: [rustup]([https://rustup.rs/](https://rust-lang.org/ja/tools/install/)) をインストールしてください
 - **C++ ビルドツール**:
   - Windowsの場合: [Visual Studio Build Tools](https://visualstudio.microsoft.com/ja/downloads/) をインストールし、「C++ によるデスクトップ開発」を選択
