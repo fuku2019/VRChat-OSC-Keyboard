@@ -53,10 +53,8 @@ export interface UseIMEReturn {
   handleCommitCandidate: (index?: number) => void;
   handleCancelConversion: () => void;
   commitPreedit: () => void;
-  discardPreedit: () => void;
 
-  // DOM-driven updates (physical keyboard / OS IME) / DOM由来の更新（物理キーボード / OS IME）
-  syncFromDom: (value: string, selectionStart: number, selectionEnd: number) => void;
+  // The selection a click placed in the textarea / テキストエリアのクリックで置かれた選択位置
   setSelection: (start: number, end: number) => void;
 
   // Wholesale replacement (history recall, send, copy mode) / 一括置換（履歴呼び出し・送信・コピーモード）
@@ -161,15 +159,6 @@ export const useIME = (
     () => dispatch({ type: 'COMMIT_PREEDIT' }),
     [],
   );
-  const discardPreedit = useCallback(
-    () => dispatch({ type: 'DISCARD_PREEDIT' }),
-    [],
-  );
-  const syncFromDom = useCallback(
-    (value: string, selectionStart: number, selectionEnd: number) =>
-      dispatch({ type: 'SYNC_FROM_DOM', value, selectionStart, selectionEnd }),
-    [],
-  );
   const setSelection = useCallback(
     (start: number, end: number) =>
       dispatch({ type: 'SET_SELECTION', start, end }),
@@ -211,8 +200,6 @@ export const useIME = (
     handleCommitCandidate,
     handleCancelConversion,
     commitPreedit,
-    discardPreedit,
-    syncFromDom,
     setSelection,
     replaceAll,
     clearAll,

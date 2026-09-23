@@ -205,9 +205,9 @@ export const TRANSLATIONS: TranslationsMap = {
       step1Title: 'OSCの有効化',
       step1Desc: 'VRChat内のアクションメニューからOSC設定を開きOSCを有効にしてください。',
       step2Title: '入力モード',
-      step2Desc: 'Tabキーや画面ボタンで入力モードを切り替えられます。また、物理キーボードでの直接入力にも対応しています。',
+      step2Desc: '画面のボタンで入力モードを切り替えられます。',
       step3Title: '送信',
-      step3Desc: 'Enterキー、または送信ボタンでVRChatへチャットを送信します。',
+      step3Desc: '送信ボタンでVRChatへチャットを送信します。',
       startButton: 'はじめる'
     },
     status: {
@@ -325,9 +325,9 @@ export const TRANSLATIONS: TranslationsMap = {
       step1Title: 'Enable OSC',
       step1Desc: 'Enable OSC in VRChat via Action Menu > OSC > Enable.',
       step2Title: 'Input Modes',
-      step2Desc: 'Switch input modes via the Tab key or the on-screen button. Physical keyboard input is also supported.',
+      step2Desc: 'Switch input modes with the on-screen button.',
       step3Title: 'Send Message',
-      step3Desc: 'Send chat to VRChat using Enter or the Send button.',
+      step3Desc: 'Send chat to VRChat with the Send button.',
       startButton: 'Get Started'
     },
     status: {

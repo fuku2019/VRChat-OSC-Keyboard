@@ -67,10 +67,7 @@ const Harness = () => {
     handleClear: ime.handleClear,
     handleSpace: ime.handleSpace,
     handleCommitCandidate: ime.handleCommitCandidate,
-    handleCancelConversion: ime.handleCancelConversion,
     commitPreedit: ime.commitPreedit,
-    discardPreedit: ime.discardPreedit,
-    syncFromDom: ime.syncFromDom,
     setSelection: ime.setSelection,
     handlePrimaryAction: onPrimaryAction,
     handleInputEffect: onInputEffect,
@@ -83,9 +80,6 @@ const Harness = () => {
         ref={controller.textareaRef}
         value={ime.displayText}
         onChange={controller.handleTextareaChange}
-        onKeyDown={controller.handleKeyDown}
-        onCompositionStart={controller.handleCompositionStart}
-        onCompositionEnd={controller.handleCompositionEnd}
         onSelect={controller.handleSelect}
         onPointerDown={controller.handlePointerDown}
       />
@@ -106,6 +100,20 @@ const Harness = () => {
       <button
         data-testid='key-space'
         onClick={controller.virtualKeyHandlers.onSpace}
+      />
+      <button
+        data-testid='key-clear'
+        onClick={controller.virtualKeyHandlers.onClear}
+      />
+      <button
+        data-testid='key-send'
+        onClick={controller.virtualKeyHandlers.onSend}
+      />
+      {/* Stands in for history recall, the only way to load a whole text.
+          テキスト全体を読み込む唯一の手段である履歴呼び出しの代わり。 */}
+      <button
+        data-testid='load-abcd'
+        onClick={() => ime.replaceAll('ABCD')}
       />
       {/* No preventDefault here: a candidate button that steals focus is the
           worst case the caret restoration has to survive.
@@ -296,10 +304,7 @@ describe('useKeyboardController - caret / キャレット', () => {
     });
 
     it('records a selection the user actually made', () => {
-      const el = textarea();
-      act(() => {
-        fireEvent.change(el, { target: { value: 'ABCD' } });
-      });
+      press('load-abcd');
 
       placeCaret(2);
       press('key-backspace');
@@ -330,27 +335,24 @@ describe('useKeyboardController - caret / キャレット', () => {
     });
   });
 
-  describe('physical keys / 物理キー', () => {
-    it('restores the caret after committing with Enter', async () => {
+  describe('send and clear keys / 送信キーとクリアキー', () => {
+    it('restores the caret after the send key commits a conversion', async () => {
       typeKeys('kanji');
       await resolveConvert(['かんじ', '漢字']);
 
-      act(() => {
-        fireEvent.keyDown(textarea(), { key: 'Enter' });
-      });
+      press('key-send');
 
       expect(textarea().value).toBe('かんじ');
       expect(textarea().selectionStart).toBe(3);
+      expect(onPrimaryAction).not.toHaveBeenCalled();
     });
 
-    it('runs the input side effects exactly once per Enter commit', async () => {
+    it('runs the input side effects exactly once per commit', async () => {
       typeKeys('kanji');
       await resolveConvert(['かんじ', '漢字']);
       onInputEffect.mockClear();
 
-      act(() => {
-        fireEvent.keyDown(textarea(), { key: 'Enter' });
-      });
+      press('key-send');
 
       expect(onInputEffect).toHaveBeenCalledTimes(1);
       expect(onInputEffect).toHaveBeenCalledWith('かんじ');
@@ -367,74 +369,32 @@ describe('useKeyboardController - caret / キャレット', () => {
       expect(onInputEffect).not.toHaveBeenCalled();
     });
 
-    it('leaves candidate mode on Escape and clears on the second press', async () => {
+    it('leaves candidate mode on clear and clears on the second press', async () => {
       typeKeys('ka');
       await resolveConvert(['か', '課']);
 
-      act(() => {
-        fireEvent.keyDown(textarea(), { key: 'Escape' });
-      });
+      press('key-clear');
       expect(textarea().value).toBe('か');
 
-      act(() => {
-        fireEvent.keyDown(textarea(), { key: 'Escape' });
-      });
+      press('key-clear');
       expect(textarea().value).toBe('');
       expect(textarea().selectionStart).toBe(0);
     });
   });
 
-  describe('OS IME composition / OSのIME合成', () => {
-    it('does not write the selection while composing', async () => {
-      const spy = vi.spyOn(HTMLTextAreaElement.prototype, 'setSelectionRange');
-      typeKeys('ka');
-      await resolveConvert(['か', '課']);
-      spy.mockClear();
+  describe('DOM edits / DOM由来の編集', () => {
+    it('refuses edits that did not come through the reducer', () => {
+      press('load-abcd');
 
+      // Typing, paste, drop and undo all announce themselves with beforeinput.
+      // タイプ・ペースト・ドロップ・Undo はいずれも beforeinput で始まる。
+      const event = new Event('beforeinput', { bubbles: true, cancelable: true });
       act(() => {
-        fireEvent.compositionStart(textarea());
+        textarea().dispatchEvent(event);
       });
 
-      // compositionStart drops our preedit, which bumps the caret revision -
-      // but the effect must refuse to touch the selection mid-composition.
-      // compositionStart は未確定文字列を破棄しキャレットの版を進めるが、エフェクトは
-      // 合成中の選択操作を拒否しなければならない。
-      expect(spy).not.toHaveBeenCalled();
-      spy.mockRestore();
-    });
-
-    it('drops an in-flight conversion when the OS IME takes over', () => {
-      typeKeys('ka');
-      expect(pendingConverts).toHaveLength(1);
-      const stale = pendingConverts[0];
-
-      act(() => {
-        fireEvent.compositionStart(textarea());
-      });
-
-      const el = textarea();
-      act(() => {
-        fireEvent.compositionEnd(el, { target: { value: 'ねこ' } });
-      });
-
-      // The stale reply must not be able to rebuild a preedit.
-      // 古い応答が未確定文字列を再構築できてはならない。
-      act(() => {
-        stale.resolve({
-          success: true,
-          state: {
-            rawKana: 'か',
-            segments: [],
-            candidates: [{ text: '課' }],
-            candidateIndex: 0,
-            isConverting: true,
-            preedit: '課',
-            selectedCandidate: '課',
-          },
-        });
-      });
-
-      expect(textarea().value).toBe('ねこ');
+      expect(event.defaultPrevented).toBe(true);
+      expect(textarea().value).toBe('ABCD');
     });
   });
 
@@ -457,11 +417,8 @@ describe('useKeyboardController - caret / キャレット', () => {
     });
 
     it('replaces a selected range when typing over it', async () => {
-      const el = textarea();
-      act(() => {
-        fireEvent.change(el, { target: { value: 'ABCD' } });
-      });
-      expect(el.value).toBe('ABCD');
+      press('load-abcd');
+      expect(textarea().value).toBe('ABCD');
 
       placeCaret(1, 3);
       press('key-space');
@@ -470,10 +427,7 @@ describe('useKeyboardController - caret / キャレット', () => {
     });
 
     it('deletes the whole selected range on backspace', () => {
-      const el = textarea();
-      act(() => {
-        fireEvent.change(el, { target: { value: 'ABCD' } });
-      });
+      press('load-abcd');
 
       placeCaret(1, 3);
       press('key-backspace');
@@ -489,9 +443,7 @@ describe('useKeyboardController - caret / キャレット', () => {
       await resolveConvert(['か', '課']);
       const before = cancelCalls;
 
-      act(() => {
-        fireEvent.keyDown(textarea(), { key: 'Escape' });
-      });
+      press('key-clear');
 
       expect(cancelCalls).toBe(before + 1);
     });

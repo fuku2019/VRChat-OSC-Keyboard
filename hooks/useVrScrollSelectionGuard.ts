@@ -3,6 +3,9 @@ import { TIMEOUTS } from '../constants';
 
 const VR_SCROLL_SELECT_LOCK_CLASS = 'vr-scroll-select-lock';
 
+const isTextField = (element: Element | null): boolean =>
+  element instanceof HTMLTextAreaElement || element instanceof HTMLInputElement;
+
 /**
  * Temporarily disables text selection while VR scroll input is active.
  * VRスクロール入力中のみ一時的にテキスト選択を無効化する
@@ -35,10 +38,21 @@ export const useVrScrollSelectionGuard = () => {
 
     const handleInputScroll = (_payload: { deltaY: number }) => {
       root.classList.add(VR_SCROLL_SELECT_LOCK_CLASS);
-      try {
-        window.getSelection()?.removeAllRanges();
-      } catch {
-        // Ignore selection API failures; lock class still prevents new selections.
+      // Leave a focused text field alone. Clearing the document selection while
+      // the textarea has focus makes Chromium report selectionStart/End as 0,
+      // the resulting select event is recorded as the caret, and the next key
+      // lands at the left edge. The caret inside a text field is not the stray
+      // drag selection this guard exists for.
+      // フォーカス中のテキスト欄には触れない。textarea にフォーカスがある状態で document の
+      // 選択を消すと Chromium は selectionStart/End を 0 と報告し、それに伴う select
+      // イベントがキャレットとして記録されて、次のキーが左端に入る。テキスト欄内の
+      // キャレットは、このガードが防ぎたいドラッグ選択ではない。
+      if (!isTextField(document.activeElement)) {
+        try {
+          window.getSelection()?.removeAllRanges();
+        } catch {
+          // Ignore selection API failures; lock class still prevents new selections.
+        }
       }
       scheduleRelease();
     };

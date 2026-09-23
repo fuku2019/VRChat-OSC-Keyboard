@@ -35,7 +35,7 @@ describe('parseLaunchArgs', () => {
 
   it.each([
     ['--vr', 'windowMode', 'vr'],
-    ['--desktop-keyboard', 'windowMode', 'desktop'],
+    ['--desktop', 'windowMode', 'desktop'],
     ['--debug', 'debug', true],
     ['--perf-log', 'perfLog', true],
     ['--keep-idle-cursors', 'keepIdleCursors', true],

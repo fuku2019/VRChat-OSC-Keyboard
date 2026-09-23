@@ -18,7 +18,7 @@ describe('resolveWindowMode', () => {
     expect(resolveWindowMode({ launchArgs: {}, debug: true })).toBe('desktop');
   });
 
-  it('lets --desktop-keyboard open the desktop keyboard without debug mode', () => {
+  it('lets --desktop open the desktop keyboard without debug mode', () => {
     expect(
       resolveWindowMode({ launchArgs: { windowMode: 'desktop' }, debug: false }),
     ).toBe('desktop');

@@ -156,10 +156,8 @@ describe('imeReducer / IME状態機械', () => {
       { type: 'SPACE' },
       { type: 'COMMIT_PREEDIT' },
       { type: 'CANCEL_CONVERSION' },
-      { type: 'DISCARD_PREEDIT' },
       { type: 'CLEAR_ALL' },
       { type: 'REPLACE_ALL', text: 'hello' },
-      { type: 'SYNC_FROM_DOM', value: 'hi', selectionStart: 2, selectionEnd: 2 },
       { type: 'SET_SELECTION', start: 0, end: 0 },
       { type: 'SET_MODE', mode: InputMode.KATAKANA },
     ];
@@ -183,10 +181,8 @@ describe('imeReducer / IME状態機械', () => {
   describe('generation counter / 世代カウンタ', () => {
     const discarding: ImeAction[] = [
       { type: 'COMMIT_PREEDIT' },
-      { type: 'DISCARD_PREEDIT' },
       { type: 'CLEAR_ALL' },
       { type: 'REPLACE_ALL', text: 'x' },
-      { type: 'SYNC_FROM_DOM', value: 'x', selectionStart: 1, selectionEnd: 1 },
       { type: 'CANCEL_CONVERSION' },
     ];
 
@@ -510,41 +506,6 @@ describe('imeReducer / IME状態機械', () => {
 
       expect(state.caret).toBe(5);
       expect(state.selectionEnd).toBe(5);
-    });
-  });
-
-  describe('SYNC_FROM_DOM / DOM由来の同期', () => {
-    it('keeps the caret the DOM already placed and does not write it back', () => {
-      const state = fresh();
-
-      const next = imeReducer(state, {
-        type: 'SYNC_FROM_DOM',
-        value: 'こんにちは',
-        selectionStart: 2,
-        selectionEnd: 2,
-      });
-
-      expect(next.input).toBe('こんにちは');
-      expect(next.caret).toBe(2);
-      // Writing the selection back mid-composition breaks the OS IME.
-      // 合成中に選択を書き戻すと OS の IME が壊れる。
-      expect(next.caretRevision).toBe(state.caretRevision);
-      expect(next.mutationSeq).toBe(state.mutationSeq + 1);
-    });
-
-    it('writes the caret back when it had to trim the value', () => {
-      const state = fresh(InputMode.HIRAGANA, 3);
-
-      const next = imeReducer(state, {
-        type: 'SYNC_FROM_DOM',
-        value: 'ABCDEF',
-        selectionStart: 6,
-        selectionEnd: 6,
-      });
-
-      expect(next.input).toBe('ABC');
-      expect(next.caret).toBe(3);
-      expect(next.caretRevision).toBe(state.caretRevision + 1);
     });
   });
 

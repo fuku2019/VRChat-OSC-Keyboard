@@ -77,10 +77,7 @@ const App = () => {
     handleClear,
     handleSpace,
     handleCommitCandidate,
-    handleCancelConversion,
     commitPreedit,
-    discardPreedit,
-    syncFromDom,
     setSelection,
     replaceAll,
     clearAll,
@@ -209,9 +206,6 @@ const App = () => {
   const {
     textareaRef,
     toggleMode,
-    handleKeyDown,
-    handleCompositionStart,
-    handleCompositionEnd,
     handleTextareaChange,
     handleSelect,
     handlePointerDown,
@@ -230,10 +224,7 @@ const App = () => {
     handleClear,
     handleSpace,
     handleCommitCandidate,
-    handleCancelConversion,
     commitPreedit,
-    discardPreedit,
-    syncFromDom,
     setSelection,
     handlePrimaryAction,
     handleInputEffect,
@@ -460,9 +451,6 @@ const App = () => {
             ref={textareaRef}
             value={displayText}
             onChange={handleTextareaChange}
-            onKeyDown={handleKeyDown}
-            onCompositionStart={handleCompositionStart}
-            onCompositionEnd={handleCompositionEnd}
             onBlur={handleBlur}
             onSelect={handleSelect}
             onPointerDown={handlePointerDown}

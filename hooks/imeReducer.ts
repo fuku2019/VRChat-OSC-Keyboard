@@ -86,16 +86,9 @@ export type ImeAction =
   | { type: 'SPACE' }
   | { type: 'COMMIT_PREEDIT'; index?: number }
   | { type: 'CANCEL_CONVERSION' }
-  | { type: 'DISCARD_PREEDIT' }
   | { type: 'CLEAR' }
   | { type: 'CLEAR_ALL' }
   | { type: 'REPLACE_ALL'; text: string }
-  | {
-      type: 'SYNC_FROM_DOM';
-      value: string;
-      selectionStart: number;
-      selectionEnd: number;
-    }
   | { type: 'SET_SELECTION'; start: number; end: number }
   | { type: 'SET_MODE'; mode: InputMode }
   | {
@@ -566,17 +559,6 @@ export function imeReducer(
       return touchMutation(dropConversion(state));
     }
 
-    case 'DISCARD_PREEDIT': {
-      if (
-        state.preeditStart === null &&
-        !state.isConverting &&
-        state.pending === null
-      ) {
-        return state;
-      }
-      return touchMutation(dropPreedit(state));
-    }
-
     // Escape and the virtual clear key back out of candidate mode first and
     // only wipe the text on a second press, like a native IME.
     // Escape と仮想クリアキーは、まず候補モードを抜け、2回目の押下で初めてテキストを
@@ -605,31 +587,6 @@ export function imeReducer(
         caret: text.length,
         selectionEnd: text.length,
       });
-    }
-
-    case 'SYNC_FROM_DOM': {
-      // The textarea already holds the text and the caret (physical keyboard /
-      // OS IME), so this records what happened rather than driving it. The
-      // caret revision is deliberately NOT bumped: writing the selection back
-      // mid-composition breaks the OS IME.
-      // textarea 側に既にテキストとキャレットがある(物理キーボード / OS IME)ため、
-      // ここは駆動ではなく記録に徹する。caretRevision は意図的に上げない。合成中に
-      // 選択を書き戻すと OS の IME が壊れるため。
-      const truncated =
-        action.value.length > state.maxLength
-          ? action.value.slice(0, state.maxLength)
-          : action.value;
-      const next = dropPreedit(state);
-      const synced: ImeCoreState = {
-        ...next,
-        input: truncated,
-        caret: clamp(action.selectionStart, 0, truncated.length),
-        selectionEnd: clamp(action.selectionEnd, 0, truncated.length),
-        mutationSeq: next.mutationSeq + 1,
-      };
-      // Only when we had to trim does the DOM disagree with us and need fixing.
-      // 切り詰めが起きたときだけDOMとの不一致が生じるので、そのときだけ書き戻す。
-      return truncated === action.value ? synced : touchCaret(synced);
     }
 
     case 'SET_SELECTION': {

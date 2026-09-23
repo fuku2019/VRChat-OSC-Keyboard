@@ -3,12 +3,23 @@
  * IME状態機械をテキストエリアへ接続するフック。
  *
  * The caret is written back to the DOM from exactly one place: the layout
- * effect below. Every path - virtual key, physical key, candidate click, a
- * conversion reply arriving milliseconds later, send, history recall - ends up
- * there, because they all go through the reducer and bump caretRevision.
+ * effect below. Every path - virtual key, candidate click, a conversion reply
+ * arriving milliseconds later, send, history recall - ends up there, because
+ * they all go through the reducer and bump caretRevision.
  * キャレットをDOMへ書き戻す箇所は下のレイアウトエフェクトただ1つである。仮想キー・
- * 物理キー・候補クリック・数ミリ秒遅れて届く変換応答・送信・履歴呼び出しのすべてが
+ * 候補クリック・数ミリ秒遅れて届く変換応答・送信・履歴呼び出しのすべてが
  * リデューサを通って caretRevision を進めるため、必ずここに合流する。
+ *
+ * The textarea never edits its own text. The only thing that flows from the
+ * DOM into the reducer is the selection a click placed (SET_SELECTION). The
+ * physical keyboard / OS IME path used to let the textarea own the text and
+ * caret while typing, which gave the caret two owners; the app is VR-only and
+ * the offscreen keyboard window cannot receive OS focus, so that path is gone.
+ * テキストエリアは自分でテキストを編集しない。DOMからリデューサへ流れるのは、クリックで
+ * 置かれた選択位置(SET_SELECTION)だけである。以前の物理キーボード / OS IME 経路は
+ * 入力中のテキストとキャレットをテキストエリアに持たせており、キャレットの持ち主が
+ * 2つあった。アプリはVR専用で、オフスクリーンのキーボードウィンドウはOSのフォーカスを
+ * 受け取れないため、この経路は削除した。
  *
  * The previous implementation instead guessed the caret inside a
  * requestAnimationFrame from the difference in text length. That guess ran
@@ -39,10 +50,7 @@ interface UseKeyboardControllerProps {
   handleClear: () => void;
   handleSpace: () => void;
   handleCommitCandidate: (index?: number) => void;
-  handleCancelConversion: () => void;
   commitPreedit: () => void;
-  discardPreedit: () => void;
-  syncFromDom: (value: string, selectionStart: number, selectionEnd: number) => void;
   setSelection: (start: number, end: number) => void;
   handlePrimaryAction: () => void;
   handleInputEffect: (text: string) => void;
@@ -76,10 +84,7 @@ export const useKeyboardController = ({
   handleClear,
   handleSpace,
   handleCommitCandidate,
-  handleCancelConversion,
   commitPreedit,
-  discardPreedit,
-  syncFromDom,
   setSelection,
   handlePrimaryAction,
   handleInputEffect,
@@ -87,7 +92,6 @@ export const useKeyboardController = ({
   onHistoryDown,
 }: UseKeyboardControllerProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const isComposing = useRef(false); // OS IME composition in progress / OSのIME合成中
   const isPointerSelecting = useRef(false); // User is dragging a selection / ユーザーがドラッグ選択中
   const appliedSelection = useRef<{ start: number; end: number } | null>(null);
   const lastAppliedRevision = useRef(0);
@@ -104,9 +108,6 @@ export const useKeyboardController = ({
     if (caretRevision === lastAppliedRevision.current) return;
     lastAppliedRevision.current = caretRevision;
 
-    // Writing the selection during an OS IME composition aborts the
-    // composition. / OSのIME合成中に選択を書き込むと合成が中断される。
-    if (isComposing.current) return;
     // Do not fight a selection the user is still dragging out.
     // ユーザーがドラッグ中の選択範囲は奪わない。
     if (isPointerSelecting.current) return;
@@ -151,90 +152,30 @@ export const useKeyboardController = ({
     setMode(MODE_CYCLE[mode]);
   }, [mode, setMode]);
 
-  // --- Physical keyboard / 物理キーボード ---
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-      if (e.nativeEvent.isComposing) return;
+  // --- DOM edits are refused / DOM由来の編集は拒否する ---
+  //
+  // Typing, paste, drop and undo would all change the text behind the
+  // reducer's back. React's onBeforeInput is a synthetic event built from
+  // keypress / textInput and misses most of these, so the native event is used.
+  // readOnly is not an option: Chromium does not paint a caret in a readonly
+  // field, and the user would lose sight of the insertion point in VR.
+  // タイプ・ペースト・ドロップ・Undo はいずれもリデューサの知らないところでテキストを
+  // 変えてしまう。React の onBeforeInput は keypress / textInput から作られる合成
+  // イベントで、その大半を拾えないためネイティブのイベントを使う。readOnly は使えない。
+  // Chromium は readonly のフィールドにキャレットを描かないので、VRで挿入位置が見えなくなる。
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    const refuse = (e: Event) => e.preventDefault();
+    el.addEventListener('beforeinput', refuse);
+    return () => el.removeEventListener('beforeinput', refuse);
+  }, []);
 
-      if (e.key === 'Enter') {
-        if (isConverting) {
-          e.preventDefault();
-          handleCommitCandidate();
-          return;
-        }
-        if (!e.shiftKey) {
-          e.preventDefault();
-          handlePrimaryAction();
-        }
-        return;
-      }
-
-      if (e.key === 'Tab') {
-        e.preventDefault();
-        toggleMode();
-        return;
-      }
-
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        handleClear();
-        return;
-      }
-
-      if (e.key === 'ArrowUp' && !isConverting && onHistoryUp) {
-        e.preventDefault();
-        onHistoryUp();
-        return;
-      }
-
-      if (e.key === 'ArrowDown' && !isConverting && onHistoryDown) {
-        e.preventDefault();
-        onHistoryDown();
-      }
-    },
-    [
-      isConverting,
-      handleCommitCandidate,
-      handlePrimaryAction,
-      toggleMode,
-      handleClear,
-      onHistoryUp,
-      onHistoryDown,
-    ],
-  );
-
-  // --- OS IME composition / OSのIME合成 ---
-  const handleCompositionStart = useCallback(() => {
-    isComposing.current = true;
-    // The app's own IME and the OS IME cannot both own the preedit. Dropping
-    // ours also invalidates any conversion still in flight, which would
-    // otherwise rewrite the textarea mid-composition and abort it.
-    // アプリ内蔵IMEとOSのIMEが同時に未確定文字列を持つことはできない。こちらを破棄する
-    // ことで飛行中の変換も無効化される。さもないと合成中にテキストエリアが書き換わり、
-    // 合成が中断される。
-    discardPreedit();
-  }, [discardPreedit]);
-
-  const handleCompositionEnd = useCallback(
-    (e: React.CompositionEvent<HTMLTextAreaElement>) => {
-      isComposing.current = false;
-      const el = e.currentTarget;
-      syncFromDom(el.value, el.selectionStart, el.selectionEnd);
-    },
-    [syncFromDom],
-  );
-
-  // The textarea owns the text and the caret for physical typing, so this
-  // records what it did rather than driving it.
-  // 物理入力ではテキストとキャレットの正はテキストエリア側にあるため、ここは駆動ではなく
-  // 記録に徹する。
-  const handleTextareaChange = useCallback(
-    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      const el = e.target;
-      syncFromDom(el.value, el.selectionStart, el.selectionEnd);
-    },
-    [syncFromDom],
-  );
+  // A controlled textarea needs onChange. Edits are already refused above, and
+  // anything that slipped through is put back from state by React.
+  // 制御コンポーネントには onChange が必要。編集は上で拒否しており、万一すり抜けても
+  // React が state の値へ戻す。
+  const handleTextareaChange = useCallback(() => {}, []);
 
   // --- Selection tracking / 選択位置の追跡 ---
   const handleSelect = useCallback(
@@ -307,11 +248,7 @@ export const useKeyboardController = ({
 
   return {
     textareaRef,
-    isComposing,
     toggleMode,
-    handleKeyDown,
-    handleCompositionStart,
-    handleCompositionEnd,
     handleTextareaChange,
     handleSelect,
     handlePointerDown,

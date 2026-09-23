@@ -4,7 +4,7 @@
 
 ## プロジェクト概要
 
-VRChat OSC Keyboard — VRChatのプレイヤーがVR内で仮想キーボードを使って日本語IME変換込みの入力を行い、そのテキストをOSC経由でVRChatのチャットボックスへ送信するWindows専用のElectron + Reactアプリ。キーボードはSteamVRオーバーレイとして描画され、ヘッドセットを外さずに操作できる。v2.3.0からVR専用で、デスクトップのキーボードはデバッグ用にだけ残っている(物理キーボード入力はデバッグ時のみ)。OpenVRへのアクセスにはRust/napi-rs製のネイティブモジュールを使用している。
+VRChat OSC Keyboard — VRChatのプレイヤーがVR内で仮想キーボードを使って日本語IME変換込みの入力を行い、そのテキストをOSC経由でVRChatのチャットボックスへ送信するWindows専用のElectron + Reactアプリ。キーボードはSteamVRオーバーレイとして描画され、ヘッドセットを外さずに操作できる。v2.3.0からVR専用で、デスクトップのキーボードはデバッグ用にだけ残っている。物理キーボード入力には対応していない(デバッグ時も含む)。OpenVRへのアクセスにはRust/napi-rs製のネイティブモジュールを使用している。
 
 ## コマンド
 
@@ -14,9 +14,9 @@ npm run build:native       # Rust ネイティブモジュール (native/) を�
 npm run ime:build-dict     # Mozc 辞書シャードの再生成 (scripts/ime または元辞書を変更した場合のみ必要)
 
 npm run dev                # vite dev server のみ (ブラウザ動作。OSC は vite の dev ブリッジプラグイン経由)
-npm run electron:dev       # フル構成: vite + Electron を同時起動。デバッグ用のデスクトップキーボードで開く (--desktop-keyboard)
+npm run electron:dev       # フル構成: vite + Electron を同時起動。デバッグ用のデスクトップキーボードで開く (--desktop)
 npm run electron:dev:vr    # 利用者と同じ VR モード (--vr --perf-log) で起動。デスクトップには設定ウィンドウだけが出る
-npm run electron:dev:perf  # デスクトップキーボード + キャプチャ計測ログ (--desktop-keyboard --perf-log)
+npm run electron:dev:perf  # デスクトップキーボード + キャプチャ計測ログ (--desktop --perf-log)
 npm run electron:dev:vr:eps  # VR モード + カーソル送信しきい値の上書き (--cursor-epsilon=0.005)
 npm run build              # vite build のみ
 npm run dist               # vite build + electron-builder + rename-build-output.js -> release/
@@ -62,7 +62,7 @@ Electron IPCで通信する2つのJSランタイムと、1つのネイティブ�
 3. **`native/` (Rust, napi-rs)** — クレート名`vr-overlay-native`、`cdylib`、ターゲットは`x86_64-pc-windows-msvc`に固定。OpenVR (オーバーレイ生成、D3D11テクスチャ送出、コントローラーの姿勢・入力取得)をメインプロセスへ公開する。`Cargo.toml`で`unsafe_op_in_unsafe_fn = "deny"`を設定しているため、`unsafe fn`の内部であってもすべてのFFI呼び出しに明示的な`unsafe`ブロックが必要 — `unsafe`をgrepすれば未検査コードを網羅できる、という意図。`npm run build:native`は`napi build`の後に`scripts/sync-native.cjs`を実行する。
 
 ### 通常のキー入力のデータフロー
-物理キー/仮想キー → `useKeyboardController`/`useIME` (レンダラー) → かな変換が必要ならIPCで`JapaneseConversionService` (メイン)へ → `displayText` state → 送信時に`useOscSender` → WebSocketブリッジ(Electronでは`OscBridgeService`、開発時はviteプラグイン) → `node-osc` → VRChatの`/chatbox/input`。
+仮想キー → `useKeyboardController`/`useIME` (レンダラー) → かな変換が必要ならIPCで`JapaneseConversionService` (メイン)へ → `displayText` state → 送信時に`useOscSender` → WebSocketブリッジ(Electronでは`OscBridgeService`、開発時はviteプラグイン) → `node-osc` → VRChatの`/chatbox/input`。
 
 ### 入力レイヤーの設計(キャレットの扱い)
 
@@ -75,6 +75,7 @@ Electron IPCで通信する2つのJSランタイムと、1つのネイティブ�
 - **IPCはリデューサの`pending`から`useEffect`が発射する**。呼び出し側から直接`window.electronAPI.ime*`を呼ばないこと。状態を捨てるアクションがリデューサ内で`requestId`を進めるため、遅れて届いた応答が確定済みテキストの裏で未確定文字列を復活させることがなくなる。
 - レンダラーが変換状態を捨てる経路では**main側にも`cancel`を送る**(`pending: {kind: 'cancel'}`)。main は独自に変換状態を持つシングルトンなので、通知しないと古い`segments`のまま次の確定に応じてしまう。
 - 確定時は`context.expectedText`にレンダラーが実際に確定した文字列を載せる。main は自身の合成結果と一致するときだけ学習する。
+- **テキストエリアは自分でテキストを編集しない**。タイプ・ペースト・ドロップ・Undoはネイティブの`beforeinput`で拒否している(Reactの`onBeforeInput`は別物で、これらを拾えない)。DOMからリデューサへ入るのは、クリックで置かれた選択位置(`SET_SELECTION`)だけである。以前は物理キーボード/OS IMEのために`SYNC_FROM_DOM`とcompositionの処理があり、キャレットの持ち主がDOMとリデューサの2つになっていた。**この経路を復活させないこと**。`readOnly`にするとChromiumはキャレットを描かなくなるので、それも使わない。
 
 ### VRコントローラー操作のデータフロー
 コントローラーの姿勢(ネイティブモジュール、`input_handler.js`でポーリング) → レイとオーバーレイの交差判定 → IPCでカーソル/トリガーイベント送信 → `CursorOverlay.tsx`と`useVrScrollSelectionGuard`が疑似カーソルを描画し、トリガー押下をクリックへ変換。対象はキーボードウィンドウのDOM UIで、それを`overlay/capture.js`がオーバーレイへキャプチャしている(VRモードではこのウィンドウはオフスクリーン描画でデスクトップに出ない。次節)。
@@ -87,14 +88,14 @@ Electron IPCで通信する2つのJSランタイムと、1つのネイティブ�
 
 **v3.0.0からアプリはVR専用**である。ウィンドウモードは2つあるが、利用者が使うのはvrだけで、desktopはデバッグ用に残している。
 
-- **vr**(既定): キーボードウィンドウは`webPreferences.offscreen`のオフスクリーン描画で、デスクトップには出ない(`paint`イベントでキャプチャ)。デスクトップには`?mode=settings`で開く設定ウィンドウだけが出る。vsyncから切り離されるため遅延が大きく減るが、**OSのフォーカスを取れないので物理キーボード入力は使えない**(仮想キーのみ。READMEにも既知の問題として書いてある)。
-- **desktop**(デバッグ用): キーボードウィンドウ1枚。デスクトップに表示され、`capturePage`のポーリングでオーバーレイへキャプチャされる。`--desktop-keyboard`か、デバッグモード(`--debug`または`debug.config.json`の`enableDebugMode`)で使う。`npm run electron:dev`は`--desktop-keyboard`付きで起動する。
+- **vr**(既定): キーボードウィンドウは`webPreferences.offscreen`のオフスクリーン描画で、デスクトップには出ない(`paint`イベントでキャプチャ)。デスクトップには`?mode=settings`で開く設定ウィンドウだけが出る。vsyncから切り離されるため遅延が大きく減る。ただしOSのフォーカスを取れないので、物理キーボードは使えない(READMEにも書いてある)。
+- **desktop**(デバッグ用): キーボードウィンドウ1枚。デスクトップに表示され、`capturePage`のポーリングでオーバーレイへキャプチャされる。`--desktop`か、デバッグモード(`--debug`または`debug.config.json`の`enableDebugMode`)で使う。`npm run electron:dev`は`--desktop`付きで起動する。
 
-モードは`electron/services/launchMode.js`の`resolveWindowMode`が**起動時に一度だけ**決める(`--vr` > `--desktop-keyboard` > デバッグならdesktop > vr)。SteamVRが動いているかには依存しないので、起動後にウィンドウを作り直すことはない。以前は「SteamVRがなければdesktopに作り直す」2段階の判定があり、起動のたびにウィンドウがちらついていた。**判定をSteamVRの状態や前回のモードの記憶に依存させないこと**。表示切替の設定(`vrOsrMode`)と「オーバーレイを起動しない」(`disableOverlay`)も削除済みで、古いビルドが残した値は`WindowManager.js`が起動時にストアから消している。
+モードは`electron/services/launchMode.js`の`resolveWindowMode`が**起動時に一度だけ**決める(`--vr` > `--desktop` > デバッグならdesktop > vr)。SteamVRが動いているかには依存しないので、起動後にウィンドウを作り直すことはない。以前は「SteamVRがなければdesktopに作り直す」2段階の判定があり、起動のたびにウィンドウがちらついていた。**判定をSteamVRの状態や前回のモードの記憶に依存させないこと**。表示切替の設定(`vrOsrMode`)と「オーバーレイを起動しない」(`disableOverlay`)も削除済みで、古いビルドが残した値は`WindowManager.js`が起動時にストアから消している。
 
 SteamVRより先に起動するのは普通の手順である。キーボードウィンドウは起動時に作られ、待つのはオーバーレイだけ。`electron/services/steamVrWatcher.js`がSteamVRをポーリングし(`isSteamVrRunningAsync`、3秒間隔)、起動を検知したら`main.js`の`startVrOverlay()`でオーバーレイを立ち上げる。vrserverのプロセスは`VR_Init`が通るようになる数秒前に現れるので、立ち上げに失敗しても上限回数まで再試行する。状態(`waiting`/`starting`/`running`/`failed`)は`vr-status-changed`で全ウィンドウへ送られ、設定ウィンドウの`components/VrStatusBanner.tsx`が表示する。待機するのはvrモードだけで、デバッグ用のdesktopモードは起動時に一度だけ確認し、SteamVRがなければ待たずにオーバーレイなしで動く。起動中にSteamVRが終了した場合の再待機は未実装(既知の制限)。
 
-- 起動引数は`electron/cli.js`: `--vr` `--desktop-keyboard` `--debug` `--perf-log` `--pose-ahead` `--pointer-filter` `--cursor-epsilon` `--keep-idle-cursors`。
+- 起動引数は`electron/cli.js`: `--vr` `--desktop` `--debug` `--perf-log` `--pose-ahead` `--pointer-filter` `--cursor-epsilon` `--keep-idle-cursors`。
 - レンダラーの分岐はルートの`index.tsx`で行う(`?mode=settings`なら`components/SettingsWindow.tsx`)。**`App.tsx`の中で分岐しないこと**。`App`はOSCブリッジとIME IPCを無条件に開くので、設定ウィンドウに2つ目のコピーができて衝突する。
 - 設定ウィンドウは`SettingsModal`を`variant='panel'`で全面表示する。VRモードではこれがユーザーの見える唯一のウィンドウで、**閉じるとアプリが終了する**(オフスクリーンのウィンドウが生きている間`window-all-closed`は発火しないため、明示的に`app.quit()`している)。
 - 2つのウィンドウ間の設定同期はmain経由のブロードキャスト(`electron/services/ipc/WindowIpcHandlers.js`が送信元以外へ中継)。受信側の`stores/configStore.ts`は**`setConfig`を呼ばずストアへ直書きする**(呼ぶと送り返してエコーが止まらない)。`storage`イベントはパッケージ版の`file://`で届く保証がないので使っていない。
