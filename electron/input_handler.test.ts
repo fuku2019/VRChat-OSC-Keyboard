@@ -93,6 +93,33 @@ describe('input_handler cleanup behavior', () => {
     stopInputLoop();
   });
 
+  it('applies the default pose prediction when the loop starts', async () => {
+    const { startInputLoop, stopInputLoop } = await import('./input_handler.js');
+    const { POSE_PREDICTION_SECONDS } = await import('./input/constants.js');
+    overlayManagerMock.getControllerIds.mockReturnValue([]);
+
+    startInputLoop(120, {} as Electron.WebContents, { syncWithCapture: true });
+
+    expect(POSE_PREDICTION_SECONDS).toBeGreaterThan(0);
+    expect(overlayManagerMock.setPosePredictionSeconds).toHaveBeenCalledWith(
+      POSE_PREDICTION_SECONDS,
+    );
+    stopInputLoop();
+  });
+
+  it('lets --pose-ahead=0 turn prediction off', async () => {
+    const { setPoseAheadSeconds, startInputLoop, stopInputLoop } = await import(
+      './input_handler.js'
+    );
+    overlayManagerMock.getControllerIds.mockReturnValue([]);
+
+    setPoseAheadSeconds(0);
+    startInputLoop(120, {} as Electron.WebContents, { syncWithCapture: true });
+
+    expect(overlayManagerMock.setPosePredictionSeconds).toHaveBeenLastCalledWith(0);
+    stopInputLoop();
+  });
+
   it('stopInputLoop sends mouse leave, releases pressed state, and resets runtime state', async () => {
     const { state } = await import('./input/state.js');
     const { stopInputLoop } = await import('./input_handler.js');

@@ -55,6 +55,14 @@ describe('parseLaunchArgs', () => {
     expect(parseLaunchArgs([...PACKAGED_ARGV, '--pose-ahead', '0.022']).poseAheadSec).toBe(0.022);
   });
 
+  // Prediction is on by default now, so 0 is the only way to turn it off - it
+  // must come through as 0, not be dropped as a missing value.
+  // 予測は既定で有効になったため、0 が唯一の無効化手段である。欠落値として
+  // 捨てられず、0 として届かなければならない。
+  it('accepts --pose-ahead=0 to turn prediction off', () => {
+    expect(parseLaunchArgs([...PACKAGED_ARGV, '--pose-ahead=0']).poseAheadSec).toBe(0);
+  });
+
   it('parses the cursor epsilon', () => {
     expect(parseLaunchArgs([...PACKAGED_ARGV, '--cursor-epsilon=0.004']).cursorEpsilon).toBe(0.004);
   });

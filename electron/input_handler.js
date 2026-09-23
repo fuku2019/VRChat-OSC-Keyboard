@@ -8,6 +8,7 @@ import {
   POINTER_MIN_CUTOFF,
   POINTER_BETA,
   POINTER_D_CUTOFF,
+  POSE_PREDICTION_SECONDS,
 } from './input/constants.js';
 import {
   resetCursorThrottle,
@@ -42,7 +43,7 @@ export { setCursorEpsilon };
 // 生きたオーバーレイマネージャーへ適用する実行時の調整値。マネージャーはVR
 // オーバーレイが立ち上がって初めて存在し、それは起動フラグを読んだ後になるため、
 // 値はここに保持して startInputLoop のたびに再適用する。
-let poseAheadSeconds = 0;
+let poseAheadSeconds = POSE_PREDICTION_SECONDS;
 let filterIdleControllers = true;
 
 /**
@@ -70,12 +71,10 @@ function applyIdleControllerFilter() {
 }
 
 /**
- * Ask OpenVR to predict controller poses this far ahead (--pose-ahead).
- * A horizon of 0 asks for the pose as of now, which is already stale by the
- * time the frame it drives reaches the headset.
- * OpenVR にコントローラーのポーズをこの秒数だけ先読みさせる (--pose-ahead)。
- * 先読み0は「今この瞬間」の姿勢を求めるが、それが駆動するフレームがヘッドセットに
- * 届く頃には既に古い。
+ * Override how far ahead OpenVR predicts controller poses (--pose-ahead).
+ * Defaults to POSE_PREDICTION_SECONDS; 0 turns prediction off.
+ * OpenVR にコントローラーの姿勢を何秒先まで予測させるかを上書きする (--pose-ahead)。
+ * 既定値は POSE_PREDICTION_SECONDS で、0 を渡すと予測を無効にする。
  */
 export function setPoseAheadSeconds(seconds) {
   if (!Number.isFinite(seconds) || seconds < 0) return;

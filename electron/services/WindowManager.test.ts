@@ -89,6 +89,9 @@ vi.mock('electron-store', () => ({
     set(key: string, value: unknown) {
       storeData.set(key, value);
     }
+    delete(key: string) {
+      storeData.delete(key);
+    }
   },
 }));
 
@@ -97,6 +100,9 @@ vi.mock('electron-store', () => ({
 // モジュール読み込み前に旧来の単一ウィンドウ用キーを仕込み、トップレベルで一度だけ
 // 走るマイグレーションに引き継ぐ対象を与える。
 storeData.set('windowPosition', { x: 77, y: 88 });
+// ...and the remembered window mode an earlier build left behind.
+// ...あわせて、以前のビルドが残した前回のウィンドウモードも仕込む。
+storeData.set('launchMode', 'vr');
 
 const {
   createWindow,
@@ -113,6 +119,7 @@ const {
 // ウィンドウ側のテストのために windowPositions を書き換えるため。
 const migratedPositions = storeData.get('windowPositions') as Record<string, unknown>;
 const migratedLegacy = storeData.get('windowPosition');
+const leftoverLaunchMode = storeData.has('launchMode');
 
 const latestWindow = () =>
   FakeBrowserWindow.instances[FakeBrowserWindow.instances.length - 1];
@@ -140,6 +147,13 @@ describe('window-state migration', () => {
     // The legacy key stays so a downgrade still finds its position.
     // ダウングレードしても位置を見つけられるよう旧キーは残す。
     expect(migratedLegacy).toEqual({ x: 77, y: 88 });
+  });
+
+  // An earlier build trusted this on the next launch, turning one --vr run into
+  // VR mode for every later launch. / 以前のビルドは次回起動でこれを信用し、一度の
+  // --vr 起動で以降の起動をすべてVRにしていた。
+  it('drops the remembered window mode left by earlier builds', () => {
+    expect(leftoverLaunchMode).toBe(false);
   });
 });
 

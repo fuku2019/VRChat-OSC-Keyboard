@@ -34,6 +34,18 @@ export const CURSOR_SEND_EPSILON = 0.002;
 export const POINTER_MIN_CUTOFF = 4.0;
 export const POINTER_BETA = 1.0;
 export const POINTER_D_CUTOFF = 1.0;
+
+// How far ahead OpenVR is asked to predict controller poses, in seconds. Asking
+// for "now" (0) returns a pose that is already stale by the time the frame it
+// drives reaches the headset. 22ms - roughly two frames at 90Hz - was chosen in
+// a headset, where it made the cursor noticeably keep up with the hand without
+// overshooting. --pose-ahead overrides it, and --pose-ahead=0 turns it off.
+// OpenVR にコントローラーの姿勢を何秒先まで予測させるか。「今」(0) を求めると、
+// それが駆動するフレームがヘッドセットに届く頃には既に古い姿勢になる。22ms
+// (90Hzでおよそ2フレーム) はヘッドセットを被って選んだ値で、行き過ぎずにカーソルが
+// 手へ目に見えて追いつくようになった。--pose-ahead で上書きでき、--pose-ahead=0 で
+// 無効になる。
+export const POSE_PREDICTION_SECONDS = 0.022;
 export const TRIGGER_DRAG_THRESHOLD = 0.015;
 export const TRIGGER_CLICK_CANCEL_THRESHOLD = 0.03;
 export const TRIGGER_SCROLL_MULTIPLIER = 0.5;

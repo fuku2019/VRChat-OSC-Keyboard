@@ -18,8 +18,6 @@ import {
   createSettingsWindow,
   getKeyboardWindow,
   getSettingsWindow,
-  getStoredLaunchMode,
-  setStoredLaunchMode,
   setAppTitle,
   getOverlaySettings,
   getSteamVrSettings,
@@ -351,7 +349,6 @@ function scheduleSteamVrBootstrap() {
       );
       applyWindowMode(finalMode);
     }
-    setStoredLaunchMode(finalMode);
 
     if (overlayHandles === null) {
       return;
@@ -387,7 +384,6 @@ function shutdownServices() {
   shutdownOverlay();
   // Close bridge connections / ブリッジ接続を閉じる
   cleanupBridge();
-  console.log('[shutdown] services stopped');
 }
 
 // Single instance lock / 単一インスタンスロック
@@ -421,7 +417,6 @@ if (!gotTheLock) {
       resolveWindowMode(
         resolveInitialWindowMode({
           launchArgs,
-          storedLaunchMode: getStoredLaunchMode(),
           overlaySettings: getOverlaySettings(),
         }),
       ),
@@ -450,20 +445,10 @@ if (!gotTheLock) {
   // Also covers quit paths that never close a window (e.g. restart / installer).
   // ウィンドウを閉じずに終了する経路（再起動やインストーラ実行など）もここで拾う。
   app.on('before-quit', () => {
-    console.log('[shutdown] before-quit');
     shutdownServices();
   });
 
-  app.on('will-quit', () => {
-    console.log('[shutdown] will-quit');
-  });
-
-  app.on('quit', () => {
-    console.log('[shutdown] quit');
-  });
-
   app.on('window-all-closed', () => {
-    console.log('[shutdown] window-all-closed');
     if (process.platform !== 'darwin') {
       shutdownServices();
       app.quit();

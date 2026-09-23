@@ -22,7 +22,6 @@
     "electron:dev": "concurrently -k \"cross-env IS_ELECTRON=true vite\" \"wait-on tcp:5173 && electron .\"",
     "electron:dev:perf": "concurrently -k \"cross-env IS_ELECTRON=true vite\" \"wait-on tcp:5173 && electron . --perf-log\"",
     "electron:dev:vr": "concurrently -k \"cross-env IS_ELECTRON=true vite\" \"wait-on tcp:5173 && electron . --vr --perf-log\"",
-    "electron:dev:vr:pose": "concurrently -k \"cross-env IS_ELECTRON=true vite\" \"wait-on tcp:5173 && electron . --vr --perf-log --pose-ahead=0.022\"",
     "electron:dev:vr:eps": "concurrently -k \"cross-env IS_ELECTRON=true vite\" \"wait-on tcp:5173 && electron . --vr --perf-log --cursor-epsilon=0.005\"",
     "dist": "vite build && electron-builder && node scripts/rename-build-output.js",
     "test": "vitest",

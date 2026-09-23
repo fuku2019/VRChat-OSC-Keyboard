@@ -15,6 +15,9 @@ npm run ime:build-dict     # Mozc 辞書シャードの再生成 (scripts/ime �
 
 npm run dev                # vite dev server のみ (ブラウザ動作。OSC は vite の dev ブリッジプラグイン経由)
 npm run electron:dev       # フル構成: vite + Electron を同時起動 (Electron が http://localhost:5173 を読み込む)
+npm run electron:dev:vr    # 同上を VR モード (--vr --perf-log) で起動。デスクトップには設定ウィンドウだけが出る
+npm run electron:dev:perf  # デスクトップモード + キャプチャ計測ログ (--perf-log)
+npm run electron:dev:vr:eps  # VR モード + カーソル送信しきい値の上書き (--cursor-epsilon=0.005)
 npm run build              # vite build のみ
 npm run dist               # vite build + electron-builder + rename-build-output.js -> release/
 
@@ -27,11 +30,13 @@ npm run typecheck          # tsc --noEmit (allowJs が有効なため electron/*
 npm run native:check       # native/ に対する cargo clippy (-D warnings)
 ```
 
+**`npm run electron:dev -- --vr`のように引数を足しても Electron には届かない**。`--`以降は`concurrently`自身が受け取ってしまうためである。起動引数が必要なら`package.json`に専用スクリプトを足すこと(上の`electron:dev:*`はそのために存在する)。
+
 `npm run native:check`がこのリポジトリで**唯一**のlintである。JS/TS側にはリンターもフォーマッターも存在しない(eslint/prettier/biome/rustfmtの設定ファイルはどこにもない)。編集時は周囲のファイルのスタイルに合わせること:インデント2スペース、シングルクォート、セミコロンあり、末尾カンマあり。
 
 `native/index.node`と生成される`.dll`/`.d.ts`は**gitignore対象**であるため、クローン直後の状態では`npm run build:native`が成功するまで`electron:dev`も`dist`も実行できない。このビルドにはrustup、MSVCの「C++によるデスクトップ開発」、およびLLVM (bindgen用)が必要 — インストーラのリンクはREADME.mdの「手動ビルド」を参照。これらは一度きりの環境構築であり、タスクごとに導入するものではない。`native/`配下を変更したら必ず再ビルドすること。
 
-テストは対象ソースと同じ階層に配置する(`Foo.ts`に対して`Foo.test.ts`)。これはレンダラー側のツリーと`electron/`の両方で共通。Vitestはjsdom環境で動作するため(`vitest.config.ts`)、Electron側のテストは実際のElectronプロセスを起動せず`electron`とネイティブバインディングをモックする。`.agent/rules/testfile-guide.md`にはPlaywrightへの言及があるが、e2eテストの仕組みは実在しない。
+テストは対象ソースと同じ階層に配置する(`Foo.ts`に対して`Foo.test.ts`)。これはレンダラー側のツリーと`electron/`の両方で共通。Vitestはjsdom環境で動作するため(`vitest.config.ts`)、Electron側のテストは実際のElectronプロセスを起動せず`electron`とネイティブバインディングをモックする。`.agent/rules/testfile-guide.md`にはPlaywrightへの言及があるが、e2eテストの仕組みは実在しない。jsdomには`document.elementFromPoint`と`window.matchMedia`がないので、これらを使うコンポーネントのテストではスタブすること(`components/CursorOverlay.test.tsx`参照)。テストファイルは`package.json`の`build.files`にある`!**/*.test.*`でasarから除外されるので、同階層に置いても出荷物には入らない。
 
 ## CIはコード品質をゲートしない
 
@@ -51,6 +56,8 @@ Electron IPCで通信する2つのJSランタイムと、1つのネイティブ�
    - `overlay.js` + `overlay/*` — SteamVRオーバーレイの生成と駆動、Electronウィンドウの描画フレームのキャプチャ、ネイティブモジュール経由のOpenVRハンドル管理。
    - `input_handler.js` + `input/*` — VRコントローラーの姿勢とトリガーをポーリングし、オーバーレイとのレイ交差判定を計算して、カーソル/トリガー/スクロールのイベントをレンダラーへ送る(`preload.js`の`onCursorMove`/`onTriggerState`/`onInputScroll`)。コントローラーで2D UIを「クリック」できるのはこの仕組みによる。
    - `services/SteamVrManifestService.js` / `SteamVrSettingsService.js` — SteamVRオーバーレイアプリとしての登録、自動起動およびバインディング設定の管理。
+   - `services/vrOverlayService.js` — SteamVR Input(オーバーレイ表示トグルのアクション)の初期化とポーリング。`state.disabled`は**恒久的な失敗専用のラッチ**で、「オーバーレイマネージャーがまだない」で立ててはならない。VRモードの設定ウィンドウは初期化より先にバインディングを問い合わせるため、以前はここでラッチが立ってセッション中ずっとSteamVR入力が死んでいた。また、バインディングは`initialized=true`になってから1〜2秒遅れて非同期に解決されるので、`hooks/useSteamVrSettings.ts`は解決まで再試行している。
+   - `cli.js` / `debugConfig.js` / `services/launchMode.js` — 起動引数の解析、デバッグ設定の読み込み、ウィンドウモードの判定(次節)。
 
 3. **`native/` (Rust, napi-rs)** — クレート名`vr-overlay-native`、`cdylib`、ターゲットは`x86_64-pc-windows-msvc`に固定。OpenVR (オーバーレイ生成、D3D11テクスチャ送出、コントローラーの姿勢・入力取得)をメインプロセスへ公開する。`Cargo.toml`で`unsafe_op_in_unsafe_fn = "deny"`を設定しているため、`unsafe fn`の内部であってもすべてのFFI呼び出しに明示的な`unsafe`ブロックが必要 — `unsafe`をgrepすれば未検査コードを網羅できる、という意図。`npm run build:native`は`napi build`の後に`scripts/sync-native.cjs`を実行する。
 
@@ -70,7 +77,28 @@ Electron IPCで通信する2つのJSランタイムと、1つのネイティブ�
 - 確定時は`context.expectedText`にレンダラーが実際に確定した文字列を載せる。main は自身の合成結果と一致するときだけ学習する。
 
 ### VRコントローラー操作のデータフロー
-コントローラーの姿勢(ネイティブモジュール、`input_handler.js`でポーリング) → レイとオーバーレイの交差判定 → IPCでカーソル/トリガーイベント送信 → `CursorOverlay.tsx`と`useVrScrollSelectionGuard`が疑似カーソルを描画し、トリガー押下をクリックへ変換。対象はデスクトップウィンドウと同一のDOM UIで、それを`overlay/capture.js`がオーバーレイへキャプチャしている。
+コントローラーの姿勢(ネイティブモジュール、`input_handler.js`でポーリング) → レイとオーバーレイの交差判定 → IPCでカーソル/トリガーイベント送信 → `CursorOverlay.tsx`と`useVrScrollSelectionGuard`が疑似カーソルを描画し、トリガー押下をクリックへ変換。対象はキーボードウィンドウのDOM UIで、それを`overlay/capture.js`がオーバーレイへキャプチャしている(VRモードではこのウィンドウはオフスクリーン描画でデスクトップに出ない。次節)。
+
+- `CursorOverlay.tsx`はマウント後に一度も再レンダーしない。カーソル要素は命令的に作り、`style.transform`の書き込みだけで動かす。**カーソルイベントごとにReactのstateを更新したり`top`/`left`で位置を与えたりしないこと**。オフスクリーン描画ではページの変化がそのままオーバーレイのフレームになるため、それがフレームごとの負荷を直接決める。`elementFromPoint`は4px以上動いたときだけ、`requestAnimationFrame`で1フレーム1回にまとめている(トリガー押下時だけは同期で確定させる)。
+- カーソルを消す判断はmain側が持つ(レイが外れた瞬間に`input-cursor-hide`を送る)。レンダラー側に無操作タイムアウトを置かないこと。以前あったタイムアウトは、送信の間引きを入れた途端に静止中のカーソルを数秒おきに消していた。置かれたまま動かないコントローラーはネイティブ側が`GetTrackedDeviceActivityLevel`で除外している(`--keep-idle-cursors`で無効化)。
+- 調整値は`electron/input/constants.js`にあり、起動引数で上書きできる: 1€フィルタ(`POINTER_MIN_CUTOFF`/`POINTER_BETA`、`--pointer-filter`)、ポーズ予測(`POSE_PREDICTION_SECONDS`=22ms、`--pose-ahead`、`0`で無効)、カーソル送信の間引き(`CURSOR_SEND_EPSILON`、`--cursor-epsilon`)。**`CURSOR_SEND_EPSILON`と`CURSOR_MOVE_EPSILON`は別物**で、前者はレンダラーへ送るかどうか、後者はドラッグの静止判定に使う。混ぜないこと。
+
+### ウィンドウ構成とVRモード
+
+ウィンドウモードは2つある。
+
+- **desktop**: キーボードウィンドウ1枚。デスクトップに表示され、`capturePage`のポーリングでオーバーレイへキャプチャされる。
+- **vr**: キーボードウィンドウは`webPreferences.offscreen`のオフスクリーン描画で、デスクトップには出ない(`paint`イベントでキャプチャ)。デスクトップには`?mode=settings`で開く設定ウィンドウだけが出る。vsyncから切り離されるため遅延が大きく減るが、**OSのフォーカスを取れないので物理キーボード入力は使えない**(仮想キーのみ)。
+
+モードは`electron/services/launchMode.js`で2回決まる。`resolveInitialWindowMode`はウィンドウを即座に出すための同期判定、`resolveFinalWindowMode`はVR初期化の結果を見た確定判定で、両者が違えば`main.js`がウィンドウを作り直す。設定`vrOsrMode`は`auto`(`--vr`のときだけVR)/`always`/`never`。`disableOverlay`とオーバーレイの起動失敗は必ずdesktopに倒す(VRモードでオーバーレイがなければ、見えるウィンドウが1枚もなくなる)。**前回のモードを記憶して次回に使ってはならない**。以前そうしていたため、一度の`--vr`起動で以降の起動がすべてVRになっていた。
+
+- 起動引数は`electron/cli.js`: `--vr` `--desktop-keyboard` `--vr-osr`/`--no-vr-osr` `--debug` `--perf-log` `--pose-ahead` `--pointer-filter` `--cursor-epsilon` `--keep-idle-cursors`。`--shared-texture`は解析されるがGPU共有テクスチャ経路が未実装のため効果はない。
+- レンダラーの分岐はルートの`index.tsx`で行う(`?mode=settings`なら`components/SettingsWindow.tsx`)。**`App.tsx`の中で分岐しないこと**。`App`はOSCブリッジとIME IPCを無条件に開くので、設定ウィンドウに2つ目のコピーができて衝突する。
+- 設定ウィンドウは`SettingsModal`を`variant='panel'`で全面表示する。VRモードではこれがユーザーの見える唯一のウィンドウで、**閉じるとアプリが終了する**(オフスクリーンのウィンドウが生きている間`window-all-closed`は発火しないため、明示的に`app.quit()`している)。
+- 2つのウィンドウ間の設定同期はmain経由のブロードキャスト(`electron/services/ipc/WindowIpcHandlers.js`が送信元以外へ中継)。受信側の`stores/configStore.ts`は**`setConfig`を呼ばずストアへ直書きする**(呼ぶと送り返してエコーが止まらない)。`storage`イベントはパッケージ版の`file://`で届く保証がないので使っていない。
+- オフスクリーン描画は変化があったときしかフレームを作らない。そのため`overlay/capture.js`には、静止後120msに1枚だけ強制描画するsettle機構(最後の1枚が落ちると古い絵が残り続けるのを防ぐ)と、オーバーレイ非表示中のキャプチャ停止がある。どちらも消さないこと。
+- オフスクリーンのウィンドウではDevToolsが当てにならないので、devではそのコンソールを`[renderer]`接頭辞でターミナルへ流している。
+- `--perf-log`は1秒ごとに`[perf] fps/frame/total/bitmap/submit`を出す。無変化の間はフレームが出ないので、`frame`のp95/p99はその空白を含み、カクつきの指標にはならない。
 
 ### 設定モーダルの構成
 
@@ -81,6 +109,7 @@ Electron IPCで通信する2つのJSランタイムと、1つのネイティブ�
 - 行のUIとクラス定数は`settingsRows.tsx`の`ToggleRow` / `TextSwitchRow` / `SettingLabel` / `SECTION_LABEL_CLASS` / `selectedBtnClass`を再利用し、同じマークアップを新たに書かない。
 - stateと副作用は`index.tsx`やタブに書かず、`hooks/`の専用フックへ置く: `useSettingsDraft`(ドラフト設定と数値入力)、`useSteamVrSettings`(SteamVRの自動起動登録とバインディング表示)、`useUpdateCheckStatus`(手動アップデート確認)、`useModalFocusTrap`(Tab巡回とEscape)、`useOverlayScrollForward`(VRスクロール転送)。
 - `useSettingsDraft`のドラフトは**開いた瞬間にだけストアから再同期される一方、変更は即座にストアへ書き戻される**。この二重の挙動は`hooks/useSettingsDraft.test.ts`が固定しているので、変更するときはテストも確認すること。
+- VRモードの設定ウィンドウも同じ`SettingsModal`を`variant='panel'`で使う。`panel`で変わるのはレイアウトのクラス、開閉アニメーション、VRスクロール転送の無効化だけで、設定項目は共通である。設定項目をどちらか一方にだけ足さないこと。
 - 設定項目を1つ増やすだけなら通常は3箇所で済む: `types.ts`の`OscConfig`へフィールド追加(既定値は`constants/appConfig.ts`と`stores/configStore.ts`)、`constants/translations.ts`へ日英の文言追加、該当タブへ`ToggleRow`などを追加。
 
 ## ポートと実行時の前提
@@ -92,9 +121,17 @@ Electron IPCで通信する2つのJSランタイムと、1つのネイティブ�
 - ユーザー側でVRChatのOSCを有効化しておく必要がある(Action Menu → Options → OSC → Enabled)。
 - `.env`は不要。関与する環境変数は`IS_ELECTRON` (開発時)と`GH_TOKEN` (CI)のみ。
 
+## devとパッケージ版の差
+
+devではレンダラーがViteの開発サーバーから読み込まれるぶん遅く、メインプロセスの初期化処理が先に終わることが多い。パッケージ版はディスクから読むので速く、**devでは隠れる競合がパッケージ版でだけ出る**。VRモード導入時に見つかったバグ4件のうち2件(SteamVR入力のラッチ、バインディング一覧の早すぎる確定)はdevでは再現しなかった。VRまわりやウィンドウの起動順序に触れる変更は、`npm run dist`か`npx electron-builder --dir`で作ったビルドでも確かめること。
+
+- SteamVRへのアプリ登録(`SteamVrManifestService.js`)は、起動のたびに`binary_path_windows`を**自分の実行ファイルのパス**で書き直す。リポジトリ内の`release/win-unpacked/`を実行すると登録先がそこに変わるので、確認後はインストール版を一度起動して戻すこと。`app_key`は実行ファイル名から作られる。
+- パッケージ版を`cmd`から起動すると、終了後もプロンプトが戻らないように見えることがある。プロセスは終了しているので、残骸を疑う前に`Get-Process`で確認すること。
+
 ## リポジトリの慣習
 
 - コメントは`electron/`、`constants/`、`vite.config.ts`、`native/`全体で**日本語と英語の併記**になっている — これらを編集する際は同じスタイルに合わせること。
 - コミットメッセージは日本語が大半で、内容を説明する形式。conventional commitsのプレフィックスは使っていない。
-- `debug.config.json`は`enableDebugMode`に加え、アップデートチェッカーのテスト用フラグ(`forceUpdateAvailable`、`mockLatestVersion`、`forceInstallerVersion`)を切り替える。
+- `debug.config.json`は`enableDebugMode`に加え、アップデートチェッカーのテスト用フラグ(`forceUpdateAvailable`、`mockLatestVersion`、`forceInstallerVersion`)を切り替える。`electron/debugConfig.js`がuserData → アプリ直下の順に探し、`--debug`を付けると`enableDebugMode`が強制的に有効になる。**`build.files`には含めないこと**。リポジトリのものは`forceUpdateAvailable: true`なので、出荷すると偽の更新通知が出る。
+- 作業ツリーはCRLF(`core.autocrlf=true`)。新しく作るファイルも既存に合わせてCRLFにする。
 - Mozc辞書のライセンスは`THIRD_PARTY_MOZC_DICTIONARY_LICENSES.txt`で管理している。`electron/assets/ime/mozc/shards/`配下のシャードは生成物であり、手で編集しない。

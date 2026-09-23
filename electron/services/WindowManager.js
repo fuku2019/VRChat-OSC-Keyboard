@@ -39,7 +39,6 @@ const store = new Store({
       keyboard: null, // { x: number, y: number } or null
       settings: null,
     },
-    launchMode: null, // 'vr' | 'desktop' | null - mode confirmed last run / 前回確定したモード
     overlaySettings: {
       disableOverlay: false,
       vrOsrMode: 'auto',
@@ -61,6 +60,14 @@ const store = new Store({
   if (positions.keyboard) return;
   store.set('windowPositions', { ...positions, keyboard: legacy });
 })();
+
+// Earlier builds remembered the last window mode here and trusted it on the
+// next launch, which made one --vr run turn every later launch into a VR
+// launch. Nothing reads it any more; drop it so nobody starts trusting it again.
+// 以前のビルドはここに前回のウィンドウモードを記憶して次回起動で信用しており、
+// 一度の --vr 起動が以降のすべての起動をVRにしていた。今は誰も読まないので、
+// 再び信用されないよう削除しておく。
+store.delete('launchMode');
 
 /**
  * Set app title / アプリタイトルを設定
@@ -152,22 +159,6 @@ export function setSteamVrSettings(partial) {
   const current = getSteamVrSettings();
   const next = { ...current, ...partial };
   store.set('steamVrSettings', next);
-}
-
-/**
- * Read the window mode confirmed on the previous run / 前回の起動で確定したウィンドウモードを読む
- */
-export function getStoredLaunchMode() {
-  const mode = store.get('launchMode');
-  return mode === 'vr' || mode === 'desktop' ? mode : null;
-}
-
-/**
- * Remember the window mode that was actually used / 実際に使われたウィンドウモードを記録する
- */
-export function setStoredLaunchMode(mode) {
-  if (mode !== 'vr' && mode !== 'desktop') return;
-  store.set('launchMode', mode);
 }
 
 /**
