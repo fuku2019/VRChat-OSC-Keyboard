@@ -92,6 +92,10 @@ export default defineConfig({
   plugins: [react(), tailwindcss(), oscBridgePlugin()],
   server: {
     host: true,
+    // electron:dev waits on and loads this exact port, so never drift to another.
+    // electron:dev はこのポートを決め打ちで待ち受け・読み込むので、別ポートへ移らせない。
+    port: 5173,
+    strictPort: true,
   },
   build: {
     outDir: 'dist',
