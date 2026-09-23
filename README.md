@@ -59,7 +59,7 @@ VRChatはVRモードでプレイすると、テキストチャットが不便<br
 + **クリップボードにコピー:** チャットを送信するだけでなく、入力した文字をクリップボードにコピーすることができます。
 
 ## 🚀 クイックスタート
-1. ダウンロード: [Releases](https://github.com/fuku2019/VRChat-OSC-Keyboard/releases/latest) から最新の .exe をダウンロード。
+1. ダウンロード: [Releases](https://github.com/fuku2019/VRChat-OSC-Keyboard/releases/latest) から最新の .exeをダウンロード。
 2. インストール: 実行してウィザードに従いインストールを完了。
 3. VRChatの設定: アクションメニュー ➔ Options ➔ OSC ➔ Enabled を選択。
 4. 起動: SteamVRを起動した状態で本ツールを起動します。デスクトップには設定ウィンドウが表示され、キーボードはVR内に表示されます。
@@ -72,7 +72,7 @@ VRChatはVRモードでプレイすると、テキストチャットが不便<br
 + テンプレート機能
 
 ## 既知の問題
-+ 初回起動時のチュートリアルはVR内にのみ表示されます。
++ 初回起動時のチュートリアルがVR内に実装されている。
 
 ## 👀 デモ・紹介
 
@@ -130,9 +130,9 @@ VRChatはVRモードでプレイすると、テキストチャットが不便<br
 - **Node.js**: [Node.js](https://nodejs.org/ja/download)をインストールしてください。LTS バージョン推奨
 - **Rust**: [rustup]([https://rustup.rs/](https://rust-lang.org/ja/tools/install/)) をインストールしてください
 - **C++ ビルドツール**:
-  - Windows の場合: [Visual Studio Build Tools](https://visualstudio.microsoft.com/ja/downloads/) をインストールし、「C++ によるデスクトップ開発」を選択
-- **LLVM**: Rust のバインディング生成に必要です
-  - Windows の場合: [LLVM](https://github.com/llvm/llvm-project/releases) Windows x64 (64-bit): installerをダウンロード
+  - Windowsの場合: [Visual Studio Build Tools](https://visualstudio.microsoft.com/ja/downloads/) をインストールし、「C++ によるデスクトップ開発」を選択
+- **LLVM**: Rustのバインディング生成に必要です
+  - Windowsの場合: [LLVM](https://github.com/llvm/llvm-project/releases) Windows x64 (64-bit): installerをダウンロード
 
 ### 2. インストールとビルド
 ```bash
@@ -147,7 +147,7 @@ npm run dist
 ```
 
 ## ライセンス補足
-- Mozc dictionary_oss 由来データを同梱しています。
+- Mozc dictionary_oss由来データを同梱しています。
 - 辞書shardは `dictionary00-09` 由来のフル語彙を先頭1文字キー分割で再生成しています。
 - 詳細は `THIRD_PARTY_MOZC_DICTIONARY_LICENSES.txt` を参照してください。
 
