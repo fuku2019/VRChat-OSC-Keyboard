@@ -30,6 +30,7 @@ import {
   displaySelectionEndOf,
   displayTextOf,
   imeReducer,
+  preeditRangeOf,
 } from './imeReducer';
 
 export interface UseIMEReturn {
@@ -43,6 +44,7 @@ export interface UseIMEReturn {
   candidateIndex: number;
   isConverting: boolean;
   hasPreedit: boolean;
+  preeditRange: { start: number; end: number } | null; // Preedit span in displayText / displayText上の未確定範囲
   mode: InputMode;
 
   setMode: (mode: InputMode) => void;
@@ -84,6 +86,7 @@ export const useIME = (
   const displayText = useMemo(() => displayTextOf(state), [state]);
   const displayCaret = useMemo(() => displayCaretOf(state), [state]);
   const displaySelectionEnd = useMemo(() => displaySelectionEndOf(state), [state]);
+  const preeditRange = useMemo(() => preeditRangeOf(state), [state]);
 
   // Fire whatever the reducer queued. `pending` keeps its identity across
   // unrelated state changes, so this runs exactly once per request.
@@ -190,6 +193,7 @@ export const useIME = (
     candidateIndex: state.candidateIndex,
     isConverting: state.isConverting,
     hasPreedit: state.preeditStart !== null,
+    preeditRange,
     mode: state.mode,
 
     setMode,

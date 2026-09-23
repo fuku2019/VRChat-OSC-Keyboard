@@ -160,6 +160,18 @@ export const displayCaretOf = (state: ImeCoreState): number => {
 export const displaySelectionEndOf = (state: ImeCoreState): number =>
   state.preeditStart === null ? state.selectionEnd : displayCaretOf(state);
 
+// The preedit's span in displayText coordinates, for drawing the IME underline.
+// 表示座標での未確定文字列の範囲。IMEの下線を描くために使う。
+export const preeditRangeOf = (
+  state: ImeCoreState,
+): { start: number; end: number } | null => {
+  if (state.preeditStart === null) return null;
+  const length = preeditTextOf(state).length;
+  if (length === 0) return null;
+  const start = clamp(state.preeditStart, 0, state.input.length);
+  return { start, end: start + length };
+};
+
 export const hasPreeditOf = (state: ImeCoreState): boolean =>
   state.preeditStart !== null;
 

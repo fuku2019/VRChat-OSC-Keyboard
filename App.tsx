@@ -11,6 +11,7 @@ import TutorialOverlay from './components/TutorialOverlay';
 import NotificationToast from './components/NotificationToast';
 import StatusDisplay from './components/StatusDisplay';
 import CursorOverlay from './components/CursorOverlay';
+import PreeditUnderline from './components/PreeditUnderline';
 import { InputMode } from './types';
 import { useIME } from './hooks/useIME';
 import { useUpdateChecker } from './hooks/useUpdateChecker';
@@ -22,6 +23,11 @@ import { useKeyboardController } from './hooks/useKeyboardController';
 import { useVrScrollSelectionGuard } from './hooks/useVrScrollSelectionGuard';
 import { useSendHistory } from './hooks/useSendHistory';
 import { TRANSLATIONS, STORAGE_KEYS, TIMEOUTS, CHATBOX } from './constants';
+
+// Shared by the textarea and its preedit underline mirror so both wrap identically.
+// テキストエリアと未確定下線のミラーで共有し、折り返し位置を一致させる。
+const TEXT_LAYOUT_CLASS =
+  'text-2xl md:text-4xl font-medium leading-tight break-all font-sans';
 
 // Copy text to clipboard / クリップボードへテキストをコピー
 const copyTextToClipboard = async (text: string): Promise<boolean> => {
@@ -68,6 +74,7 @@ const App = () => {
     displayText,
     displayCaret,
     displaySelectionEnd,
+    preeditRange,
     caretRevision,
     mutationSeq,
     mode,
@@ -447,18 +454,27 @@ const App = () => {
             </button>
           </div>
 
-          <textarea
-            ref={textareaRef}
-            value={displayText}
-            onChange={handleTextareaChange}
-            onBlur={handleBlur}
-            onSelect={handleSelect}
-            onPointerDown={handlePointerDown}
-            maxLength={CHATBOX.MAX_LENGTH}
-            className='w-full h-full bg-transparent text-2xl md:text-4xl dark:text-white text-slate-900 font-medium resize-none outline-none mt-6 leading-tight break-all font-sans'
-            spellCheck='false'
-            autoFocus
-          />
+          <div className='relative w-full h-full mt-6'>
+            <PreeditUnderline
+              textareaRef={textareaRef}
+              text={displayText}
+              range={preeditRange}
+              isConverting={isConverting}
+              className={TEXT_LAYOUT_CLASS}
+            />
+            <textarea
+              ref={textareaRef}
+              value={displayText}
+              onChange={handleTextareaChange}
+              onBlur={handleBlur}
+              onSelect={handleSelect}
+              onPointerDown={handlePointerDown}
+              maxLength={CHATBOX.MAX_LENGTH}
+              className={`relative w-full h-full bg-transparent dark:text-white text-slate-900 resize-none outline-none ${TEXT_LAYOUT_CLASS}`}
+              spellCheck='false'
+              autoFocus
+            />
+          </div>
         </div>
       </div>
 

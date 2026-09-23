@@ -5,6 +5,7 @@ import {
   displayTextOf,
   displayCaretOf,
   preeditTextOf,
+  preeditRangeOf,
   type ImeAction,
   type ImeCoreState,
 } from './imeReducer';
@@ -128,6 +129,21 @@ describe('imeReducer / IME状態機械', () => {
 
       expect(displayTextOf(state)).toBe('XかY');
       expect(displayCaretOf(state)).toBe(2);
+    });
+  });
+
+  describe('preedit range / 未確定範囲', () => {
+    it('covers only the uncommitted span, tracking the converted word', () => {
+      let state = run(fresh(), { type: 'REPLACE_ALL', text: 'XY' });
+      state = imeReducer(state, { type: 'SET_SELECTION', start: 1, end: 1 });
+      state = type(state, 'ka');
+      expect(preeditRangeOf(state)).toEqual({ start: 1, end: 2 });
+
+      state = reply(state, ['会社']);
+      expect(preeditRangeOf(state)).toEqual({ start: 1, end: 3 });
+
+      state = imeReducer(state, { type: 'COMMIT_PREEDIT', index: 0 });
+      expect(preeditRangeOf(state)).toBeNull();
     });
   });
 
