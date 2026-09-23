@@ -48,7 +48,7 @@ VRChatはVRモードでプレイすると、テキストチャットが不便<br
 このソフトウェアは、VR画面に仮想キーボードをフローティング表示させることで、自由なチャット入力を可能にします。<br>
 **VR専用のソフトウェアです。** 利用にはSteamVRが必要です。
 
-![app_img_0](docs/app_img_0.webp)
+![app_img_0](docs/app_img_0.png)
 ![zm_vok_0](https://github.com/user-attachments/assets/e7d60988-36bf-4302-9654-9d8162f98422)
 <em>ソフトウェアのデザインや機能はバージョンによって異なる場合があります。</em>
 
