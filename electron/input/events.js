@@ -93,6 +93,24 @@ export function sendTriggerStateEvent(controllerId, pressed) {
   }
 }
 
+/**
+ * Ask the renderer how the element at (u, v) wants a trigger click. Returns
+ * false when nothing could be asked, so the caller does not wait for an answer.
+ * (u, v) の要素がトリガーでどうクリックされたいかをレンダラーへ問い合わせる。
+ * 問い合わせられなかったときは false を返し、呼び出し側が答えを待たないようにする。
+ */
+export function sendClickModeRequest(controllerId, requestId, u, v) {
+  const target = getTargetWebContents();
+  if (!target) return false;
+  try {
+    target.send('input-click-mode-request', { controllerId, requestId, u, v });
+    return true;
+  } catch (e) {
+    console.error('Failed to send click mode request', e);
+    return false;
+  }
+}
+
 export function sendScrollEvent(deltaY) {
   const target = getTargetWebContents();
   if (!target) return;

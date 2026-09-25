@@ -27,6 +27,7 @@ import { PointerStabilizer } from './input/smoothing.js';
 import { releaseTriggerForController } from './input/trigger.js';
 
 export { updateWindowSize } from './input/mapping.js';
+export { resolveTriggerClickMode } from './input/trigger.js';
 
 // Live filter tuning / 実行時に調整されるフィルタ設定
 const pointerFilter = {
@@ -117,20 +118,6 @@ export function setPointerFilter({ minCutoff, beta, dCutoff } = {}) {
       ' beta=' +
       pointerFilter.beta,
   );
-}
-
-/**
- * Record how the element under a controller wants a trigger click ('press' /
- * 'hold'; anything else = on release). Reported by the renderer only on change.
- * コントローラーの下の要素のトリガークリック方式を記録する ('press' / 'hold'。
- * それ以外は離したとき)。レンダラーは変化したときだけ報告する。
- */
-export function setHoverClickMode(controllerId, mode) {
-  if (mode === 'press' || mode === 'hold') {
-    state.hoverClickMode[controllerId] = mode;
-  } else {
-    delete state.hoverClickMode[controllerId];
-  }
 }
 
 /**
@@ -242,7 +229,6 @@ export function stopInputLoop() {
   state.lastMoveAtByController = {};
   state.lastTriggerPressedState = {};
   state.triggerDragState = {};
-  state.hoverClickMode = {};
   state.inputSmoothers = {};
   resetCursorThrottle();
   state.lastMouseHit = false;
@@ -426,5 +412,4 @@ function cleanupControllerRuntimeState(controllerId) {
   delete state.lastHitByController[controllerId];
   delete state.lastMoveAtByController[controllerId];
   delete state.lastTriggerPressedState[controllerId];
-  delete state.hoverClickMode[controllerId];
 }

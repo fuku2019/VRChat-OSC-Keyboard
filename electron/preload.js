@@ -37,6 +37,7 @@ const configBroadcast = listenerPair('config-broadcast');
 const showTutorialRequest = listenerPair('show-tutorial');
 const clearHistoryRequest = listenerPair('clear-history');
 const vrStatusChanged = listenerPair('vr-status-changed');
+const clickModeRequest = listenerPair('input-click-mode-request');
 
 // Expose protected methods to renderer process via contextBridge
 // contextBridge経由でレンダラープロセスに保護されたメソッドを公開
@@ -106,8 +107,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Send renderer metrics to main process / レンダラーメトリクスをメインプロセスに送信
   sendRendererMetrics: (metrics) =>
     ipcRenderer.send('renderer-metrics', metrics),
-  // How the element under a controller wants a trigger click ('press' / 'hold' / null)
-  // コントローラーの下の要素がトリガーでどうクリックされたいか ('press' / 'hold' / null)
+  // Answer to input-click-mode-request ('press' / 'hold' / null)
+  // input-click-mode-request への答え ('press' / 'hold' / null)
   sendVrClickMode: (data) => ipcRenderer.send('vr-click-mode', data),
 
   // VR Controller cursor events / VRコントローラーカーソルイベント
@@ -162,6 +163,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.removeListener('input-trigger-state', wrapped);
     triggerStateListenerMap.delete(callback);
   },
+  // Main asks how the element at a trigger press wants to be clicked
+  // トリガー押下位置の要素がどうクリックされたいかをmainが問い合わせる
+  onClickModeRequest: clickModeRequest.on,
+  removeClickModeRequestListener: clickModeRequest.off,
 
   // VR Controller scroll events / VRコントローラスクロールイベント
   onInputScroll: (callback) => {

@@ -13,16 +13,20 @@ import CursorOverlay from './CursorOverlay';
 type CursorMove = { u: number; v: number; controllerId?: number };
 type CursorHide = { controllerId?: number };
 type TriggerState = { controllerId?: number; pressed?: boolean };
+type ClickModeRequest = { controllerId: number; requestId: number; u: number; v: number };
 
 const listeners = {
   move: [] as ((data: CursorMove) => void)[],
   hide: [] as ((data: CursorHide) => void)[],
   trigger: [] as ((data: TriggerState) => void)[],
+  clickMode: [] as ((data: ClickModeRequest) => void)[],
 };
 
 const emitMove = (data: CursorMove) => listeners.move.forEach((fn) => fn(data));
 const emitHide = (data: CursorHide) => listeners.hide.forEach((fn) => fn(data));
 const emitTrigger = (data: TriggerState) => listeners.trigger.forEach((fn) => fn(data));
+const emitClickModeRequest = (data: ClickModeRequest) =>
+  listeners.clickMode.forEach((fn) => fn(data));
 
 // The hit test is coalesced into a requestAnimationFrame, so a test that wants to
 // observe it has to let one frame go by.
@@ -58,6 +62,7 @@ beforeEach(() => {
   listeners.move = [];
   listeners.hide = [];
   listeners.trigger = [];
+  listeners.clickMode = [];
   window.electronAPI = {
     onCursorMove: (fn) => listeners.move.push(fn),
     removeCursorMoveListener: (fn) => {
@@ -72,6 +77,10 @@ beforeEach(() => {
       listeners.trigger = listeners.trigger.filter((registered) => registered !== fn);
     },
     sendRendererMetrics: vi.fn(),
+    onClickModeRequest: (fn) => listeners.clickMode.push(fn),
+    removeClickModeRequestListener: (fn) => {
+      listeners.clickMode = listeners.clickMode.filter((registered) => registered !== fn);
+    },
     sendVrClickMode: vi.fn(),
   } as unknown as Window['electronAPI'];
 });
@@ -307,65 +316,41 @@ describe('hover and press classes', () => {
   });
 });
 
-describe('click mode reporting', () => {
-  // The main process decides how to click on trigger press from what it has been
-  // told about the hovered element, so the report has to follow the hover target.
-  // メインプロセスはホバー中の要素について知らされた内容からトリガー押下時の
-  // クリック方式を決めるので、報告はホバー対象に追従しなければならない。
+describe('click mode requests', () => {
+  // The main process asks at every trigger press how the element at the press
+  // point wants to be clicked, and waits for this answer before clicking.
+  // メインプロセスはトリガー押下のたびに押下位置の要素のクリック方式を問い合わせ、
+  // この答えを待ってからクリックする。
   const makeButton = (mode?: 'press' | 'hold') => {
     const button = document.createElement('button');
     if (mode) button.dataset.vrClick = mode;
     document.body.appendChild(button);
     return button;
   };
-  const reports = () =>
+  const answers = () =>
     vi.mocked(window.electronAPI!.sendVrClickMode).mock.calls.map(([data]) => data);
 
-  it('reports only changes as the cursor moves between elements', async () => {
-    const hitTest = vi.spyOn(document, 'elementFromPoint').mockReturnValue(makeButton('press'));
+  it.each([
+    ['press', 'press'],
+    ['hold', 'hold'],
+    [undefined, null],
+  ] as const)('answers data-vr-click=%s as %s', (attribute, mode) => {
+    vi.spyOn(document, 'elementFromPoint').mockReturnValue(makeButton(attribute));
     render(<CursorOverlay />);
 
-    emitMove({ u: 0.2, v: 0.5, controllerId: 1 });
-    await nextFrame();
-    emitMove({ u: 0.4, v: 0.5, controllerId: 1 });
-    await nextFrame();
-    expect(reports()).toEqual([{ controllerId: 1, mode: 'press' }]);
+    emitClickModeRequest({ controllerId: 1, requestId: 7, u: 0.5, v: 0.5 });
 
-    hitTest.mockReturnValue(makeButton('hold'));
-    emitMove({ u: 0.6, v: 0.5, controllerId: 1 });
-    await nextFrame();
-    hitTest.mockReturnValue(makeButton());
-    emitMove({ u: 0.8, v: 0.5, controllerId: 1 });
-    await nextFrame();
-    expect(reports()).toEqual([
-      { controllerId: 1, mode: 'press' },
-      { controllerId: 1, mode: 'hold' },
-      { controllerId: 1, mode: null },
-    ]);
+    expect(answers()).toEqual([{ controllerId: 1, requestId: 7, mode }]);
   });
 
-  it('reports null when the cursor is hidden over a key', async () => {
-    vi.spyOn(document, 'elementFromPoint').mockReturnValue(makeButton('press'));
+  it('hit tests at the requested point, not the hovered one', () => {
+    const hitTest = vi.spyOn(document, 'elementFromPoint').mockReturnValue(null);
     render(<CursorOverlay />);
 
-    emitMove({ u: 0.5, v: 0.5, controllerId: 1 });
-    await nextFrame();
-    emitHide({ controllerId: 1 });
+    // v=1 is the top of the overlay / v=1 はオーバーレイの上端
+    emitClickModeRequest({ controllerId: 1, requestId: 1, u: 0, v: 1 });
 
-    expect(reports()).toEqual([
-      { controllerId: 1, mode: 'press' },
-      { controllerId: 1, mode: null },
-    ]);
-  });
-
-  it('stays silent over elements that click on release', async () => {
-    vi.spyOn(document, 'elementFromPoint').mockReturnValue(makeButton());
-    render(<CursorOverlay />);
-
-    emitMove({ u: 0.5, v: 0.5, controllerId: 1 });
-    await nextFrame();
-    emitHide({ controllerId: 1 });
-
-    expect(reports()).toEqual([]);
+    expect(hitTest).toHaveBeenCalledWith(0, 0);
+    expect(answers()).toEqual([{ controllerId: 1, requestId: 1, mode: null }]);
   });
 });

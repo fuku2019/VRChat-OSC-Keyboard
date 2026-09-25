@@ -1,7 +1,7 @@
 import { ipcMain } from 'electron';
 import { resetOverlayPosition, updateRendererMetrics } from '../../overlay.js';
 import {
-  setHoverClickMode,
+  resolveTriggerClickMode,
   updateWindowSize,
 } from '../../input_handler.js';
 
@@ -40,12 +40,15 @@ export function registerOverlayIpcHandlers() {
     }
   });
 
-  // How the element under a controller wants a trigger click
-  // コントローラーの下の要素がトリガーでどうクリックされたいか
+  // Answer to input-click-mode-request: how the element at a trigger press
+  // wants to be clicked / input-click-mode-request への答え: トリガー押下位置の
+  // 要素がどうクリックされたいか
   ipcMain.on('vr-click-mode', (_event, data) => {
     const controllerId = Number(data?.controllerId);
-    if (!Number.isFinite(controllerId)) return;
-    setHoverClickMode(controllerId, data?.mode);
+    const requestId = Number(data?.requestId);
+    if (!Number.isFinite(controllerId) || !Number.isFinite(requestId)) return;
+    const mode = data?.mode === 'press' || data?.mode === 'hold' ? data.mode : null;
+    resolveTriggerClickMode(controllerId, requestId, mode);
   });
 
   // Backward-compatible window size updates / 互換用ウィンドウサイズ更新

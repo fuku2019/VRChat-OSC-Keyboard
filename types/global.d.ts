@@ -66,7 +66,7 @@ interface ElectronAPI {
     height: number;
     devicePixelRatio: number;
   }) => void;
-  sendVrClickMode: (data: { controllerId: number; mode: 'press' | 'hold' | null }) => void;
+  sendVrClickMode: (data: { controllerId: number; requestId: number; mode: 'press' | 'hold' | null }) => void;
   getSteamVrAutoLaunch: () => Promise<SteamVrAutoLaunchResult>;
   setSteamVrAutoLaunch: (enabled: boolean) => Promise<SteamVrAutoLaunchResult>;
   getSteamVrBindings: () => Promise<{
@@ -88,6 +88,8 @@ interface ElectronAPI {
   removeCursorHideListener: (callback: (data: { controllerId?: number }) => void) => void;
   onTriggerState: (callback: (data: { controllerId?: number; pressed?: boolean; value?: number }) => void) => void;
   removeTriggerStateListener: (callback: (data: { controllerId?: number; pressed?: boolean; value?: number }) => void) => void;
+  onClickModeRequest: (callback: (data: { controllerId: number; requestId: number; u: number; v: number }) => void) => void;
+  removeClickModeRequestListener: (callback: (data: { controllerId: number; requestId: number; u: number; v: number }) => void) => void;
   onInputScroll: (callback: (data: { deltaY: number }) => void) => void;
   removeInputScrollListener: (callback: (data: { deltaY: number }) => void) => void;
 

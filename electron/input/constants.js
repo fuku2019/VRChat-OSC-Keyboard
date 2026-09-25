@@ -50,3 +50,11 @@ export const TRIGGER_DRAG_THRESHOLD = 0.015;
 export const TRIGGER_CLICK_CANCEL_THRESHOLD = 0.03;
 export const TRIGGER_SCROLL_MULTIPLIER = 0.5;
 export const TRIGGER_SCROLL_MAX = 140;
+// How long a trigger press waits for the renderer to say how the element under
+// it wants to be clicked (data-vr-click). The answer normally takes about a
+// millisecond; past this the press falls back to clicking on release, the
+// behaviour that is safe for every element.
+// トリガー押下時に、その下の要素がどうクリックされたいか (data-vr-click) を
+// レンダラーが答えるのを待つ時間。答えは通常1ms前後で返る。これを過ぎた押下は、
+// どの要素にとっても安全な「離したときのクリック」に戻る。
+export const TRIGGER_CLICK_MODE_TIMEOUT_MS = 50;

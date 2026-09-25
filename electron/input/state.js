@@ -18,14 +18,12 @@ export const state = {
   lastTriggerPressedState: {},
   // Per-controller trigger press state: / コントローラーごとのトリガー押下状態:
   // { startU, startV, lastU, lastV, dragging, moved } // { 開始U, 開始V, 前回U, 前回V, ドラッグ中, 移動済み }
-  // or { mode: 'press' } / { mode: 'hold', lastU, lastV } per the hovered element's data-vr-click
-  // またはホバー中の要素の data-vr-click に応じて { mode: 'press' } / { mode: 'hold', lastU, lastV }
+  // plus { pending, requestId, requestedAt, released } while waiting for the renderer
+  // to answer how to click (data-vr-click), or { mode: 'press' } / { mode: 'hold', lastU, lastV }
+  // once it did / レンダラーがクリック方式 (data-vr-click) を答えるまでは
+  // { pending, requestId, requestedAt, released } が付き、答えの後は
+  // { mode: 'press' } / { mode: 'hold', lastU, lastV } になる
   triggerDragState: {},
-  // Per-controller click mode of the hovered element ('press' / 'hold'), as
-  // reported by the renderer from data-vr-click. Absent = click on release.
-  // コントローラーごとの、ホバー中の要素のクリック方式 ('press' / 'hold')。
-  // レンダラーが data-vr-click から報告する。無ければ離したときにクリックする。
-  hoverClickMode: {},
   windowSize: { width: 0, height: 0 },
   windowScale: { zoomFactor: 1 },
   drag: {

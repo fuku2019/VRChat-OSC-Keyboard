@@ -91,7 +91,6 @@ const CursorOverlay = () => {
     const pressedByController = new Map<number, HTMLElement>();
     const pressedCounts = new Map<HTMLElement, number>();
     const pressedControllers = new Set<number>();
-    const clickModeByController = new Map<number, VrClickMode>();
     const pendingHover = new Map<number, { u: number; v: number }>(); // raw OpenVR v / OpenVRの生のv
     const lastProbedPoint = new Map<number, { x: number; y: number }>();
     let hoverRaf: number | null = null;
@@ -135,31 +134,12 @@ const CursorOverlay = () => {
       }
     };
 
-    // The main process sends the click, so it has to know at the moment of a
-    // trigger press how the element under the controller wants to be clicked
-    // (data-vr-click). Only changes are sent, never per cursor event.
-    // クリックを送るのはメインプロセスなので、トリガーを押した瞬間に、
-    // コントローラーの下の要素がどうクリックされたいか(data-vr-click)を知っている
-    // 必要がある。送るのは変化したときだけで、カーソルイベントごとには送らない。
-    const reportClickMode = (controllerId: number, target: HTMLElement | null) => {
-      const attribute = target?.dataset.vrClick;
-      const mode: VrClickMode = attribute === 'press' || attribute === 'hold' ? attribute : null;
-      if ((clickModeByController.get(controllerId) ?? null) === mode) return;
-      if (mode) {
-        clickModeByController.set(controllerId, mode);
-      } else {
-        clickModeByController.delete(controllerId);
-      }
-      window.electronAPI?.sendVrClickMode?.({ controllerId, mode });
-    };
-
     const clearHoverForController = (controllerId: number) => {
       const previous = hoveredByController.get(controllerId);
       if (previous) {
         removeHover(previous);
         hoveredByController.delete(controllerId);
       }
-      reportClickMode(controllerId, null);
     };
 
     const clearPressedForController = (controllerId: number) => {
@@ -217,7 +197,6 @@ const CursorOverlay = () => {
       const previous = hoveredByController.get(controllerId) ?? null;
       if (previous === target) return;
       if (previous) removeHover(previous);
-      reportClickMode(controllerId, target);
       if (target) {
         addHover(target);
         hoveredByController.set(controllerId, target);
@@ -356,8 +335,37 @@ const CursorOverlay = () => {
       }
     };
 
+    // The main process sends the click, so on a trigger press it asks how the
+    // element at the press point wants to be clicked (data-vr-click). The hit
+    // test runs at the exact point the click will land - the raw ray, not the
+    // smoothed cursor - so the hover state above, which lags by a frame and the
+    // probe epsilon, never decides it. One synchronous hit test per press.
+    // クリックを送るのはメインプロセスなので、トリガー押下時に押下位置の要素が
+    // どうクリックされたいか(data-vr-click)を問い合わせてくる。ヒットテストは
+    // クリックが入るちょうどその位置 - 平滑化したカーソルではなく生のレイ - で行う
+    // ので、1フレームとしきい値ぶん遅れる上のホバー状態が判定を左右することはない。
+    // 同期のヒットテストは押下1回につき1回だけである。
+    const handleClickModeRequest = ({
+      controllerId,
+      requestId,
+      u,
+      v,
+    }: {
+      controllerId: number;
+      requestId: number;
+      u: number;
+      v: number;
+    }) => {
+      const attribute = getHoverTarget(u, v)?.dataset.vrClick;
+      const mode: VrClickMode = attribute === 'press' || attribute === 'hold' ? attribute : null;
+      window.electronAPI?.sendVrClickMode?.({ controllerId, requestId, mode });
+    };
+
     if (window.electronAPI?.onCursorMove) {
       window.electronAPI.onCursorMove(handleCursorMove);
+    }
+    if (window.electronAPI?.onClickModeRequest) {
+      window.electronAPI.onClickModeRequest(handleClickModeRequest);
     }
     if (window.electronAPI?.onCursorHide) {
       window.electronAPI.onCursorHide(handleCursorHide);
@@ -421,6 +429,9 @@ const CursorOverlay = () => {
       }
       if (window.electronAPI?.removeTriggerStateListener) {
         window.electronAPI.removeTriggerStateListener(handleTriggerState);
+      }
+      if (window.electronAPI?.removeClickModeRequestListener) {
+        window.electronAPI.removeClickModeRequestListener(handleClickModeRequest);
       }
       if (hoverRaf !== null) {
         cancelAnimationFrame(hoverRaf);
