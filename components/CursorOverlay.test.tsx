@@ -72,6 +72,7 @@ beforeEach(() => {
       listeners.trigger = listeners.trigger.filter((registered) => registered !== fn);
     },
     sendRendererMetrics: vi.fn(),
+    sendVrInstantHover: vi.fn(),
   } as unknown as Window['electronAPI'];
 });
 
@@ -303,5 +304,66 @@ describe('hover and press classes', () => {
     emitHide({ controllerId: 1 });
 
     expect(button.classList.contains('vr-hover')).toBe(true);
+  });
+});
+
+describe('instant click hover reporting', () => {
+  // The main process clicks keys on trigger press only if it has been told the
+  // controller is over one, so the report has to follow the hover target.
+  // メインプロセスはコントローラーがキーの上にいると知らされたときだけ押下で
+  // クリックするので、報告はホバー対象に追従しなければならない。
+  const makeButton = (instant: boolean) => {
+    const button = document.createElement('button');
+    if (instant) button.dataset.vrInstantClick = 'true';
+    document.body.appendChild(button);
+    return button;
+  };
+  const reports = () =>
+    vi.mocked(window.electronAPI!.sendVrInstantHover).mock.calls.map(([data]) => data);
+
+  it('reports only changes as the cursor moves between elements', async () => {
+    const key = makeButton(true);
+    const other = makeButton(false);
+    const hitTest = vi.spyOn(document, 'elementFromPoint').mockReturnValue(key);
+    render(<CursorOverlay />);
+
+    emitMove({ u: 0.2, v: 0.5, controllerId: 1 });
+    await nextFrame();
+    emitMove({ u: 0.4, v: 0.5, controllerId: 1 });
+    await nextFrame();
+    expect(reports()).toEqual([{ controllerId: 1, instant: true }]);
+
+    hitTest.mockReturnValue(other);
+    emitMove({ u: 0.6, v: 0.5, controllerId: 1 });
+    await nextFrame();
+    expect(reports()).toEqual([
+      { controllerId: 1, instant: true },
+      { controllerId: 1, instant: false },
+    ]);
+  });
+
+  it('reports false when the cursor is hidden over a key', async () => {
+    vi.spyOn(document, 'elementFromPoint').mockReturnValue(makeButton(true));
+    render(<CursorOverlay />);
+
+    emitMove({ u: 0.5, v: 0.5, controllerId: 1 });
+    await nextFrame();
+    emitHide({ controllerId: 1 });
+
+    expect(reports()).toEqual([
+      { controllerId: 1, instant: true },
+      { controllerId: 1, instant: false },
+    ]);
+  });
+
+  it('stays silent over elements that click on release', async () => {
+    vi.spyOn(document, 'elementFromPoint').mockReturnValue(makeButton(false));
+    render(<CursorOverlay />);
+
+    emitMove({ u: 0.5, v: 0.5, controllerId: 1 });
+    await nextFrame();
+    emitHide({ controllerId: 1 });
+
+    expect(reports()).toEqual([]);
   });
 });

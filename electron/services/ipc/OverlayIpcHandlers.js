@@ -1,6 +1,9 @@
 import { ipcMain } from 'electron';
 import { resetOverlayPosition, updateRendererMetrics } from '../../overlay.js';
-import { updateWindowSize } from '../../input_handler.js';
+import {
+  setInstantClickHover,
+  updateWindowSize,
+} from '../../input_handler.js';
 
 /**
  * Register Overlay related IPC handlers / オーバーレイ関連のIPCハンドラを登録
@@ -35,6 +38,14 @@ export function registerOverlayIpcHandlers() {
         zoomFactor,
       );
     }
+  });
+
+  // Whether a controller hovers an element that clicks on trigger press
+  // トリガー押下でクリックする要素にコントローラーが乗っているか
+  ipcMain.on('vr-instant-hover', (_event, data) => {
+    const controllerId = Number(data?.controllerId);
+    if (!Number.isFinite(controllerId)) return;
+    setInstantClickHover(controllerId, data?.instant === true);
   });
 
   // Backward-compatible window size updates / 互換用ウィンドウサイズ更新

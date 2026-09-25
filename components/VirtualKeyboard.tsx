@@ -151,6 +151,9 @@ const VirtualKeyboard: FC<VirtualKeyboardProps> = ({
                   // Key.tsx と同じくテキストエリアのフォーカスを保つ。これが無いと
                   // 候補クリックでblurし、キャレットが末尾へ飛ぶ。
                   onMouseDown={(e) => e.preventDefault()}
+                  // Committed on VR trigger press, like the keys (Key.tsx).
+                  // キーと同じく、VRのトリガーを押した瞬間に確定する(Key.tsx)。
+                  data-vr-instant-click='true'
                   className={`h-7 px-3 rounded-lg text-sm border transition-colors whitespace-nowrap ${
                     index === candidateIndex
                       ? 'bg-primary-500/20 border-primary-500 text-primary-700 dark:text-primary-200'

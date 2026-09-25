@@ -106,6 +106,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Send renderer metrics to main process / レンダラーメトリクスをメインプロセスに送信
   sendRendererMetrics: (metrics) =>
     ipcRenderer.send('renderer-metrics', metrics),
+  // Whether a controller hovers an element that clicks on trigger press
+  // トリガー押下でクリックする要素にコントローラーが乗っているか
+  sendVrInstantHover: (data) => ipcRenderer.send('vr-instant-hover', data),
 
   // VR Controller cursor events / VRコントローラーカーソルイベント
   onCursorMove: (callback) => {

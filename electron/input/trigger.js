@@ -15,6 +15,18 @@ export function handleTriggerInput(controllerId, controllerState, hit) {
   if (pressed) {
     if (!existing) {
       if (!hit) return;
+      // Keyboard keys and conversion candidates click on press, for typing
+      // speed. They are not scrollable, so there is no drag to protect, and the
+      // rest of this press is ignored - no scroll, no second click on release.
+      // キーボードのキーと変換候補は、打鍵の速さのため押した瞬間にクリックする。
+      // これらはスクロールしないので守るべきドラッグがなく、この押下の残りは
+      // 無視する - スクロールもせず、離したときに2回目のクリックも送らない。
+      if (state.instantClickHover[controllerId]) {
+        sendClickEvent(hit.u, hit.v, 'mouseDown');
+        sendClickEvent(hit.u, hit.v, 'mouseUp', 1);
+        state.triggerDragState[controllerId] = { instant: true };
+        return;
+      }
       // Defer the click to release. Emitting it on press made the drag/cancel
       // tracking below unreachable, so a trigger-drag used for scrolling also
       // clicked whatever sat under the press point.
@@ -30,6 +42,8 @@ export function handleTriggerInput(controllerId, controllerState, hit) {
       };
       return;
     }
+
+    if (existing.instant) return;
 
     if (!hit) {
       existing.moved = true;
@@ -71,7 +85,7 @@ export function handleTriggerInput(controllerId, controllerState, hit) {
     // and is intentionally swallowed here.
     // 取り消ししきい値を超えずに離された場合のみクリックとして扱う。
     // スクロールドラッグやオーバーレイ外での解放は moved が立つため送らない。
-    if (!existing.moved) {
+    if (!existing.instant && !existing.moved) {
       sendClickEvent(existing.lastU, existing.lastV, 'mouseDown');
       sendClickEvent(existing.lastU, existing.lastV, 'mouseUp', 1);
     }

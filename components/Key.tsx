@@ -153,6 +153,11 @@ const Key: FC<KeyProps> = ({
         ...style,
       }}
       data-vr-key='true'
+      // A VR trigger press clicks this key immediately instead of on release.
+      // Keys with a long press keep release semantics so the hold can be timed.
+      // VRのトリガーは離したときではなく押した瞬間にこのキーをクリックする。
+      // 長押しを持つキーは押下時間を測れるよう、離したときの判定のままにする。
+      data-vr-instant-click={onLongPress ? undefined : 'true'}
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerCancel}

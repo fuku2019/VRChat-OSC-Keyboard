@@ -89,6 +89,7 @@ const CursorOverlay = () => {
     const pressedByController = new Map<number, HTMLElement>();
     const pressedCounts = new Map<HTMLElement, number>();
     const pressedControllers = new Set<number>();
+    const instantByController = new Map<number, boolean>();
     const pendingHover = new Map<number, { u: number; v: number }>(); // raw OpenVR v / OpenVRの生のv
     const lastProbedPoint = new Map<number, { x: number; y: number }>();
     let hoverRaf: number | null = null;
@@ -132,12 +133,30 @@ const CursorOverlay = () => {
       }
     };
 
+    // The main process sends the click, so it has to know at the moment of a
+    // trigger press whether the controller is over an element that clicks on
+    // press (data-vr-instant-click). Only changes are sent, never per cursor event.
+    // クリックを送るのはメインプロセスなので、トリガーを押した瞬間に、押下で
+    // クリックする要素(data-vr-instant-click)の上にいるかを知っている必要がある。
+    // 送るのは変化したときだけで、カーソルイベントごとには送らない。
+    const reportInstant = (controllerId: number, target: HTMLElement | null) => {
+      const instant = target?.dataset.vrInstantClick === 'true';
+      if ((instantByController.get(controllerId) ?? false) === instant) return;
+      if (instant) {
+        instantByController.set(controllerId, true);
+      } else {
+        instantByController.delete(controllerId);
+      }
+      window.electronAPI?.sendVrInstantHover?.({ controllerId, instant });
+    };
+
     const clearHoverForController = (controllerId: number) => {
       const previous = hoveredByController.get(controllerId);
       if (previous) {
         removeHover(previous);
         hoveredByController.delete(controllerId);
       }
+      reportInstant(controllerId, null);
     };
 
     const clearPressedForController = (controllerId: number) => {
@@ -195,6 +214,7 @@ const CursorOverlay = () => {
       const previous = hoveredByController.get(controllerId) ?? null;
       if (previous === target) return;
       if (previous) removeHover(previous);
+      reportInstant(controllerId, target);
       if (target) {
         addHover(target);
         hoveredByController.set(controllerId, target);

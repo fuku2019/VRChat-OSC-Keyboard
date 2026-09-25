@@ -120,6 +120,20 @@ export function setPointerFilter({ minCutoff, beta, dCutoff } = {}) {
 }
 
 /**
+ * Record whether a controller hovers an element that clicks on trigger press.
+ * Reported by the renderer only when it changes.
+ * コントローラーがトリガー押下でクリックする要素に乗っているかを記録する。
+ * レンダラーは変化したときだけ報告する。
+ */
+export function setInstantClickHover(controllerId, instant) {
+  if (instant) {
+    state.instantClickHover[controllerId] = true;
+  } else {
+    delete state.instantClickHover[controllerId];
+  }
+}
+
+/**
  * Start the input handling loop
  * @param {number} fps - Input polling rate (default: 120)
  * @param {Electron.WebContents} webContents - Target webContents for input events
@@ -228,6 +242,7 @@ export function stopInputLoop() {
   state.lastMoveAtByController = {};
   state.lastTriggerPressedState = {};
   state.triggerDragState = {};
+  state.instantClickHover = {};
   state.inputSmoothers = {};
   resetCursorThrottle();
   state.lastMouseHit = false;
@@ -411,4 +426,5 @@ function cleanupControllerRuntimeState(controllerId) {
   delete state.lastHitByController[controllerId];
   delete state.lastMoveAtByController[controllerId];
   delete state.lastTriggerPressedState[controllerId];
+  delete state.instantClickHover[controllerId];
 }

@@ -66,6 +66,7 @@ interface ElectronAPI {
     height: number;
     devicePixelRatio: number;
   }) => void;
+  sendVrInstantHover: (data: { controllerId: number; instant: boolean }) => void;
   getSteamVrAutoLaunch: () => Promise<SteamVrAutoLaunchResult>;
   setSteamVrAutoLaunch: (enabled: boolean) => Promise<SteamVrAutoLaunchResult>;
   getSteamVrBindings: () => Promise<{
