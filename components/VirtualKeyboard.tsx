@@ -153,7 +153,7 @@ const VirtualKeyboard: FC<VirtualKeyboardProps> = ({
                   onMouseDown={(e) => e.preventDefault()}
                   // Committed on VR trigger press, like the keys (Key.tsx).
                   // キーと同じく、VRのトリガーを押した瞬間に確定する(Key.tsx)。
-                  data-vr-instant-click='true'
+                  data-vr-click='press'
                   className={`h-7 px-3 rounded-lg text-sm border transition-colors whitespace-nowrap ${
                     index === candidateIndex
                       ? 'bg-primary-500/20 border-primary-500 text-primary-700 dark:text-primary-200'

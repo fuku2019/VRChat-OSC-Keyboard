@@ -1,7 +1,7 @@
 import { ipcMain } from 'electron';
 import { resetOverlayPosition, updateRendererMetrics } from '../../overlay.js';
 import {
-  setInstantClickHover,
+  setHoverClickMode,
   updateWindowSize,
 } from '../../input_handler.js';
 
@@ -40,12 +40,12 @@ export function registerOverlayIpcHandlers() {
     }
   });
 
-  // Whether a controller hovers an element that clicks on trigger press
-  // トリガー押下でクリックする要素にコントローラーが乗っているか
-  ipcMain.on('vr-instant-hover', (_event, data) => {
+  // How the element under a controller wants a trigger click
+  // コントローラーの下の要素がトリガーでどうクリックされたいか
+  ipcMain.on('vr-click-mode', (_event, data) => {
     const controllerId = Number(data?.controllerId);
     if (!Number.isFinite(controllerId)) return;
-    setInstantClickHover(controllerId, data?.instant === true);
+    setHoverClickMode(controllerId, data?.mode);
   });
 
   // Backward-compatible window size updates / 互換用ウィンドウサイズ更新

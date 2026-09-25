@@ -15,16 +15,27 @@ export function handleTriggerInput(controllerId, controllerState, hit) {
   if (pressed) {
     if (!existing) {
       if (!hit) return;
-      // Keyboard keys and conversion candidates click on press, for typing
-      // speed. They are not scrollable, so there is no drag to protect, and the
-      // rest of this press is ignored - no scroll, no second click on release.
-      // キーボードのキーと変換候補は、打鍵の速さのため押した瞬間にクリックする。
-      // これらはスクロールしないので守るべきドラッグがなく、この押下の残りは
-      // 無視する - スクロールもせず、離したときに2回目のクリックも送らない。
-      if (state.instantClickHover[controllerId]) {
+      // Keyboard keys and conversion candidates ('press') click on press, for
+      // typing speed. Keys with a long press ('hold', e.g. Shift -> CapsLock)
+      // go down on press and up on release, so the page can time the hold -
+      // the release-click path below sends down and up back to back, which no
+      // long press timer can ever see. Neither is scrollable, so there is no
+      // drag to protect and the rest of the press does not scroll.
+      // キーボードのキーと変換候補 ('press') は打鍵の速さのため押した瞬間に
+      // クリックする。長押しを持つキー ('hold'、例: Shift→CapsLock) は押下で押し、
+      // 離したときに離すので、ページが押下時間を測れる - 下の「離したときの
+      // クリック」は down と up を続けて送るので、長押しタイマーは決して動かない。
+      // どちらもスクロールしないので守るべきドラッグがなく、押下中はスクロールしない。
+      const mode = state.hoverClickMode[controllerId];
+      if (mode === 'press') {
         sendClickEvent(hit.u, hit.v, 'mouseDown');
         sendClickEvent(hit.u, hit.v, 'mouseUp', 1);
-        state.triggerDragState[controllerId] = { instant: true };
+        state.triggerDragState[controllerId] = { mode };
+        return;
+      }
+      if (mode === 'hold') {
+        sendClickEvent(hit.u, hit.v, 'mouseDown');
+        state.triggerDragState[controllerId] = { mode, lastU: hit.u, lastV: hit.v };
         return;
       }
       // Defer the click to release. Emitting it on press made the drag/cancel
@@ -43,7 +54,13 @@ export function handleTriggerInput(controllerId, controllerState, hit) {
       return;
     }
 
-    if (existing.instant) return;
+    if (existing.mode) {
+      if (existing.mode === 'hold' && hit) {
+        existing.lastU = hit.u;
+        existing.lastV = hit.v;
+      }
+      return;
+    }
 
     if (!hit) {
       existing.moved = true;
@@ -80,12 +97,18 @@ export function handleTriggerInput(controllerId, controllerState, hit) {
 
   if (existing) {
     delete state.triggerDragState[controllerId];
+    if (existing.mode) {
+      if (existing.mode === 'hold') {
+        sendClickEvent(existing.lastU, existing.lastV, 'mouseUp', 1);
+      }
+      return;
+    }
     // Released without dragging past the cancel threshold -> treat as a click.
     // A scroll drag (or a release while pointing off the overlay) sets `moved`
     // and is intentionally swallowed here.
     // 取り消ししきい値を超えずに離された場合のみクリックとして扱う。
     // スクロールドラッグやオーバーレイ外での解放は moved が立つため送らない。
-    if (!existing.instant && !existing.moved) {
+    if (!existing.moved) {
       sendClickEvent(existing.lastU, existing.lastV, 'mouseDown');
       sendClickEvent(existing.lastU, existing.lastV, 'mouseUp', 1);
     }
@@ -96,5 +119,11 @@ export function releaseTriggerForController(
   controllerId,
   _clickCountOverride = null,
 ) {
+  const existing = state.triggerDragState[controllerId];
   delete state.triggerDragState[controllerId];
+  // A controller that vanishes mid-hold must not leave the page's button down.
+  // 押している途中で消えたコントローラーが、ページのボタンを押しっぱなしにしないようにする。
+  if (existing?.mode === 'hold') {
+    sendClickEvent(existing.lastU, existing.lastV, 'mouseUp', 1);
+  }
 }

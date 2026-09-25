@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { handleTriggerInput } from './trigger.js';
+import { handleTriggerInput, releaseTriggerForController } from './trigger.js';
 import { sendClickEvent, sendScrollEvent } from './events.js';
 import { state } from './state.js';
 
@@ -16,13 +16,13 @@ const release = (hit: { u: number; v: number } | null) =>
 beforeEach(() => {
   vi.clearAllMocks();
   state.triggerDragState = {};
-  state.instantClickHover = {};
+  state.hoverClickMode = {};
   state.windowSize = { width: 800, height: 700 };
 });
 
-describe('instant click (keys and candidates)', () => {
+describe("'press' mode (keys and candidates)", () => {
   beforeEach(() => {
-    state.instantClickHover[1] = true;
+    state.hoverClickMode[1] = 'press';
   });
 
   it('clicks on press and not again on release', () => {
@@ -51,6 +51,41 @@ describe('instant click (keys and candidates)', () => {
     release(null);
 
     expect(sendClickEvent).not.toHaveBeenCalled();
+  });
+});
+
+describe("'hold' mode (keys with a long press)", () => {
+  beforeEach(() => {
+    state.hoverClickMode[1] = 'hold';
+  });
+
+  // Down and up must be split across press and release, or the page's long
+  // press timer never runs (Shift -> CapsLock).
+  // down と up を押下と解放に分けないと、ページの長押しタイマーが動かない (Shift→CapsLock)。
+  it('goes down on press and up on release', () => {
+    press({ u: 0.5, v: 0.5 });
+    expect(vi.mocked(sendClickEvent).mock.calls).toEqual([[0.5, 0.5, 'mouseDown']]);
+
+    press({ u: 0.5, v: 0.52 });
+    expect(sendClickEvent).toHaveBeenCalledTimes(1);
+
+    release({ u: 0.5, v: 0.52 });
+    expect(vi.mocked(sendClickEvent).mock.calls).toEqual([
+      [0.5, 0.5, 'mouseDown'],
+      [0.5, 0.52, 'mouseUp', 1],
+    ]);
+    expect(sendScrollEvent).not.toHaveBeenCalled();
+  });
+
+  it('releases the button when the controller vanishes mid-hold', () => {
+    press({ u: 0.5, v: 0.5 });
+    releaseTriggerForController(1);
+
+    expect(vi.mocked(sendClickEvent).mock.calls).toEqual([
+      [0.5, 0.5, 'mouseDown'],
+      [0.5, 0.5, 'mouseUp', 1],
+    ]);
+    expect(state.triggerDragState[1]).toBeUndefined();
   });
 });
 

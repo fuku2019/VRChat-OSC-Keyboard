@@ -120,16 +120,16 @@ export function setPointerFilter({ minCutoff, beta, dCutoff } = {}) {
 }
 
 /**
- * Record whether a controller hovers an element that clicks on trigger press.
- * Reported by the renderer only when it changes.
- * コントローラーがトリガー押下でクリックする要素に乗っているかを記録する。
- * レンダラーは変化したときだけ報告する。
+ * Record how the element under a controller wants a trigger click ('press' /
+ * 'hold'; anything else = on release). Reported by the renderer only on change.
+ * コントローラーの下の要素のトリガークリック方式を記録する ('press' / 'hold'。
+ * それ以外は離したとき)。レンダラーは変化したときだけ報告する。
  */
-export function setInstantClickHover(controllerId, instant) {
-  if (instant) {
-    state.instantClickHover[controllerId] = true;
+export function setHoverClickMode(controllerId, mode) {
+  if (mode === 'press' || mode === 'hold') {
+    state.hoverClickMode[controllerId] = mode;
   } else {
-    delete state.instantClickHover[controllerId];
+    delete state.hoverClickMode[controllerId];
   }
 }
 
@@ -242,7 +242,7 @@ export function stopInputLoop() {
   state.lastMoveAtByController = {};
   state.lastTriggerPressedState = {};
   state.triggerDragState = {};
-  state.instantClickHover = {};
+  state.hoverClickMode = {};
   state.inputSmoothers = {};
   resetCursorThrottle();
   state.lastMouseHit = false;
@@ -426,5 +426,5 @@ function cleanupControllerRuntimeState(controllerId) {
   delete state.lastHitByController[controllerId];
   delete state.lastMoveAtByController[controllerId];
   delete state.lastTriggerPressedState[controllerId];
-  delete state.instantClickHover[controllerId];
+  delete state.hoverClickMode[controllerId];
 }
