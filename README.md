@@ -7,14 +7,16 @@
 
 # VRChat-OSC-Keyboard
 
-🕊️ **VRChatのチャットをもっと自由に！！** <br>
+<div align="center">
+
+**VRのChatをチャットをもっと自由に！！** <br>
 VRの中から **仮想キーボード** で快適なチャットができる**オープンソースフリーウェア**
 
-<div align="center">
+
 
 [**📖ユーザーマニュアルはこちら(日本語🗾)📖**](/docs/manual.jp.md)
 
-![logo](https://raw.githubusercontent.com/fuku2019/VRChat-OSC-Keyboard/refs/heads/main/docs/fake_logo_3.png)
+![logo](docs/Images/LogoV3.0.0.png)
 <br>
 
 <!-- https://github.com/user-attachments/assets/cd2ba263-f580-4a85-8861-cc934f06c34e -->
@@ -48,7 +50,7 @@ VRChatはVRモードでプレイすると、テキストチャットが不便<br
 このソフトウェアは、VR画面に仮想キーボードをフローティング表示させることで、自由なチャット入力を可能にします。<br>
 **VR専用のソフトウェアです。** 利用にはSteamVRが必要です。
 
-![app_img_0](docs/app_img_0.png)
+![keyboard_v3.0.0](docs/keyboard_v3.0.0.png)
 ![zm_vok_0](https://github.com/user-attachments/assets/e7d60988-36bf-4302-9654-9d8162f98422)
 <em>デザインや機能はバージョンによって異なる場合があります。</em>
 
@@ -112,9 +114,9 @@ VRChatはVRモードでプレイすると、テキストチャットが不便<br
   このセクションのメディアコンテンツは、実際のツールの操作感、機能、外観とは異なります。本ツールに着想を得た「夢」としてお楽しみください。
   <br>
 
-  ![waao](https://raw.githubusercontent.com/fuku2019/VRChat-OSC-Keyboard/refs/heads/main/docs/waao.jpg)
+  ![waao](docs/Images/waao.jpg)
 
-  ![udream_0](https://raw.githubusercontent.com/fuku2019/VRChat-OSC-Keyboard/refs/heads/main/docs/udream_0.png)
+  ![udream_0](docs/Images/udream_0.png)
 
   <video style="width: 100%; height: auto;" controls src="https://github.com/user-attachments/assets/aab2cf37-fc52-4324-a83e-8559a9d85e81"></video>
 
@@ -174,6 +176,9 @@ npm run dist
 </table>
 
 ***
+<!--
 
 ![GitHub Stats_f**k](https://github-readme-stats.vercel.app/api?username=fuku2019&theme=tokyonight&show_icons=true&hide_border=true&count_private=true)
 ![GitHub Stats_n**m](https://github-readme-stats.vercel.app/api?username=nrtm22&theme=tokyonight&show_icons=true&hide_border=true&count_private=true)
+
+-->
