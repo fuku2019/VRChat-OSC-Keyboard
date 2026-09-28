@@ -154,20 +154,34 @@ npm run dist
 - 詳細は `THIRD_PARTY_MOZC_DICTIONARY_LICENSES.txt` を参照してください。
 
 ***
-
-**作者**
 <table>
   <tr>
-    <td><img src="https://avatars.githubusercontent.com/u/190678790?size=64" width="64"></td>
-    <td><img src="https://avatars.githubusercontent.com/u/76728947?size=64" width="64"></td>
+    <td> <b>作者</b> <img src="https://avatars.githubusercontent.com/u/76728947?size=64" width="64"> <br> @fuku_2019 </td>
+    <td> <p> <== 御方に、感謝を捧げましょう。 </p> </td>
   </tr>
 </table>
 
-**人工知能**
-*本プロジェクトの開発にはAIサービスを活用しています。*
+<table>
+  <tr>
+    <td>
+      <b>貢献者</b>
+    </td>
+    <td>
+      <p> <img src="https://avatars.githubusercontent.com/u/190678790?size=64" width="64"> <br> @Nrtm22 </p>
+    </td>
+  </tr>
+</table>
+
 <!-- > *本プロジェクトの開発には以下のAIサービスを活用しています。これは、各提供企業との提携や公式な関係を示すものではありません。* -->
 <table>
   <tr>
+    <td>
+      <p> <img src="https://avatars.githubusercontent.com/u/81847?size=64" width="64"> <br> @claude </p>
+    </td>
+    <td>
+      <b>人工知能</b> <br>
+      <i>本プロジェクトの開発にはAIサービスを活用しています。<br> これは、各提供企業との提携や公式な関係を示すものではありません。</i> <br>
+    </td>
     <!-- <td><img width="32" height="32" alt="googlegemini" src="https://github.com/user-attachments/assets/bd0739aa-25b0-4d20-8737-0116c77c9cb8" /></td> -->
     <!-- <td><img width="32" height="32" alt="googleantigravity" src="https://antigravity.google/assets/image/brand/antigravity-icon__full-color.png" /></td> -->
     <!-- <td><img width="64" height="64" alt="claude" src="https://github.com/user-attachments/assets/fa5201f0-533a-43b3-8d55-98d4879ae9ce" /> </td>
