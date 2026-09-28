@@ -4,7 +4,7 @@ Unleash your typing in VRChat.<br>
 Directly send messages to the Chatbox via OSC using a virtual keyboard inside VR.<br>
 **VR-only:** SteamVR is required.
 
-![logo](https://raw.githubusercontent.com/fuku2019/VRChat-OSC-Keyboard/refs/heads/main/docs/fake_logo_3.png)
+![logo](/docs/Images/LogoV3.0.0.png)
 <br>
 ↓ Note: The voice of VOICEVOX Zundamon is loud, so please be careful.
 
@@ -99,9 +99,9 @@ We recommend unmuting.<br>
 The media content in this section differs from the actual operation, function, and appearance of the tool. Please enjoy it as a "Dream" inspired by this tool.
 <br>
 
-![waao](https://raw.githubusercontent.com/fuku2019/VRChat-OSC-Keyboard/refs/heads/main/docs/waao.jpg)
+![waao](/docs/Images/waao.jpg)
 
-![udream_0](https://raw.githubusercontent.com/fuku2019/VRChat-OSC-Keyboard/refs/heads/main/docs/udream_0.png)
+![udream_0](/docs/Images/udream_0.png)
 
 <video style="width: 100%; height: auto;" controls src="https://github.com/user-attachments/assets/aab2cf37-fc52-4324-a83e-8559a9d85e81"></video>
 
