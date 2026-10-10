@@ -51,6 +51,9 @@ if ($LASTEXITCODE -ne 0 -or $revision -ne $lock.dictionaryRevision) { throw 'Dic
 $changes = & git -C $dictionary status --porcelain
 if ($LASTEXITCODE -ne 0 -or $changes) { throw 'Dictionary working tree was modified' }
 Copy-Item -LiteralPath (Join-Path $dictionary 'Dictionary') -Destination (Join-Path $Destination 'Dictionary') -Recurse
+# Git placeholders are not dictionary data and electron-builder omits them.
+# Gitの空ディレクトリ用ファイルは辞書データではなく、配布時も除外される。
+Get-ChildItem -LiteralPath (Join-Path $Destination 'Dictionary') -Recurse -File -Filter '.gitkeep' -Force | Remove-Item -Force
 $licenses = Join-Path $Destination 'THIRD_PARTY_LICENSES'
 New-Item -ItemType Directory -Force $licenses | Out-Null
 Copy-Item -LiteralPath (Join-Path $dictionary 'LICENSE') -Destination (Join-Path $licenses 'AzooKeyDictionary-LICENSE.txt')

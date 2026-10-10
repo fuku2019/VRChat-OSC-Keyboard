@@ -10,7 +10,7 @@ try {
   await verifyStage(fixture, { development: true });
   await assert.rejects(verifyStage(fixture), /not release-ready/);
   const manifest = JSON.parse((await fs.readFile(path.join(fixture, 'stage-manifest.json'), 'utf8')).replace(/^\uFEFF/, ''));
-  const entry = manifest.payload.find(item => item.path.startsWith('Dictionary/'));
+  const entry = manifest.payload.find(item => item.path.startsWith('Dictionary/') && item.bytes > 0);
   const file = path.join(fixture, entry.path), bytes = await fs.readFile(file);
   const changed = Buffer.from(bytes); changed[0] ^= 1;
   await fs.writeFile(file, changed);

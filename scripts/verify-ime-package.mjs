@@ -45,6 +45,12 @@ export async function verifyStage(directory, { development = false } = {}) {
   assert.equal(metadata.dictionaryRevision, lock.dictionaryRevision);
   assert.equal(metadata.dependencyLockSha256, hash(await fs.readFile(path.join(root, 'helper/windows-dependencies.json'))));
   assert.equal(metadata.packageResolvedSha256, hash(await fs.readFile(path.join(root, 'helper/Package.resolved'))));
+  assert.equal(metadata.packageLockSha256, hash(await fs.readFile(path.join(root, 'package-lock.json'))));
+  const patches = await fs.readdir(path.join(root, 'helper/patches'));
+  for (const name of patches.filter(name => name.endsWith('.patch'))) {
+    assert.equal(metadata.patches?.find(entry => entry.name === name)?.sha256,
+      hash(await fs.readFile(path.join(root, 'helper/patches', name))), `Helper patch mismatch: ${name}`);
+  }
   for (const [name, sha] of Object.entries(lock.llama.files)) {
     if (name.endsWith('.dll')) assert.equal(manifest.payload.find(entry => entry.path === name)?.sha256, sha, `Pinned DLL: ${name}`);
   }
@@ -54,9 +60,9 @@ export async function verifyStage(directory, { development = false } = {}) {
   const pins = (await json(path.join(root, 'helper/Package.resolved'))).pins;
   for (const pin of pins) assert.ok(expected.has(`THIRD_PARTY_LICENSES/${pin.identity}-LICENSE.txt`), `Missing notice: ${pin.identity}`);
   if (!development) {
-    assert.equal(metadata.appSourceDirty, false, 'Release stage must be built from committed sources');
     assert.equal(manifest.distributionReady, true, `Stage is not release-ready: ${(manifest.remainingChecks ?? []).join(', ')}`);
     assert.deepEqual(manifest.remainingChecks, []);
+    assert.equal(metadata.appSourceDirty, false, 'Release stage must be built from committed sources');
   }
   return { files: expected.size, bytes: manifest.payload.reduce((sum, entry) => sum + entry.bytes, 0), distributionReady: manifest.distributionReady };
 }
@@ -70,9 +76,13 @@ export async function verifyPackage(directory, options = {}) {
   assert.ok(!files.some(name => legacy.test(name)), 'Legacy Mozc/learning code in app.asar');
   const packaged = JSON.parse(asar.extractFile(archive, 'package.json').toString());
   assert.equal(packaged.name, 'vrcliveime', 'Fork identity mismatch');
+  assert.equal(packaged.main, 'electron/bootstrap.js', 'Fork path bootstrap must run before persistent stores');
   for (const name of ['LICENSE', 'Openvr-LICENSE.txt', 'THIRD_PARTY_NOTICES.md', 'docs/distribution.md']) assert.ok(files.includes(name), `Missing application notice: ${name}`);
   for (const name of ['native/index.node', 'native/openvr_api.dll', 'steamvr/actions.json'])
     await fs.access(path.join(directory, 'resources/app.asar.unpacked', name));
+  for (const name of ['LICENSE.electron.txt', 'LICENSES.chromium.html']) await fs.access(path.join(directory, name));
+  const actions = JSON.parse(await fs.readFile(path.join(directory, 'resources/app.asar.unpacked/steamvr/actions.json'), 'utf8'));
+  assert.equal(actions.app_key, 'vrcliveime.keyboard', 'Packaged SteamVR identity mismatch');
   return result;
 }
 

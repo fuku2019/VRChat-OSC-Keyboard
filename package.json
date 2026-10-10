@@ -14,7 +14,7 @@
   },
   "private": true,
   "type": "module",
-  "main": "electron/main.js",
+  "main": "electron/bootstrap.js",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

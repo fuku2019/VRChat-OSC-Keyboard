@@ -4,7 +4,7 @@
  */
 
 import { app, BrowserWindow } from 'electron';
-import { APP_ID, APP_NAME } from './appIdentity.js';
+import { APP_NAME } from './appIdentity.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
@@ -66,9 +66,6 @@ const __dirname = path.dirname(__filename);
 const packageJsonPath = path.join(__dirname, '../package.json');
 const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
 const APP_VERSION = packageJson.version;
-app.setName(APP_NAME);
-app.setPath('userData', path.join(app.getPath('appData'), APP_NAME));
-if (process.platform === 'win32') app.setAppUserModelId(APP_ID);
 
 // Parse launch arguments first: everything below may depend on them.
 // 以降の処理が参照しうるので、起動引数を最初に解析する。

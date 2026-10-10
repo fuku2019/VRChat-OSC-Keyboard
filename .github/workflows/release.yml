@@ -22,12 +22,16 @@ jobs:
           name: windows-validation
           path: release
       - name: Require completed redistribution and clean-host checks
-        run: node scripts/verify-ime-package.mjs --app release/win-unpacked
+        shell: pwsh
+        run: |
+          if ($env:GITHUB_REF_TYPE -ne 'tag') { throw 'Select an existing version tag when dispatching Release' }
+          node scripts/verify-ime-package.mjs --app release/win-unpacked
+          if ($LASTEXITCODE -ne 0) { throw 'Release readiness checks are incomplete' }
       - name: Archive application sources at the built revision
         run: git archive --format=zip --output=release/VrcLiveIme-sources.zip HEAD
       - uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ github.run_number }}-validation
+          tag_name: ${{ github.ref_name }}
           draft: true
           files: |
             release/*.exe

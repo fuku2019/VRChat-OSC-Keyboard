@@ -1,4 +1,6 @@
-# VRChat-OSC-Keyboard
+# VrcLiveIme (development fork)
+
+This fork is undergoing packaging validation. Existing release links below refer to upstream. See [distribution](../distribution.md) for fork build instructions and outstanding checks.
 
 Unleash your typing in VRChat.<br>
 Directly send messages to the Chatbox via OSC using a virtual keyboard inside VR.<br>
@@ -129,13 +131,14 @@ The following environment is required.
 npm install
 # Build native module (Rust)
 npm run build:native
-# Build Mozc dictionary shards (only when updating dictionary assets)
-npm run ime:build-dict
-# Run build
-npm run dist
+# Build and stage the Swift helper (see helper/README.md for dependencies)
+pwsh -File scripts/build-ime-helper.ps1
+npm run ime:stage
+# Build unreleased validation artifacts
+npm run dist:validation
 ```
 
 ## License Note
-- This project bundles data derived from Mozc dictionary_oss.
-- Dictionary shards are regenerated from the full `dictionary00-09` vocabulary set using first-character shard keys.
-- See `THIRD_PARTY_MOZC_DICTIONARY_LICENSES.txt` for details.
+- This working fork is VrcLiveIme. Legacy Mozc shards and learning code have been removed in favor of an AzooKey/Zenzai helper.
+- Replacement dictionary provenance, runtime redistribution notices and Swift-uninstalled Windows validation remain open; the release gate currently fails.
+- See [distribution](../distribution.md), [notices](../../THIRD_PARTY_NOTICES.md) and [helper development](../../helper/README.md). Upstream settings and update feeds are isolated.

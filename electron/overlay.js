@@ -219,13 +219,13 @@ export function initOverlay() {
     }
 
     // Create single overlay / 単一のオーバーレイを作成
-    const key = 'vrchat-osc-keyboard-overlay';
-    const name = 'VRC Keyboard';
+    const key = 'vrcliveime-overlay';
+    const name = 'VrcLiveIme';
     createdMain = state.overlayManager.createOverlay(key, name);
 
     // Create backside overlay for double-sided rendering
-    const backKey = 'vrchat-osc-keyboard-overlay-back';
-    const backName = 'VRC Keyboard (Back)';
+    const backKey = 'vrcliveime-overlay-back';
+    const backName = 'VrcLiveIme (Back)';
     createdBack = state.overlayManager.createOverlay(backKey, backName);
 
     // Success - Commit to state / 成功 - 状態にコミット
@@ -338,8 +338,8 @@ export function initSplash() {
     }
 
     // Create splash overlay
-    const key = 'vrchat-osc-keyboard-splash';
-    const name = 'VRC Keyboard Start';
+    const key = 'vrcliveime-splash';
+    const name = 'VrcLiveIme Start';
     state.splashHandle = state.overlayManager.createOverlay(key, name);
     console.log(`Splash Overlay Created with handle: ${state.splashHandle}`);
 

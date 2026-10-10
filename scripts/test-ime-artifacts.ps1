@@ -1,12 +1,15 @@
 $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path $PSScriptRoot -Parent
 $release = Join-Path $repoRoot 'release'
-$sevenZip = Join-Path $repoRoot 'node_modules/7zip-bin/win/x64/7za.exe'
+$sevenZip = & node (Join-Path $repoRoot 'scripts/resolve-7zip.mjs')
+if ($LASTEXITCODE -ne 0 -or !(Test-Path -LiteralPath $sevenZip)) { throw 'Cannot resolve electron-builder 7zip' }
 $inspection = Join-Path $repoRoot ('.tools/artifact-inspection-' + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $inspection | Out-Null
 $installer = Get-ChildItem -LiteralPath $release -Filter 'VrcLiveIme-Setup-*.exe' | Select-Object -First 1
 $zip = Get-ChildItem -LiteralPath $release -Filter '*.zip' | Where-Object { $_.Name -notmatch 'sources' } | Select-Object -First 1
 if (!$installer -or !$zip) { throw 'Expected NSIS installer and zip' }
+if ($installer.Length -gt 140MB) { Write-Warning 'Installer exceeds the existing 140 MiB warning threshold' }
+if ($installer.Length -gt 150MB) { throw 'Installer exceeds the existing 150 MiB size gate' }
 $nsis = Join-Path $inspection 'nsis'
 & $sevenZip x $installer.FullName "-o$nsis" '-y' | Out-Null
 if ($LASTEXITCODE -ne 0) { throw 'Cannot extract NSIS payload' }

@@ -3,7 +3,8 @@
 `ZenzaiHelper` implements the [JSONL v1 protocol](../docs/ime-helper-protocol.md).
 `ZenzaiProbe` is a separate single-conversion diagnostic tool. Gate A now passes
 on the development Windows host with both pinned v3.2 models. Production IME
-wiring is the next implementation step.
+wiring and committed OSC snapshot sending are implemented. Windows packaging is
+under validation; see [distribution](../docs/distribution.md).
 
 ## Toolchain
 
@@ -112,7 +113,9 @@ npm run electron:dev
 Without a helper override, development uses .tools/ime-helper-stage. Without a
 model, the helper uses AzooKey dictionary conversion. Without the staged helper,
 the app preserves kana input. Executable/model paths are never accepted from a
-renderer. Packaged resources are not staged automatically yet (P7).
+renderer. Run `npm run ime:stage` (PowerShell 7) to prepare the packaging stage
+`.tools/ime-helper-package`; electron-builder copies it outside app.asar.
+Packaged model selection also accepts `--ime-model "C:\models\model.gguf"`.
 
 Test the real application facade without launching SteamVR or posting OSC:
 

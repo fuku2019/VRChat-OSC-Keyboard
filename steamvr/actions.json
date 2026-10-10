@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "app_key": "VRChat-OSC-Keyboard",
+  "app_key": "vrcliveime.keyboard",
   "category": "steamvr_input",
   "actions": [
     {

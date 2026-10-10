@@ -11,7 +11,7 @@ VRChat OSC Keyboard — VRChatのプレイヤーがVR内で仮想キーボード
 ```bash
 npm install                # JS 依存関係のインストール
 npm run build:native       # Rust ネイティブモジュール (native/) をビルドし、配置先へ同期する
-npm run ime:build-dict     # Mozc 辞書シャードの再生成 (scripts/ime または元辞書を変更した場合のみ必要)
+npm run ime:stage         # pinned Swift helperと辞書を配布検証用にstage (helper/README.md参照)
 
 npm run dev                # vite dev server のみ (ブラウザ動作。OSC は vite の dev ブリッジプラグイン経由)
 npm run electron:dev       # フル構成: vite + Electron を同時起動。デバッグ用のデスクトップキーボードで開く (--desktop)
@@ -19,7 +19,7 @@ npm run electron:dev:vr    # 利用者と同じ VR モード (--vr --perf-log) �
 npm run electron:dev:perf  # デスクトップキーボード + キャプチャ計測ログ (--desktop --perf-log)
 npm run electron:dev:vr:eps  # VR モード + カーソル送信しきい値の上書き (--cursor-epsilon=0.005)
 npm run build              # vite build のみ
-npm run dist               # vite build + electron-builder + rename-build-output.js -> release/
+npm run dist:validation    # 公開しないNSIS/zipの検証用ビルド -> release/ (distは公開前のreadiness検査も必須)
 
 npm run test               # vitest ウォッチモード
 npm run test:run           # vitest を 1 回だけ実行 (CI 相当)
@@ -38,11 +38,9 @@ npm run native:check       # native/ に対する cargo clippy (-D warnings)
 
 テストは対象ソースと同じ階層に配置する(`Foo.ts`に対して`Foo.test.ts`)。これはレンダラー側のツリーと`electron/`の両方で共通。Vitestはjsdom環境で動作するため(`vitest.config.ts`)、Electron側のテストは実際のElectronプロセスを起動せず`electron`とネイティブバインディングをモックする。`.agent/rules/testfile-guide.md`にはPlaywrightへの言及があるが、e2eテストの仕組みは実在しない。jsdomには`document.elementFromPoint`と`window.matchMedia`がないので、これらを使うコンポーネントのテストではスタブすること(`components/CursorOverlay.test.tsx`参照)。テストファイルは`package.json`の`build.files`にある`!**/*.test.*`でasarから除外されるので、同階層に置いても出荷物には入らない。
 
-## CIはコード品質をゲートしない
+## CIと配布検査
 
-`.github/workflows/release.yml`は`v*`タグで起動し、`npm ci` → `build:native` → `dist`を実行するだけ。テストもtypecheckもclippyも**一切実行しない**ため、これらはローカル専用のゲートであり、コミット前に自分で走らせる必要がある。一方でCIが実際に強制しているのはインストーラのサイズゲートで、140MB超で警告、150MB超でリリースを失敗させる。アセットや辞書シャードを追加する際は注意すること(`sourcemap: false`、`removeLocales.cjs`、manualChunksが存在するのはこのため)。
-
-`release.json`は`update-release-json.yml`がReleaseワークフロー完了後にGitHub APIのレスポンスをそのまま書き込んでコミットするファイルである — 手動で編集しないこと。**アプリ側はこのファイルを一切読んでいない。** アップデート確認の経路は`hooks/useUpdateChecker.ts` → `check-for-update` IPC → `electron/services/ipc/SystemIpcHandlers.js`で、メインプロセスがGitHubのreleases APIを直接fetchしている。したがって`release.json`を更新してもアプリの挙動は変わらない。
+Windows IME validationはtest・typecheck・Swift helper build/stage・native build・NSIS/zip検査を実行する。モデルdownload/hash検査と推論は別job。Releaseは手動起動のみでreadiness検査後もdraftを作る。現状は辞書由来/runtime表記/クリーンWindowsの検証が未完了で公開gateは停止する。詳細はdocs/distribution.md。release.jsonはアプリから参照しない。上流版の更新先は使わない。
 
 ## アーキテクチャ
 
@@ -52,7 +50,7 @@ Electron IPCで通信する2つのJSランタイムと、1つのネイティブ�
 
 2. **Electronメインプロセス(`electron/`、素のESM `.js`)** — アプリのライフサイクル(`main.js`)、ウィンドウ生成(`services/WindowManager.js`)、および関心ごとに`electron/services/ipc/*IpcHandlers.js`へ分割され`electron/services/IpcHandlers.js`で一括登録されるIPCハンドラを担う。主要サブシステム:
    - `services/OscBridgeService.js` — 本番用のOSCブリッジ(vite devプラグインのElectron側相当)。
-   - `services/ime/*` + `services/JapaneseConversionService.js` — 日本語IME/変換エンジン(Mozc由来の辞書、分割処理、学習ストア)。かな漢字変換の辞書引きは**メインプロセス側で動作する**。レンダラーの`hooks/imeReducer.ts`は`jp-ime:*` IPCチャンネル経由でこれを呼び出すが、Electron外(`npm run dev`)やIPC失敗時のために**かな/カタカナだけのローカルフォールバック候補**を自前で持っている。学習ストアへの記録はユーザーが実際に選択したアクティブ文節のみが対象(文節移動のUIが存在しないため、他の文節の`selectedIndex`はユーザーの選択ではない)。
+   - `services/ime/*` + `services/JapaneseConversionService.js` — persistent Swift helperへJSONLで非同期変換を委譲する。入力の正はrenderer reducer、変換はsession/revision付き。失敗時はかなfallback。旧Mozc/Segmenter/LearningStoreは撤去済みで、旧DBを読み書きしない。
    - `overlay.js` + `overlay/*` — SteamVRオーバーレイの生成と駆動、Electronウィンドウの描画フレームのキャプチャ、ネイティブモジュール経由のOpenVRハンドル管理。
    - `input_handler.js` + `input/*` — VRコントローラーの姿勢とトリガーをポーリングし、オーバーレイとのレイ交差判定を計算して、カーソル/トリガー/スクロールのイベントをレンダラーへ送る(`preload.js`の`onCursorMove`/`onTriggerState`/`onInputScroll`)。コントローラーで2D UIを「クリック」できるのはこの仕組みによる。
    - `services/SteamVrManifestService.js` / `SteamVrSettingsService.js` — SteamVRオーバーレイアプリとしての登録、自動起動およびバインディング設定の管理。
@@ -128,7 +126,7 @@ SteamVRより先に起動するのは普通の手順である。キーボード�
 
 devではレンダラーがViteの開発サーバーから読み込まれるぶん遅く、メインプロセスの初期化処理が先に終わることが多い。パッケージ版はディスクから読むので速く、**devでは隠れる競合がパッケージ版でだけ出る**。VRモード導入時に見つかったバグ4件のうち2件(SteamVR入力のラッチ、バインディング一覧の早すぎる確定)はdevでは再現しなかった。VRまわりやウィンドウの起動順序に触れる変更は、`npm run dist`か`npx electron-builder --dir`で作ったビルドでも確かめること。
 
-- SteamVRへのアプリ登録(`SteamVrManifestService.js`)は、起動のたびに`binary_path_windows`を**自分の実行ファイルのパス**で書き直す。リポジトリ内の`release/win-unpacked/`を実行すると登録先がそこに変わるので、確認後はインストール版を一度起動して戻すこと。`app_key`は実行ファイル名から作られる。
+- SteamVRへのアプリ登録(`SteamVrManifestService.js`)は、起動のたびに`binary_path_windows`を**自分の実行ファイルのパス**で書き直す。リポジトリ内の`release/win-unpacked/`を実行すると登録先がそこに変わるので、確認後はインストール版を一度起動して戻すこと。`app_key`は固定のvrcliveime.keyboardで、上流と分離される。
 - パッケージ版を`cmd`から起動すると、終了後もプロンプトが戻らないように見えることがある。プロセスは終了しているので、残骸を疑う前に`Get-Process`で確認すること。
 
 ## リポジトリの慣習
@@ -137,4 +135,4 @@ devではレンダラーがViteの開発サーバーから読み込まれるぶ�
 - コミットメッセージは日本語が大半で、内容を説明する形式。conventional commitsのプレフィックスは使っていない。
 - `debug.config.json`は`enableDebugMode`に加え、アップデートチェッカーのテスト用フラグ(`forceUpdateAvailable`、`mockLatestVersion`、`forceInstallerVersion`)を切り替える。`electron/debugConfig.js`がuserData → アプリ直下の順に探し、`--debug`を付けると`enableDebugMode`が強制的に有効になる。**`build.files`には含めないこと**。リポジトリのものは`forceUpdateAvailable: true`なので、出荷すると偽の更新通知が出る。
 - 作業ツリーはCRLF(`core.autocrlf=true`)。新しく作るファイルも既存に合わせてCRLFにする。
-- Mozc辞書のライセンスは`THIRD_PARTY_MOZC_DICTIONARY_LICENSES.txt`で管理している。`electron/assets/ime/mozc/shards/`配下のシャードは生成物であり、手で編集しない。
+- 変換helperと辞書の出典・表記・配布前の未完了事項はTHIRD_PARTY_NOTICES.mdとdocs/distribution.mdを参照する。
