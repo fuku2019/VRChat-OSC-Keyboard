@@ -1,0 +1,33 @@
+{
+  "installer": "VrcLiveIme-Setup-3.0.1-x64.exe",
+  "installerMiB": 126.95,
+  "zip": "VrcLiveIme-3.0.1-win.zip",
+  "zipMiB": 172.76,
+  "scope": "Extracted payload and helper conversion; not an installed app/VR acceptance test",
+  "sourceRevision": "7fa8d684853b5ff853382ac5f208a2c88befa858",
+  "sourceDirty": false,
+  "date": "2026-10-10",
+  "helperPayloadFiles": 3414,
+  "installerSha256": "8f3353b7254730a515cd60cadbf107e2211586fba8deb9f6624a07e91e73653c",
+  "zipSha256": "457b7329f878938c9263831f488849859fa0e81980f8c040570495630b51d4dd",
+  "distributionReady": false,
+  "checks": [
+    "Complete helper payload size/SHA256",
+    "Pinned dependency locks and helper patches",
+    "Fork bootstrap identity and SteamVR key",
+    "Application and helper notices present",
+    "Legacy Mozc assets/providers/learning code absent",
+    "Extracted NSIS dictionary conversion and commit/reset",
+    "Extracted zip dictionary conversion and commit/reset",
+    "Missing model dictionary fallback",
+    "Missing helper kana fallback",
+    "Existing 150 MiB installer size gate"
+  ],
+  "outstanding": [
+    "Dictionary provenance review",
+    "Swift/runtime/MSVC/transitive redistribution notices",
+    "Swift-uninstalled clean Windows test",
+    "Installed application GUI startup and VR acceptance",
+    "Remote GitHub Actions execution"
+  ]
+}

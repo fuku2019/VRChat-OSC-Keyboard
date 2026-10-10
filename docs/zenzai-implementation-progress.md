@@ -202,3 +202,64 @@ receiver, never VRChat's port 9000. Localhost connection requires execution
 outside the sandbox on this host. This verifies bridge receive/wire behavior;
 VRChat display, VR layout/controller acceptance and performance remain P8 work.
 P7 packaging/legacy removal/CI is next; P2 clean-host/notices remain open.
+
+## P7: packaging/CI and legacy removal implemented; distribution acceptance open
+
+Implemented extraResources staging at resources/ime-helper/win-x64. Stage
+manifests now inventory every payload file with size/SHA256, including dictionary
+and license texts. Build metadata records the application revision/dirty status,
+npm lock, Swift dependency lock, dictionary revision and AzooKey patch hashes.
+Transitive Swift package license texts are copied from pinned source checkouts.
+Git placeholders are removed before inventorying because electron-builder omits
+them. No model weights or diagnostic probe are shipped.
+
+verify-ime-package.mjs checks exact payload inventory, hashes, pinned dependencies
+and patches, app/native/SteamVR resources, notices, fork bootstrap identity and
+absence of old Mozc assets/providers/learning code in app.asar. afterPack always
+checks structure; dist also enforces release readiness. dist:validation creates
+explicitly unreleased NSIS/zip artifacts while reporting readiness=false. Gate
+fault tests cover dictionary corruption, extra files, missing DLLs, path traversal
+and incomplete readiness. NSIS/zip inspection handles directly extracted NSIS
+payloads as well as nested app-64.7z payloads.
+
+A separate commit (5025700) removed the legacy dictionary shards, generator,
+MozcDictionaryProvider, MicroDictionaryProvider, Segmenter, LearningStore and
+obsolete tests/license display from the current tree. Existing databases and Git
+history were not touched. Removing those old resources does not resolve the
+replacement dictionary's ancestry/provenance.
+
+The fork now has a separate appId/executable/user data directory, SteamVR app key
+and overlay keys. bootstrap.js configures user data before ESM services construct
+electron-store, avoiding import-order access to upstream settings. Update check,
+download and installation are disabled until a fork-owned feed is configured.
+Manual model selection supports --ime-model, taking precedence over the existing
+environment variable. Model paths remain main-process-only. README, helper and
+repository guidance now describe this migration and the validation build.
+
+Windows CI now includes tests/typecheck, pinned Swift helper build/stage, native
+build, package gates and extracted artifact checks. A separate job downloads and
+hash-checks xsmall, then tests inference on the staged helper. Release is manual,
+requires a version tag and completed readiness checks, and creates a draft only.
+The obsolete release-json updater no longer runs automatically after Release.
+Workflow YAML parses locally; no remote CI run or public release was performed.
+
+Validation at application source 7fa8d684853b5ff853382ac5f208a2c88befa858
+(clean tree at staging): 488 Vitest tests in 38 files plus 31 helper transport
+tests pass; typecheck and production build pass. Native code was unchanged;
+packaging used the previously built native module. Stage fault tests and the
+real helper facade (xsmall/dictionary/missing model/missing helper) pass. NSIS
+and zip were generated and extracted; both contain 3,414 helper payload files
+(99.55 MiB), expected DLLs/licenses, native assets and the fork's SteamVR key.
+Extracted helpers convert Japanese and support candidate/commit/reset paths.
+Installer: 126.95 MiB (within the unchanged 140/150 MiB thresholds). Zip:
+172.76 MiB. Artifact hashes and scope are in
+validation/2026-10-10-package-validation.json. A later inspector-only fix handles
+the direct NSIS extraction format; it does not change the packaged application.
+
+P7 is not complete as distribution acceptance. Dictionary provenance and full
+Swift/runtime/MSVC/transitive notices remain open. The developer-host manifest
+still classifies VCOMP140.dll through System32, so it cannot establish a clean
+machine's runtime availability. Actual NSIS installation/application GUI startup,
+Swift-uninstalled clean Windows and VR/OSC display acceptance have not been
+performed. The release gate rejects the current stage for its outstanding
+checks. P8 hardware/performance work is still open; see docs/distribution.md.

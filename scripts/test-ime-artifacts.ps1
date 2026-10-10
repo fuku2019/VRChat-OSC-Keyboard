@@ -13,11 +13,14 @@ if ($installer.Length -gt 150MB) { throw 'Installer exceeds the existing 150 MiB
 $nsis = Join-Path $inspection 'nsis'
 & $sevenZip x $installer.FullName "-o$nsis" '-y' | Out-Null
 if ($LASTEXITCODE -ne 0) { throw 'Cannot extract NSIS payload' }
-$archive = Get-ChildItem -LiteralPath $nsis -Filter 'app-64.7z' -Recurse | Select-Object -First 1
-if (!$archive) { throw 'NSIS x64 application payload missing' }
-$installed = Join-Path $inspection 'installed'
-& $sevenZip x $archive.FullName "-o$installed" '-y' | Out-Null
-if ($LASTEXITCODE -ne 0) { throw 'Cannot inspect NSIS application' }
+$installed = $nsis
+if (!(Test-Path -LiteralPath (Join-Path $installed 'VrcLiveIme.exe'))) {
+    $archive = Get-ChildItem -LiteralPath $nsis -Filter 'app-64.7z' -Recurse | Select-Object -First 1
+    if (!$archive) { throw 'NSIS x64 application payload missing' }
+    $installed = Join-Path $inspection 'installed'
+    & $sevenZip x $archive.FullName "-o$installed" '-y' | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw 'Cannot inspect NSIS application' }
+}
 $portable = Join-Path $inspection 'portable'
 & $sevenZip x $zip.FullName "-o$portable" '-y' | Out-Null
 if ($LASTEXITCODE -ne 0) { throw 'Cannot inspect portable zip' }
