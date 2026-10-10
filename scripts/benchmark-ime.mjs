@@ -44,7 +44,7 @@ const report = {
     samplesPerCase: samples, startupTrials: 3, traceTrialsPerDebounce: 3,
     requestTimeoutMs: 10000, productionRequestTimeoutMs: 2000,
     startup: 'Process spawn to ready includes dictionary initialization, model load and warm-up; OS file cache is NOT flushed.',
-    conversion: 'Fresh composition after reset, same persistent model. Short/medium/long rotate each iteration to avoid consecutive identical-prompt cache hits; internal prefix caches are not disabled. elapsedMs is helper conversion; roundTripMs includes JSONL/service overhead, not Electron IPC.',
+    conversion: 'Fresh composition after reset, same persistent model. Two workloads: cached-replay rotates fixed cases; distinct-context appends 第N回の会話。 to leftContext per iteration (N starts at 1). Internal caches remain enabled. elapsedMs is helper conversion; roundTripMs includes JSONL/service overhead, not Electron IPC.',
     trace: 'Real Node timer debounce and helper queue; stopToResultMs ends at service receipt, NOT React paint/VR display. Stale responses are recorded but excluded from current-result latency.',
     resources: 'Process CPU delta over warm conversions and trace phase, divided by wall time and logical CPU count. Lifetime peak working set includes startup; end private bytes are not peak RAM.',
     unmeasured: ['model load separate from first warm-up inference', 'Electron IPC alone', 'input stop to UI/VR paint', 'VRChat/SteamVR frame time', 'uncached disk cold start'],
@@ -64,7 +64,7 @@ async function convert(client, text, leftContext = '') {
     return { roundTripMs: performance.now() - begin, error: error.code ?? error.message };
   }
 }
-async function trace(client, debounceMs) {
+async function trace(client, debounceMs, trial) {
   await client.reset('benchmark');
   const begin = performance.now();
   const requests = [];
@@ -76,7 +76,7 @@ async function trace(client, debounceMs) {
     lastEdit = performance.now();
     const editTime = lastEdit;
     timer = setTimeout(() => {
-      requests.push(convert(client, event.text).then((result) => ({
+      requests.push(convert(client, event.text, `待機${debounceMs}、第${trial + 1}回の会話。`).then((result) => ({
         index, scheduledAtMs: event.atMs, stopToResultMs: performance.now() - editTime,
         currentAtReceipt: latest === index, ...result,
       })));
@@ -97,8 +97,10 @@ try {
     const record = { id: model.id, sha256: model.sha256, startups: [], cases: [], traces: [] };
     report.models.push(record);
     for (let trial = 0; trial < 3; trial++) {
+      let stderr = '';
       const client = new HelperProcessService({ executable: path.join(stage, 'ZenzaiHelper.exe'), cwd: stage,
-        args: [path.join(stage, 'Dictionary'), filename], requestTimeoutMs: 10000, restartDelaysMs: [] });
+        args: [path.join(stage, 'Dictionary'), filename], requestTimeoutMs: 10000, restartDelaysMs: [],
+        log: (chunk) => { stderr = (stderr + chunk).slice(-2 * 1024 * 1024); } });
       try {
         const start = performance.now();
         await client.start();
@@ -108,26 +110,29 @@ try {
         if (trial !== 2) continue;
         const before = resources(client.child.pid);
         const phaseStart = performance.now();
-        const batches = corpus.cases.map((item) => ({ item, measurements: [] }));
-        for (let i = 0; i < samples; i++) {
-          for (const batch of batches) {
-            await client.reset('benchmark');
-            batch.measurements.push(await convert(client, batch.item.text, batch.item.leftContext));
+        for (const workload of ['cached-replay', 'distinct-context']) {
+          const batches = corpus.cases.map((item) => ({ item, measurements: [] }));
+          for (let i = 0; i < samples; i++) {
+            for (const batch of batches) {
+              await client.reset('benchmark');
+              const context = batch.item.leftContext + (workload === 'distinct-context' ? `第${i + 1}回の会話。` : '');
+              batch.measurements.push(await convert(client, batch.item.text, context));
+            }
+            if ((i + 1) % 10 === 0) console.log(`${model.id}: ${workload} ${i + 1}/${samples}`);
           }
-          if ((i + 1) % 10 === 0) console.log(`${model.id}: rotating corpus ${i + 1}/${samples}`);
-        }
-        for (const { item, measurements } of batches) {
+          for (const { item, measurements } of batches) {
           const successful = measurements.filter((value) => !value.error && value.engine === 'zenzai');
-          record.cases.push({ id: item.id, measurements, neuralSuccesses: successful.length,
+          record.cases.push({ id: item.id, workload, measurements, neuralSuccesses: successful.length,
             helperMs: summary(successful.map((value) => value.helperMs)),
             roundTripMs: summary(successful.map((value) => value.roundTripMs)),
             failuresOrFallbacks: measurements.filter((value) => value.error || value.engine !== 'zenzai').length });
           console.log(`${model.id}: ${item.id} ${successful.length}/${samples}, p95=${record.cases.at(-1).roundTripMs.p95} ms`);
           await save();
+          }
         }
         for (const debounceMs of [50, 75, 100]) {
           const trials = [];
-          for (let i = 0; i < 3; i++) trials.push(await trace(client, debounceMs));
+          for (let i = 0; i < 3; i++) trials.push(await trace(client, debounceMs, i));
           const current = trials.flat().filter((value) => value.currentAtReceipt && !value.error && value.engine === 'zenzai');
           record.traces.push({ debounceMs, trials, stopToResultMs: summary(current.map((value) => value.stopToResultMs)),
             failuresOrFallbacks: trials.flat().filter((value) => value.error || value.engine !== 'zenzai').length });
@@ -138,7 +143,12 @@ try {
         const after = resources(client.child.pid);
         record.resources = { before, after, phaseWallMs, cpuDeltaMs: after.cpuMs - before.cpuMs,
           averageMachineCpuPercent: 100 * (after.cpuMs - before.cpuMs) / phaseWallMs / os.cpus().length };
-      } finally { await client.dispose(); }
+      } finally {
+        await client.dispose();
+        const diagnostics = stderr.split(/\r?\n/).filter((line) => line.startsWith('{"imeDiagnostics"'))
+          .map((line) => JSON.parse(line).imeDiagnostics);
+        record.startups[trial].diagnostics = { first: diagnostics[0], last: diagnostics.at(-1) };
+      }
     }
     record.readyMs = summary(record.startups.map((value) => value.readyMs));
     record.firstUserRoundTripMs = summary(record.startups.map((value) => value.firstUser.roundTripMs));
