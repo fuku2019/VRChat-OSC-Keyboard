@@ -1,0 +1,3878 @@
+{
+  "version": 1,
+  "startedAt": "2026-10-10T11:34:41.960Z",
+  "sourceRevision": "9951793fa8523c31ea2e92e49b4c80d970792117",
+  "sourceDirty": false,
+  "corpusSha256": "709404c1221c6ca5f20385f1c0495392c9bcd851de0a673fccc69b469f69da2d",
+  "stageManifestSha256": "de878db547e091be8ed1a99c7daccd87bfd3c85520bed66815e4d3a4687b9e6f",
+  "helperSha256": "bd7c0f34ad6949c7f0ecb3a28bc99473933a9dabb3bb2d5d3a769337d82dca70",
+  "host": {
+    "platform": "win32",
+    "release": "10.0.26200",
+    "architecture": "x64",
+    "cpu": "AMD Ryzen 7 5700X3D 8-Core Processor           ",
+    "logicalCpus": 16,
+    "totalMemoryBytes": 68640759808,
+    "node": "v24.14.0"
+  },
+  "runningVrProcesses": [],
+  "methodology": {
+    "samplesPerCase": 30,
+    "startupTrials": 3,
+    "traceTrialsPerDebounce": 3,
+    "requestTimeoutMs": 10000,
+    "productionRequestTimeoutMs": 2000,
+    "startup": "Process spawn to ready includes dictionary initialization, model load and warm-up; OS file cache is NOT flushed.",
+    "conversion": "Fresh composition after reset, same persistent model. Two workloads: cached-replay rotates fixed cases; distinct-context appends 第N回の会話。 to leftContext per iteration (N starts at 1). Internal caches remain enabled. elapsedMs is helper conversion; roundTripMs includes JSONL/service overhead, not Electron IPC.",
+    "trace": "Real Node timer debounce and helper queue; stopToResultMs ends at service receipt, NOT React paint/VR display. Stale responses are recorded but excluded from current-result latency.",
+    "resources": "Process CPU delta over warm conversions and trace phase, divided by wall time and logical CPU count. Lifetime peak working set includes startup; end private bytes are not peak RAM.",
+    "unmeasured": [
+      "model load separate from first warm-up inference",
+      "Electron IPC alone",
+      "input stop to UI/VR paint",
+      "VRChat/SteamVR frame time",
+      "uncached disk cold start"
+    ]
+  },
+  "models": [
+    {
+      "id": "zenz-v3.2-xsmall-q5-k-m",
+      "sha256": "00c64b3d318045a708d0cad5434faccab10f5481a49e6362864551fd0995fa58",
+      "startups": [
+        {
+          "readyMs": 75.72109999999998,
+          "firstUser": {
+            "roundTripMs": 14.867999999999938,
+            "helperMs": 13.8421,
+            "engine": "zenzai",
+            "reason": null,
+            "candidate": "日本語"
+          },
+          "diagnostics": {
+            "first": {
+              "successfulDecodes": 1,
+              "failedDecodes": 0,
+              "modelLoadAttempts": 1
+            },
+            "last": {
+              "successfulDecodes": 2,
+              "failedDecodes": 0,
+              "modelLoadAttempts": 1
+            }
+          }
+        },
+        {
+          "readyMs": 68.76530000000002,
+          "firstUser": {
+            "roundTripMs": 19.210799999999836,
+            "helperMs": 18.5473,
+            "engine": "zenzai",
+            "reason": null,
+            "candidate": "日本語"
+          },
+          "diagnostics": {
+            "first": {
+              "successfulDecodes": 1,
+              "failedDecodes": 0,
+              "modelLoadAttempts": 1
+            },
+            "last": {
+              "successfulDecodes": 2,
+              "failedDecodes": 0,
+              "modelLoadAttempts": 1
+            }
+          }
+        },
+        {
+          "readyMs": 71.92849999999999,
+          "firstUser": {
+            "roundTripMs": 19.653299999999945,
+            "helperMs": 18.8573,
+            "engine": "zenzai",
+            "reason": null,
+            "candidate": "日本語"
+          },
+          "diagnostics": {
+            "first": {
+              "successfulDecodes": 1,
+              "failedDecodes": 0,
+              "modelLoadAttempts": 1
+            },
+            "last": {
+              "successfulDecodes": 127,
+              "failedDecodes": 0,
+              "modelLoadAttempts": 1
+            }
+          }
+        }
+      ],
+      "cases": [
+        {
+          "id": "short",
+          "workload": "cached-replay",
+          "measurements": [
+            {
+              "roundTripMs": 1.0347999999999047,
+              "helperMs": 0.7299,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 0.8949000000002343,
+              "helperMs": 0.6511,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 0.8373999999998887,
+              "helperMs": 0.6053,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 0.8401000000003478,
+              "helperMs": 0.6277,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 1.0978000000000065,
+              "helperMs": 0.9021,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 1.0502999999998792,
+              "helperMs": 0.8593,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 1.1505999999999403,
+              "helperMs": 0.9121,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 0.8051000000000386,
+              "helperMs": 0.63,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 1.074200000000019,
+              "helperMs": 0.8775,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 0.8202000000001135,
+              "helperMs": 0.6121,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 0.7998999999999796,
+              "helperMs": 0.6092,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 0.8168000000000575,
+              "helperMs": 0.6122,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 1.0808999999999287,
+              "helperMs": 0.8848,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 1.0430999999998676,
+              "helperMs": 0.8528,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 0.8180999999999585,
+              "helperMs": 0.6198,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 0.8097000000002481,
+              "helperMs": 0.5956,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 0.8722000000002481,
+              "helperMs": 0.6301,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 0.7925000000000182,
+              "helperMs": 0.6071,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 0.7807999999999993,
+              "helperMs": 0.5993,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 0.8747000000003027,
+              "helperMs": 0.6594,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 0.8157999999998538,
+              "helperMs": 0.6098,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 0.8036999999999352,
+              "helperMs": 0.6073,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 0.8091999999996915,
+              "helperMs": 0.6168,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 0.7822000000001026,
+              "helperMs": 0.6043,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 0.7945999999997184,
+              "helperMs": 0.6155,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 0.8150999999998021,
+              "helperMs": 0.6225,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 0.8027000000001863,
+              "helperMs": 0.6219,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 0.7991000000001804,
+              "helperMs": 0.6192,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 0.8162000000002081,
+              "helperMs": 0.6184,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 0.8148999999998523,
+              "helperMs": 0.6098,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            }
+          ],
+          "neuralSuccesses": 30,
+          "helperMs": {
+            "count": 30,
+            "p50": 0.6192,
+            "p95": 0.9021,
+            "p99": 0.9121,
+            "max": 0.9121
+          },
+          "roundTripMs": {
+            "count": 30,
+            "p50": 0.8162000000002081,
+            "p95": 1.0978000000000065,
+            "p99": 1.1505999999999403,
+            "max": 1.1505999999999403
+          },
+          "failuresOrFallbacks": 0
+        },
+        {
+          "id": "medium",
+          "workload": "cached-replay",
+          "measurements": [
+            {
+              "roundTripMs": 68.94209999999975,
+              "helperMs": 68.6351,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 1.945600000000013,
+              "helperMs": 1.6783,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 1.7578000000003158,
+              "helperMs": 1.5321,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 1.7597999999998137,
+              "helperMs": 1.544,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 2.739100000000235,
+              "helperMs": 2.4853,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 2.6765999999997803,
+              "helperMs": 2.46,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 1.8992000000002918,
+              "helperMs": 1.6778,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 1.7690999999999804,
+              "helperMs": 1.576,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 1.7343000000000757,
+              "helperMs": 1.5381,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 1.727100000000064,
+              "helperMs": 1.5211,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 1.716200000000299,
+              "helperMs": 1.5174,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 1.795100000000275,
+              "helperMs": 1.5888,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 2.802799999999934,
+              "helperMs": 2.5566,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 2.574200000000019,
+              "helperMs": 2.3629,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 1.7390000000000327,
+              "helperMs": 1.5161,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 2.8371000000001914,
+              "helperMs": 2.5754,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 1.736199999999826,
+              "helperMs": 1.5241,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 1.737699999999677,
+              "helperMs": 1.5411,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 1.735700000000179,
+              "helperMs": 1.5214,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 1.735899999999674,
+              "helperMs": 1.5318,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 1.7665000000001783,
+              "helperMs": 1.5421,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 1.7132999999998901,
+              "helperMs": 1.5157,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 1.7649000000001251,
+              "helperMs": 1.5597,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 1.7346000000002277,
+              "helperMs": 1.5362,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 1.8200000000001637,
+              "helperMs": 1.5788,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 1.790100000000166,
+              "helperMs": 1.5663,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 1.72649999999976,
+              "helperMs": 1.5229,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 1.723700000000008,
+              "helperMs": 1.521,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 1.7156999999997424,
+              "helperMs": 1.5189,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 1.7789999999999964,
+              "helperMs": 1.5676,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            }
+          ],
+          "neuralSuccesses": 30,
+          "helperMs": {
+            "count": 30,
+            "p50": 1.5421,
+            "p95": 2.5754,
+            "p99": 68.6351,
+            "max": 68.6351
+          },
+          "roundTripMs": {
+            "count": 30,
+            "p50": 1.7597999999998137,
+            "p95": 2.8371000000001914,
+            "p99": 68.94209999999975,
+            "max": 68.94209999999975
+          },
+          "failuresOrFallbacks": 0
+        },
+        {
+          "id": "long",
+          "workload": "cached-replay",
+          "measurements": [
+            {
+              "roundTripMs": 131.56489999999985,
+              "helperMs": 131.2524,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 2.1217999999998938,
+              "helperMs": 1.8633,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 2.1952000000001135,
+              "helperMs": 1.9658,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 2.067399999999907,
+              "helperMs": 1.836,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 3.2640000000001237,
+              "helperMs": 3.0101,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 3.2150000000001455,
+              "helperMs": 2.9681,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 2.0716999999999643,
+              "helperMs": 1.8454,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 2.0484999999998763,
+              "helperMs": 1.8352,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 2.122100000000046,
+              "helperMs": 1.8557,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 2.0974999999998545,
+              "helperMs": 1.8417,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 2.0850000000000364,
+              "helperMs": 1.8442,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 2.04970000000003,
+              "helperMs": 1.8059,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 3.200199999999768,
+              "helperMs": 2.9413,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 2.179200000000037,
+              "helperMs": 1.9361,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 2.042500000000018,
+              "helperMs": 1.8127,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 3.246100000000297,
+              "helperMs": 2.9872,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 2.0452000000000226,
+              "helperMs": 1.8165,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 2.0781999999999243,
+              "helperMs": 1.8452,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 2.017899999999827,
+              "helperMs": 1.792,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 2.0172999999999774,
+              "helperMs": 1.8097,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 2.0713000000000648,
+              "helperMs": 1.8013,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 2.032000000000153,
+              "helperMs": 1.7908,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 2.0344999999997526,
+              "helperMs": 1.8112,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 2.0534999999999854,
+              "helperMs": 1.7964,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 2.2661000000002787,
+              "helperMs": 2.0035,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 2.028899999999794,
+              "helperMs": 1.809,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 2.168300000000272,
+              "helperMs": 1.9151,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 2.0228000000001884,
+              "helperMs": 1.8015,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 2.0052999999998065,
+              "helperMs": 1.7943,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 2.1799000000000888,
+              "helperMs": 1.9489,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            }
+          ],
+          "neuralSuccesses": 30,
+          "helperMs": {
+            "count": 30,
+            "p50": 1.8417,
+            "p95": 3.0101,
+            "p99": 131.2524,
+            "max": 131.2524
+          },
+          "roundTripMs": {
+            "count": 30,
+            "p50": 2.0716999999999643,
+            "p95": 3.2640000000001237,
+            "p99": 131.56489999999985,
+            "max": 131.56489999999985
+          },
+          "failuresOrFallbacks": 0
+        },
+        {
+          "id": "short",
+          "workload": "distinct-context",
+          "measurements": [
+            {
+              "roundTripMs": 8.652900000000045,
+              "helperMs": 8.437,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 9.139099999999871,
+              "helperMs": 8.8932,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 10.574699999999666,
+              "helperMs": 10.2679,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 8.24160000000029,
+              "helperMs": 8.0206,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 8.231699999999819,
+              "helperMs": 8.0081,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 8.216399999999794,
+              "helperMs": 7.9906,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 8.396600000000035,
+              "helperMs": 8.1821,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 8.374899999999798,
+              "helperMs": 8.144,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 9.145599999999831,
+              "helperMs": 8.886,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 8.698900000000322,
+              "helperMs": 8.4796,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 10.431899999999587,
+              "helperMs": 10.2132,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 8.504899999999907,
+              "helperMs": 8.2605,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 8.638500000000022,
+              "helperMs": 8.3197,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 8.487999999999374,
+              "helperMs": 8.2806,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 8.52639999999974,
+              "helperMs": 8.3186,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 8.424700000000485,
+              "helperMs": 8.2145,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 8.630299999999806,
+              "helperMs": 8.4154,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 10.037800000000061,
+              "helperMs": 9.843,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 8.65480000000025,
+              "helperMs": 8.4621,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 8.444500000000517,
+              "helperMs": 8.2497,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 9.050400000000081,
+              "helperMs": 8.8608,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 9.889900000000125,
+              "helperMs": 9.6823,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 8.422199999999975,
+              "helperMs": 8.2248,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 8.561800000000403,
+              "helperMs": 8.3487,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 8.4346000000005,
+              "helperMs": 8.2392,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 8.462599999999838,
+              "helperMs": 8.2473,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 8.55869999999959,
+              "helperMs": 8.3559,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 8.406500000000051,
+              "helperMs": 8.2258,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 8.54489999999987,
+              "helperMs": 8.3391,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 8.628600000000006,
+              "helperMs": 8.4252,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            }
+          ],
+          "neuralSuccesses": 30,
+          "helperMs": {
+            "count": 30,
+            "p50": 8.3197,
+            "p95": 10.2132,
+            "p99": 10.2679,
+            "max": 10.2679
+          },
+          "roundTripMs": {
+            "count": 30,
+            "p50": 8.54489999999987,
+            "p95": 10.431899999999587,
+            "p99": 10.574699999999666,
+            "max": 10.574699999999666
+          },
+          "failuresOrFallbacks": 0
+        },
+        {
+          "id": "medium",
+          "workload": "distinct-context",
+          "measurements": [
+            {
+              "roundTripMs": 38.671100000000024,
+              "helperMs": 38.4574,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 38.290100000000166,
+              "helperMs": 38.0601,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 43.75720000000001,
+              "helperMs": 43.5302,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 40.7518,
+              "helperMs": 40.5248,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 38.348399999999856,
+              "helperMs": 38.1167,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 37.88869999999997,
+              "helperMs": 37.6699,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 38.54489999999987,
+              "helperMs": 38.3172,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 38.229699999999866,
+              "helperMs": 37.8576,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 41.95600000000013,
+              "helperMs": 41.6443,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 38.519100000000435,
+              "helperMs": 38.3006,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 38.47359999999935,
+              "helperMs": 38.2605,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 42.31970000000001,
+              "helperMs": 42.0102,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 38.628999999999905,
+              "helperMs": 38.2903,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 40.54989999999998,
+              "helperMs": 40.3193,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 38.39140000000043,
+              "helperMs": 38.1686,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 39.40269999999964,
+              "helperMs": 39.1539,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 38.9376000000002,
+              "helperMs": 38.7164,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 41.91469999999936,
+              "helperMs": 41.7051,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 45.75200000000041,
+              "helperMs": 45.5223,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 42.19380000000001,
+              "helperMs": 41.9662,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 41.23959999999988,
+              "helperMs": 41.0139,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 39.765700000000834,
+              "helperMs": 39.5381,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 38.53089999999975,
+              "helperMs": 38.2981,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 42.42830000000049,
+              "helperMs": 42.1884,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 38.34720000000016,
+              "helperMs": 38.1396,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 41.5595000000003,
+              "helperMs": 41.3534,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 40.61859999999979,
+              "helperMs": 40.3995,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 38.71309999999994,
+              "helperMs": 38.5066,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 38.79359999999997,
+              "helperMs": 38.5571,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 38.65610000000015,
+              "helperMs": 38.4435,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            }
+          ],
+          "neuralSuccesses": 30,
+          "helperMs": {
+            "count": 30,
+            "p50": 38.5571,
+            "p95": 43.5302,
+            "p99": 45.5223,
+            "max": 45.5223
+          },
+          "roundTripMs": {
+            "count": 30,
+            "p50": 38.79359999999997,
+            "p95": 43.75720000000001,
+            "p99": 45.75200000000041,
+            "max": 45.75200000000041
+          },
+          "failuresOrFallbacks": 0
+        },
+        {
+          "id": "long",
+          "workload": "distinct-context",
+          "measurements": [
+            {
+              "roundTripMs": 117.60019999999986,
+              "helperMs": 117.2863,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとてもきれいな景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 115.60330000000022,
+              "helperMs": 115.2976,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとてもきれいな景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 124.83330000000024,
+              "helperMs": 124.527,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとてもきれいな景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 114.94689999999991,
+              "helperMs": 114.6975,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとてもきれいな景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 118.50579999999991,
+              "helperMs": 118.248,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとてもきれいな景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 118.88659999999982,
+              "helperMs": 118.6255,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとてもきれいな景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 115.08409999999913,
+              "helperMs": 114.8297,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとてもきれいな景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 125.02520000000004,
+              "helperMs": 124.6372,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとてもきれいな景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 121.0607,
+              "helperMs": 120.8267,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとてもきれいな景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 125.77459999999974,
+              "helperMs": 125.5315,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとてもきれいな景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 116.20169999999962,
+              "helperMs": 115.9495,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとてもきれいな景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 116.24459999999999,
+              "helperMs": 115.9496,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとてもきれいな景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 119.6921999999995,
+              "helperMs": 119.4389,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとてもきれいな景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 114.9387999999999,
+              "helperMs": 114.6863,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとてもきれいな景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 119.9402,
+              "helperMs": 119.6446,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとてもきれいな景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 125.43439999999919,
+              "helperMs": 125.1227,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとてもきれいな景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 115.59370000000035,
+              "helperMs": 115.3307,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとてもきれいな景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 119.35879999999997,
+              "helperMs": 119.1355,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとてもきれいな景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 122.44700000000012,
+              "helperMs": 122.1862,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとてもきれいな景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 120.32570000000032,
+              "helperMs": 120.0986,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとてもきれいな景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 135.10230000000047,
+              "helperMs": 134.7794,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとてもきれいな景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 121.79539999999997,
+              "helperMs": 121.5242,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとてもきれいな景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 118.17780000000039,
+              "helperMs": 117.9112,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとてもきれいな景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 115.45539999999983,
+              "helperMs": 115.211,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとてもきれいな景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 131.3094000000001,
+              "helperMs": 131.003,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとてもきれいな景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 127.34739999999965,
+              "helperMs": 126.7421,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとてもきれいな景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 128.10490000000027,
+              "helperMs": 127.8568,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとてもきれいな景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 121.20479999999952,
+              "helperMs": 120.9455,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとてもきれいな景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 123.46349999999984,
+              "helperMs": 123.2128,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとてもきれいな景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 132.76850000000104,
+              "helperMs": 132.5101,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとてもきれいな景色だったのでまたみんなで遊びに行きたいです"
+            }
+          ],
+          "neuralSuccesses": 30,
+          "helperMs": {
+            "count": 30,
+            "p50": 119.6446,
+            "p95": 132.5101,
+            "p99": 134.7794,
+            "max": 134.7794
+          },
+          "roundTripMs": {
+            "count": 30,
+            "p50": 119.9402,
+            "p95": 132.76850000000104,
+            "p99": 135.10230000000047,
+            "max": 135.10230000000047
+          },
+          "failuresOrFallbacks": 0
+        }
+      ],
+      "traces": [
+        {
+          "debounceMs": 50,
+          "trials": [
+            [
+              {
+                "index": 0,
+                "scheduledAtMs": 0,
+                "stopToResultMs": 58.76560000000063,
+                "currentAtReceipt": false,
+                "roundTripMs": 8.628399999999601,
+                "helperMs": 8.3151,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "気"
+              },
+              {
+                "index": 1,
+                "scheduledAtMs": 60,
+                "stopToResultMs": 55.38140000000021,
+                "currentAtReceipt": true,
+                "roundTripMs": 4.998999999999796,
+                "helperMs": 4.7542,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "きョ"
+              },
+              {
+                "index": 2,
+                "scheduledAtMs": 120,
+                "stopToResultMs": 58.760299999999916,
+                "currentAtReceipt": true,
+                "roundTripMs": 8.774100000000544,
+                "helperMs": 8.4933,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "今日"
+              },
+              {
+                "index": 3,
+                "scheduledAtMs": 380,
+                "stopToResultMs": 57.1903999999995,
+                "currentAtReceipt": false,
+                "roundTripMs": 6.184700000001612,
+                "helperMs": 5.9179,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "今日は"
+              },
+              {
+                "index": 4,
+                "scheduledAtMs": 440,
+                "stopToResultMs": 60.5684999999994,
+                "currentAtReceipt": true,
+                "roundTripMs": 8.173200000001088,
+                "helperMs": 7.9663,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "今日はい"
+              },
+              {
+                "index": 5,
+                "scheduledAtMs": 500,
+                "stopToResultMs": 58.13969999999972,
+                "currentAtReceipt": true,
+                "roundTripMs": 7.126699999998891,
+                "helperMs": 6.912,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "今日はいい"
+              },
+              {
+                "index": 6,
+                "scheduledAtMs": 560,
+                "stopToResultMs": 62.214200000000346,
+                "currentAtReceipt": true,
+                "roundTripMs": 12.210799999998926,
+                "helperMs": 11.9816,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "今日はいい天気"
+              }
+            ],
+            [
+              {
+                "index": 0,
+                "scheduledAtMs": 0,
+                "stopToResultMs": 57.92000000000007,
+                "currentAtReceipt": false,
+                "roundTripMs": 7.919400000000678,
+                "helperMs": 7.6682,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "気"
+              },
+              {
+                "index": 1,
+                "scheduledAtMs": 60,
+                "stopToResultMs": 54.381099999998696,
+                "currentAtReceipt": true,
+                "roundTripMs": 4.716899999999441,
+                "helperMs": 4.484,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "きョ"
+              },
+              {
+                "index": 2,
+                "scheduledAtMs": 120,
+                "stopToResultMs": 56.06109999999899,
+                "currentAtReceipt": true,
+                "roundTripMs": 6.053200000000288,
+                "helperMs": 5.7986,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "今日"
+              },
+              {
+                "index": 3,
+                "scheduledAtMs": 380,
+                "stopToResultMs": 56.90400000000045,
+                "currentAtReceipt": true,
+                "roundTripMs": 6.420900000000984,
+                "helperMs": 6.1462,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "今日は"
+              },
+              {
+                "index": 4,
+                "scheduledAtMs": 440,
+                "stopToResultMs": 56.37489999999889,
+                "currentAtReceipt": true,
+                "roundTripMs": 6.391799999999421,
+                "helperMs": 6.1644,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "今日はい"
+              },
+              {
+                "index": 5,
+                "scheduledAtMs": 500,
+                "stopToResultMs": 59.23530000000028,
+                "currentAtReceipt": true,
+                "roundTripMs": 9.236800000000585,
+                "helperMs": 9.0216,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "今日はいい"
+              },
+              {
+                "index": 6,
+                "scheduledAtMs": 560,
+                "stopToResultMs": 60.89500000000044,
+                "currentAtReceipt": true,
+                "roundTripMs": 10.889100000000326,
+                "helperMs": 10.6822,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "今日はいい天気"
+              }
+            ],
+            [
+              {
+                "index": 0,
+                "scheduledAtMs": 0,
+                "stopToResultMs": 57.14400000000023,
+                "currentAtReceipt": true,
+                "roundTripMs": 6.63839999999982,
+                "helperMs": 6.392,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "気"
+              },
+              {
+                "index": 1,
+                "scheduledAtMs": 60,
+                "stopToResultMs": 54.61649999999827,
+                "currentAtReceipt": true,
+                "roundTripMs": 4.607100000001083,
+                "helperMs": 4.373,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "きョ"
+              },
+              {
+                "index": 2,
+                "scheduledAtMs": 120,
+                "stopToResultMs": 55.57060000000092,
+                "currentAtReceipt": true,
+                "roundTripMs": 5.5724000000009255,
+                "helperMs": 5.3184,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "今日"
+              },
+              {
+                "index": 3,
+                "scheduledAtMs": 380,
+                "stopToResultMs": 56.14729999999872,
+                "currentAtReceipt": true,
+                "roundTripMs": 6.107700000000477,
+                "helperMs": 5.8707,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "今日は"
+              },
+              {
+                "index": 4,
+                "scheduledAtMs": 440,
+                "stopToResultMs": 58.42330000000038,
+                "currentAtReceipt": true,
+                "roundTripMs": 8.421900000001187,
+                "helperMs": 8.2047,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "今日はい"
+              },
+              {
+                "index": 5,
+                "scheduledAtMs": 500,
+                "stopToResultMs": 57.38090000000011,
+                "currentAtReceipt": true,
+                "roundTripMs": 6.877599999999802,
+                "helperMs": 6.6692,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "今日はいい"
+              },
+              {
+                "index": 6,
+                "scheduledAtMs": 560,
+                "stopToResultMs": 65.29219999999987,
+                "currentAtReceipt": true,
+                "roundTripMs": 15.289199999999255,
+                "helperMs": 15.0622,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "今日はいい天気"
+              }
+            ]
+          ],
+          "stopToResultMs": {
+            "count": 18,
+            "p50": 57.14400000000023,
+            "p95": 65.29219999999987,
+            "p99": 65.29219999999987,
+            "max": 65.29219999999987
+          },
+          "failuresOrFallbacks": 0
+        },
+        {
+          "debounceMs": 75,
+          "trials": [
+            [
+              {
+                "index": 2,
+                "scheduledAtMs": 120,
+                "stopToResultMs": 85.79439999999886,
+                "currentAtReceipt": true,
+                "roundTripMs": 10.303200000000288,
+                "helperMs": 9.9816,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "今日"
+              },
+              {
+                "index": 6,
+                "scheduledAtMs": 560,
+                "stopToResultMs": 91.33200000000033,
+                "currentAtReceipt": true,
+                "roundTripMs": 16.222100000000864,
+                "helperMs": 15.9568,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "今日はいい天気"
+              }
+            ],
+            [
+              {
+                "index": 2,
+                "scheduledAtMs": 120,
+                "stopToResultMs": 85.93870000000061,
+                "currentAtReceipt": true,
+                "roundTripMs": 10.605999999999767,
+                "helperMs": 10.3168,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "今日"
+              },
+              {
+                "index": 6,
+                "scheduledAtMs": 560,
+                "stopToResultMs": 89.3135000000002,
+                "currentAtReceipt": true,
+                "roundTripMs": 14.852100000000064,
+                "helperMs": 14.5378,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "今日はいい天気"
+              }
+            ],
+            [
+              {
+                "index": 2,
+                "scheduledAtMs": 120,
+                "stopToResultMs": 86.36230000000069,
+                "currentAtReceipt": true,
+                "roundTripMs": 10.518299999999726,
+                "helperMs": 10.2256,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "今日"
+              },
+              {
+                "index": 6,
+                "scheduledAtMs": 560,
+                "stopToResultMs": 91.15579999999864,
+                "currentAtReceipt": true,
+                "roundTripMs": 15.903000000000247,
+                "helperMs": 15.5728,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "今日はいい天気"
+              }
+            ]
+          ],
+          "stopToResultMs": {
+            "count": 6,
+            "p50": 86.36230000000069,
+            "p95": 91.33200000000033,
+            "p99": 91.33200000000033,
+            "max": 91.33200000000033
+          },
+          "failuresOrFallbacks": 0
+        },
+        {
+          "debounceMs": 100,
+          "trials": [
+            [
+              {
+                "index": 2,
+                "scheduledAtMs": 120,
+                "stopToResultMs": 110.76109999999971,
+                "currentAtReceipt": true,
+                "roundTripMs": 10.490799999999581,
+                "helperMs": 10.186,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "今日"
+              },
+              {
+                "index": 6,
+                "scheduledAtMs": 560,
+                "stopToResultMs": 115.75690000000031,
+                "currentAtReceipt": true,
+                "roundTripMs": 15.370500000000902,
+                "helperMs": 15.0082,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "今日はいい天気"
+              }
+            ],
+            [
+              {
+                "index": 2,
+                "scheduledAtMs": 120,
+                "stopToResultMs": 109.03830000000016,
+                "currentAtReceipt": true,
+                "roundTripMs": 9.039199999999255,
+                "helperMs": 8.7514,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "今日"
+              },
+              {
+                "index": 6,
+                "scheduledAtMs": 560,
+                "stopToResultMs": 114.5573000000004,
+                "currentAtReceipt": true,
+                "roundTripMs": 14.999899999998888,
+                "helperMs": 14.6719,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "今日はいい天気"
+              }
+            ],
+            [
+              {
+                "index": 2,
+                "scheduledAtMs": 120,
+                "stopToResultMs": 109.1150000000016,
+                "currentAtReceipt": true,
+                "roundTripMs": 9.11120000000119,
+                "helperMs": 8.8092,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "今日"
+              },
+              {
+                "index": 6,
+                "scheduledAtMs": 560,
+                "stopToResultMs": 115.76310000000012,
+                "currentAtReceipt": true,
+                "roundTripMs": 15.627700000000914,
+                "helperMs": 15.3058,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "今日はいい天気"
+              }
+            ]
+          ],
+          "stopToResultMs": {
+            "count": 6,
+            "p50": 110.76109999999971,
+            "p95": 115.76310000000012,
+            "p99": 115.76310000000012,
+            "max": 115.76310000000012
+          },
+          "failuresOrFallbacks": 0
+        }
+      ],
+      "resources": {
+        "before": {
+          "cpuMs": 937.5,
+          "workingSetBytes": 60035072,
+          "peakWorkingSetBytes": 60035072,
+          "privateBytes": 81563648
+        },
+        "after": {
+          "cpuMs": 64015.625,
+          "workingSetBytes": 72589312,
+          "peakWorkingSetBytes": 72589312,
+          "privateBytes": 92942336
+        },
+        "phaseWallMs": 11401.8961,
+        "cpuDeltaMs": 63078.125,
+        "averageMachineCpuPercent": 34.57655444255452
+      },
+      "readyMs": {
+        "count": 3,
+        "p50": 71.92849999999999,
+        "p95": 75.72109999999998,
+        "p99": 75.72109999999998,
+        "max": 75.72109999999998
+      },
+      "firstUserRoundTripMs": {
+        "count": 3,
+        "p50": 19.210799999999836,
+        "p95": 19.653299999999945,
+        "p99": 19.653299999999945,
+        "max": 19.653299999999945
+      }
+    },
+    {
+      "id": "zenz-v3.2-small-q5-k-m",
+      "sha256": "29c223d4c23327b80fd13ebb5ab2555057a46317997d5da391584ffbef0db673",
+      "startups": [
+        {
+          "readyMs": 92.89980000000105,
+          "firstUser": {
+            "roundTripMs": 25.184699999999793,
+            "helperMs": 24.5559,
+            "engine": "zenzai",
+            "reason": null,
+            "candidate": "日本語"
+          },
+          "diagnostics": {
+            "first": {
+              "successfulDecodes": 1,
+              "failedDecodes": 0,
+              "modelLoadAttempts": 1
+            },
+            "last": {
+              "successfulDecodes": 2,
+              "failedDecodes": 0,
+              "modelLoadAttempts": 1
+            }
+          }
+        },
+        {
+          "readyMs": 86.77739999999903,
+          "firstUser": {
+            "roundTripMs": 22.637800000000425,
+            "helperMs": 22.0093,
+            "engine": "zenzai",
+            "reason": null,
+            "candidate": "日本語"
+          },
+          "diagnostics": {
+            "first": {
+              "successfulDecodes": 1,
+              "failedDecodes": 0,
+              "modelLoadAttempts": 1
+            },
+            "last": {
+              "successfulDecodes": 2,
+              "failedDecodes": 0,
+              "modelLoadAttempts": 1
+            }
+          }
+        },
+        {
+          "readyMs": 90.35130000000026,
+          "firstUser": {
+            "roundTripMs": 23.570299999999406,
+            "helperMs": 23.0062,
+            "engine": "zenzai",
+            "reason": null,
+            "candidate": "日本語"
+          },
+          "diagnostics": {
+            "first": {
+              "successfulDecodes": 1,
+              "failedDecodes": 0,
+              "modelLoadAttempts": 1
+            },
+            "last": {
+              "successfulDecodes": 127,
+              "failedDecodes": 0,
+              "modelLoadAttempts": 1
+            }
+          }
+        }
+      ],
+      "cases": [
+        {
+          "id": "short",
+          "workload": "cached-replay",
+          "measurements": [
+            {
+              "roundTripMs": 1.1322999999993044,
+              "helperMs": 0.8712,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 1.357800000001589,
+              "helperMs": 1.0478,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 0.7906999999977415,
+              "helperMs": 0.6096,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 0.8088999999999942,
+              "helperMs": 0.619,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 1.095100000002276,
+              "helperMs": 0.8877,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 0.7857000000003609,
+              "helperMs": 0.6087,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 0.790499999999156,
+              "helperMs": 0.6092,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 0.7888000000020838,
+              "helperMs": 0.6086,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 1.0861000000004424,
+              "helperMs": 0.8692,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 1.0662999999985914,
+              "helperMs": 0.8776,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 1.1131999999997788,
+              "helperMs": 0.8834,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 1.0588999999999942,
+              "helperMs": 0.8832,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 1.0345000000015716,
+              "helperMs": 0.8641,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 1.0582000000031258,
+              "helperMs": 0.8764,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 0.7785000000003492,
+              "helperMs": 0.5982,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 0.8381000000008498,
+              "helperMs": 0.6456,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 1.0806999999986147,
+              "helperMs": 0.7669,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 0.7975000000005821,
+              "helperMs": 0.6324,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 0.7705999999998312,
+              "helperMs": 0.6092,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 0.7804999999971187,
+              "helperMs": 0.6148,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 0.94629999999961,
+              "helperMs": 0.751,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 1.0200000000004366,
+              "helperMs": 0.8435,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 0.8131000000030326,
+              "helperMs": 0.6485,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 0.7968000000000757,
+              "helperMs": 0.6154,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 0.804599999999482,
+              "helperMs": 0.621,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 0.8127999999996973,
+              "helperMs": 0.6065,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 0.7690000000002328,
+              "helperMs": 0.6182,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 0.7969000000011874,
+              "helperMs": 0.6316,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 0.8064000000013039,
+              "helperMs": 0.6398,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 0.8358000000007451,
+              "helperMs": 0.672,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            }
+          ],
+          "neuralSuccesses": 30,
+          "helperMs": {
+            "count": 30,
+            "p50": 0.6398,
+            "p95": 0.8877,
+            "p99": 1.0478,
+            "max": 1.0478
+          },
+          "roundTripMs": {
+            "count": 30,
+            "p50": 0.8127999999996973,
+            "p95": 1.1322999999993044,
+            "p99": 1.357800000001589,
+            "max": 1.357800000001589
+          },
+          "failuresOrFallbacks": 0
+        },
+        {
+          "id": "medium",
+          "workload": "cached-replay",
+          "measurements": [
+            {
+              "roundTripMs": 113.31420000000071,
+              "helperMs": 112.9853,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 2.942300000002433,
+              "helperMs": 2.6935,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 1.7275000000008731,
+              "helperMs": 1.5197,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 1.71389999999883,
+              "helperMs": 1.5162,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 2.707800000000134,
+              "helperMs": 2.4627,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 1.7473000000027241,
+              "helperMs": 1.552,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 1.758399999998801,
+              "helperMs": 1.5459,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 1.7124000000003434,
+              "helperMs": 1.5181,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 2.6661000000021886,
+              "helperMs": 2.4461,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 2.6820000000006985,
+              "helperMs": 2.4705,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 2.817399999999907,
+              "helperMs": 2.589,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 2.675699999999779,
+              "helperMs": 2.4662,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 2.6741999999976542,
+              "helperMs": 2.4554,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 1.7403999999987718,
+              "helperMs": 1.5423,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 1.7036999999982072,
+              "helperMs": 1.5008,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 2.717399999997724,
+              "helperMs": 2.4349,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 1.7118000000009488,
+              "helperMs": 1.5133,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 1.7184000000015658,
+              "helperMs": 1.5272,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 1.7907999999988533,
+              "helperMs": 1.6042,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 1.701600000000326,
+              "helperMs": 1.5118,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 1.689299999998184,
+              "helperMs": 1.5093,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 1.7134000000005472,
+              "helperMs": 1.5337,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 1.7311999999983527,
+              "helperMs": 1.5426,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 1.7134000000005472,
+              "helperMs": 1.5264,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 1.7190000000009604,
+              "helperMs": 1.543,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 1.7290000000029977,
+              "helperMs": 1.5516,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 1.726200000000972,
+              "helperMs": 1.5334,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 1.7109999999993306,
+              "helperMs": 1.5173,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 1.7849999999998545,
+              "helperMs": 1.6064,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 1.759699999998702,
+              "helperMs": 1.551,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            }
+          ],
+          "neuralSuccesses": 30,
+          "helperMs": {
+            "count": 30,
+            "p50": 1.543,
+            "p95": 2.6935,
+            "p99": 112.9853,
+            "max": 112.9853
+          },
+          "roundTripMs": {
+            "count": 30,
+            "p50": 1.7311999999983527,
+            "p95": 2.942300000002433,
+            "p99": 113.31420000000071,
+            "max": 113.31420000000071
+          },
+          "failuresOrFallbacks": 0
+        },
+        {
+          "id": "long",
+          "workload": "cached-replay",
+          "measurements": [
+            {
+              "roundTripMs": 262.77959999999985,
+              "helperMs": 262.3925,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 2.1969000000026426,
+              "helperMs": 1.9704,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 2.0406000000002678,
+              "helperMs": 1.8013,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 2.066999999999098,
+              "helperMs": 1.8426,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 2.168499999999767,
+              "helperMs": 1.929,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 2.565500000000611,
+              "helperMs": 2.3184,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 2.063900000001013,
+              "helperMs": 1.8362,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 3.209899999998015,
+              "helperMs": 2.9529,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 3.209899999998015,
+              "helperMs": 2.9703,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 3.198500000002241,
+              "helperMs": 2.9678,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 2.059000000001106,
+              "helperMs": 1.8049,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 3.2101000000002387,
+              "helperMs": 2.9769,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 3.2511999999987893,
+              "helperMs": 3.012,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 2.023700000001554,
+              "helperMs": 1.7951,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 2.0561000000016065,
+              "helperMs": 1.8352,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 2.743900000001304,
+              "helperMs": 2.5097,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 2.2498999999988882,
+              "helperMs": 1.9611,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 2.0086000000010245,
+              "helperMs": 1.7972,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 2.028599999997823,
+              "helperMs": 1.8326,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 2.0099999999983993,
+              "helperMs": 1.793,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 1.9742999999980384,
+              "helperMs": 1.7838,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 2.044399999998859,
+              "helperMs": 1.8341,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 2.0283999999992375,
+              "helperMs": 1.8083,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 2.0033999999977823,
+              "helperMs": 1.7881,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 2.0175000000017462,
+              "helperMs": 1.8059,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 2.0086999999984982,
+              "helperMs": 1.8012,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 2.0076000000008207,
+              "helperMs": 1.796,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 2.018499999998312,
+              "helperMs": 1.8226,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 2.292700000001787,
+              "helperMs": 2.0676,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 2.024199999999837,
+              "helperMs": 1.8071,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            }
+          ],
+          "neuralSuccesses": 30,
+          "helperMs": {
+            "count": 30,
+            "p50": 1.8341,
+            "p95": 3.012,
+            "p99": 262.3925,
+            "max": 262.3925
+          },
+          "roundTripMs": {
+            "count": 30,
+            "p50": 2.0561000000016065,
+            "p95": 3.2511999999987893,
+            "p99": 262.77959999999985,
+            "max": 262.77959999999985
+          },
+          "failuresOrFallbacks": 0
+        },
+        {
+          "id": "short",
+          "workload": "distinct-context",
+          "measurements": [
+            {
+              "roundTripMs": 25.08520000000135,
+              "helperMs": 24.8563,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 26.11030000000028,
+              "helperMs": 25.8292,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 25.8721000000005,
+              "helperMs": 25.5418,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 26.004300000000512,
+              "helperMs": 25.7547,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 24.561399999998685,
+              "helperMs": 24.3224,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 27.081200000000536,
+              "helperMs": 26.8401,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 23.814800000000105,
+              "helperMs": 23.5653,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 23.70600000000195,
+              "helperMs": 23.4571,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 25.02520000000004,
+              "helperMs": 24.7901,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 27.004800000002433,
+              "helperMs": 26.7486,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 32.245999999999185,
+              "helperMs": 31.9566,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 24.821300000003248,
+              "helperMs": 24.5633,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 24.78950000000259,
+              "helperMs": 24.5534,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 25.048500000000786,
+              "helperMs": 24.7891,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 29.07129999999961,
+              "helperMs": 28.8194,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 29.69420000000173,
+              "helperMs": 29.4355,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 26.33430000000226,
+              "helperMs": 26.0804,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 25.23949999999968,
+              "helperMs": 24.9874,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 29.003700000001118,
+              "helperMs": 28.7359,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 27.436099999998987,
+              "helperMs": 27.198,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 25.35269999999946,
+              "helperMs": 25.0102,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 24.994000000002416,
+              "helperMs": 24.7483,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 29.458200000000943,
+              "helperMs": 29.1923,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 28.50300000000061,
+              "helperMs": 28.0854,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 26.1179000000011,
+              "helperMs": 25.8736,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 25.945499999997992,
+              "helperMs": 25.7183,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 24.96429999999964,
+              "helperMs": 24.7194,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 28.742999999998574,
+              "helperMs": 28.4728,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 27.410100000000966,
+              "helperMs": 27.1471,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            },
+            {
+              "roundTripMs": 26.266599999999016,
+              "helperMs": 26.0518,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "日本語"
+            }
+          ],
+          "neuralSuccesses": 30,
+          "helperMs": {
+            "count": 30,
+            "p50": 25.7547,
+            "p95": 29.4355,
+            "p99": 31.9566,
+            "max": 31.9566
+          },
+          "roundTripMs": {
+            "count": 30,
+            "p50": 26.004300000000512,
+            "p95": 29.69420000000173,
+            "p99": 32.245999999999185,
+            "max": 32.245999999999185
+          },
+          "failuresOrFallbacks": 0
+        },
+        {
+          "id": "medium",
+          "workload": "distinct-context",
+          "measurements": [
+            {
+              "roundTripMs": 101.08820000000196,
+              "helperMs": 100.3303,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 89.21699999999691,
+              "helperMs": 88.928,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 91.54469999999856,
+              "helperMs": 91.2337,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 89.01770000000033,
+              "helperMs": 88.7441,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 88.67159999999785,
+              "helperMs": 88.3817,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 90.95500000000175,
+              "helperMs": 90.6526,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 88.62229999999909,
+              "helperMs": 88.3433,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 89.1951999999983,
+              "helperMs": 88.9242,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 88.6186000000016,
+              "helperMs": 88.3288,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 89.75530000000072,
+              "helperMs": 89.429,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 90.88540000000285,
+              "helperMs": 90.606,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 91.38010000000213,
+              "helperMs": 91.0143,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 102.44659999999931,
+              "helperMs": 102.1128,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 89.30110000000059,
+              "helperMs": 89.0087,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 93.92189999999755,
+              "helperMs": 93.6329,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 90.73859999999695,
+              "helperMs": 90.4476,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 96.29439999999886,
+              "helperMs": 96.025,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 89.77400000000125,
+              "helperMs": 89.5122,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 94.70889999999781,
+              "helperMs": 94.4048,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 93.30379999999786,
+              "helperMs": 93.0045,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 89.65020000000004,
+              "helperMs": 89.3878,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 91.8813999999984,
+              "helperMs": 91.5483,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 93.76020000000062,
+              "helperMs": 93.4635,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 101.45590000000084,
+              "helperMs": 101.1895,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 89.46949999999924,
+              "helperMs": 89.2032,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 91.08439999999973,
+              "helperMs": 90.8373,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 105.62149999999747,
+              "helperMs": 105.2922,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 90.38589999999749,
+              "helperMs": 90.1007,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 98.5772999999972,
+              "helperMs": 98.2916,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            },
+            {
+              "roundTripMs": 90.0038999999997,
+              "helperMs": 89.7447,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に遊びに行きます"
+            }
+          ],
+          "neuralSuccesses": 30,
+          "helperMs": {
+            "count": 30,
+            "p50": 90.606,
+            "p95": 102.1128,
+            "p99": 105.2922,
+            "max": 105.2922
+          },
+          "roundTripMs": {
+            "count": 30,
+            "p50": 90.88540000000285,
+            "p95": 102.44659999999931,
+            "p99": 105.62149999999747,
+            "max": 105.62149999999747
+          },
+          "failuresOrFallbacks": 0
+        },
+        {
+          "id": "long",
+          "workload": "distinct-context",
+          "measurements": [
+            {
+              "roundTripMs": 251.9514999999992,
+              "helperMs": 251.5845,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 253.81750000000102,
+              "helperMs": 253.4587,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 262.321100000001,
+              "helperMs": 261.9504,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 273.6242999999995,
+              "helperMs": 273.2526,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 267.3935999999994,
+              "helperMs": 267.0428,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 251.60130000000208,
+              "helperMs": 251.2717,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 250.14180000000124,
+              "helperMs": 249.8229,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 263.25800000000163,
+              "helperMs": 262.9333,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 246.99719999999797,
+              "helperMs": 246.645,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 256.4447,
+              "helperMs": 256.1114,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 251.52660000000105,
+              "helperMs": 251.197,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 249.88839999999982,
+              "helperMs": 249.5264,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 255.2622999999985,
+              "helperMs": 254.9146,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 295.16229999999996,
+              "helperMs": 294.7535,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 268.6365000000005,
+              "helperMs": 268.309,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 266.73249999999825,
+              "helperMs": 266.3886,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 261.9395000000004,
+              "helperMs": 261.5971,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 255.21910000000207,
+              "helperMs": 254.8845,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 264.8636000000006,
+              "helperMs": 264.5146,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 251.47429999999804,
+              "helperMs": 251.1307,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 263.4691000000021,
+              "helperMs": 263.1318,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 257.7379000000001,
+              "helperMs": 257.431,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 262.5070999999989,
+              "helperMs": 262.1588,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 269.64120000000185,
+              "helperMs": 269.2815,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 265.8863999999994,
+              "helperMs": 265.5252,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 254.53000000000247,
+              "helperMs": 254.2113,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 264.8400999999976,
+              "helperMs": 264.4904,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 254.28080000000045,
+              "helperMs": 253.9456,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 262.5229999999974,
+              "helperMs": 262.1846,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            },
+            {
+              "roundTripMs": 261.01820000000225,
+              "helperMs": 260.6601,
+              "engine": "zenzai",
+              "reason": null,
+              "candidate": "今日は友達と一緒に新しいワールドを探検しましたとても綺麗な景色だったのでまたみんなで遊びに行きたいです"
+            }
+          ],
+          "neuralSuccesses": 30,
+          "helperMs": {
+            "count": 30,
+            "p50": 260.6601,
+            "p95": 273.2526,
+            "p99": 294.7535,
+            "max": 294.7535
+          },
+          "roundTripMs": {
+            "count": 30,
+            "p50": 261.01820000000225,
+            "p95": 273.6242999999995,
+            "p99": 295.16229999999996,
+            "max": 295.16229999999996
+          },
+          "failuresOrFallbacks": 0
+        }
+      ],
+      "traces": [
+        {
+          "debounceMs": 50,
+          "trials": [
+            [
+              {
+                "index": 0,
+                "scheduledAtMs": 0,
+                "stopToResultMs": 76.8682000000008,
+                "currentAtReceipt": false,
+                "roundTripMs": 26.86909999999989,
+                "helperMs": 26.5611,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "来"
+              },
+              {
+                "index": 1,
+                "scheduledAtMs": 60,
+                "stopToResultMs": 62.72110000000248,
+                "currentAtReceipt": false,
+                "roundTripMs": 11.201700000001438,
+                "helperMs": 10.8864,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "虚"
+              },
+              {
+                "index": 2,
+                "scheduledAtMs": 120,
+                "stopToResultMs": 61.46310000000085,
+                "currentAtReceipt": true,
+                "roundTripMs": 10.94720000000234,
+                "helperMs": 10.6619,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "今日"
+              },
+              {
+                "index": 3,
+                "scheduledAtMs": 380,
+                "stopToResultMs": 62.414600000000064,
+                "currentAtReceipt": false,
+                "roundTripMs": 11.997699999999895,
+                "helperMs": 11.6822,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "今日は"
+              },
+              {
+                "index": 4,
+                "scheduledAtMs": 440,
+                "stopToResultMs": 63.09059999999954,
+                "currentAtReceipt": false,
+                "roundTripMs": 13.091100000001461,
+                "helperMs": 12.8405,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "今日はい"
+              },
+              {
+                "index": 5,
+                "scheduledAtMs": 500,
+                "stopToResultMs": 65.59310000000187,
+                "currentAtReceipt": false,
+                "roundTripMs": 14.093400000001566,
+                "helperMs": 13.852,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "今日はいい"
+              },
+              {
+                "index": 6,
+                "scheduledAtMs": 560,
+                "stopToResultMs": 79.38390000000072,
+                "currentAtReceipt": true,
+                "roundTripMs": 29.365200000000186,
+                "helperMs": 29.1034,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "今日はいい天気"
+              }
+            ],
+            [
+              {
+                "index": 0,
+                "scheduledAtMs": 0,
+                "stopToResultMs": 71.51770000000033,
+                "currentAtReceipt": false,
+                "roundTripMs": 21.506900000000314,
+                "helperMs": 21.2141,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "来"
+              },
+              {
+                "index": 1,
+                "scheduledAtMs": 60,
+                "stopToResultMs": 59.36709999999948,
+                "currentAtReceipt": false,
+                "roundTripMs": 9.359299999996438,
+                "helperMs": 9.0883,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "虚"
+              },
+              {
+                "index": 2,
+                "scheduledAtMs": 120,
+                "stopToResultMs": 61.67629999999917,
+                "currentAtReceipt": true,
+                "roundTripMs": 9.933700000001409,
+                "helperMs": 9.6699,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "今日"
+              },
+              {
+                "index": 3,
+                "scheduledAtMs": 380,
+                "stopToResultMs": 63.400399999998626,
+                "currentAtReceipt": false,
+                "roundTripMs": 13.391899999998714,
+                "helperMs": 13.1364,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "今日は"
+              },
+              {
+                "index": 4,
+                "scheduledAtMs": 440,
+                "stopToResultMs": 65.85239999999976,
+                "currentAtReceipt": false,
+                "roundTripMs": 13.35570000000007,
+                "helperMs": 13.1159,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "今日はい"
+              },
+              {
+                "index": 5,
+                "scheduledAtMs": 500,
+                "stopToResultMs": 64.20830000000205,
+                "currentAtReceipt": false,
+                "roundTripMs": 14.205500000000029,
+                "helperMs": 13.9788,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "今日はいい"
+              },
+              {
+                "index": 6,
+                "scheduledAtMs": 560,
+                "stopToResultMs": 71.93419999999969,
+                "currentAtReceipt": true,
+                "roundTripMs": 21.933499999999185,
+                "helperMs": 21.669,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "今日はいい天気"
+              }
+            ],
+            [
+              {
+                "index": 0,
+                "scheduledAtMs": 0,
+                "stopToResultMs": 67.35329999999885,
+                "currentAtReceipt": false,
+                "roundTripMs": 17.33810000000085,
+                "helperMs": 17.0713,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "き"
+              },
+              {
+                "index": 1,
+                "scheduledAtMs": 60,
+                "stopToResultMs": 59.42610000000059,
+                "currentAtReceipt": true,
+                "roundTripMs": 9.4262000000017,
+                "helperMs": 9.1622,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "虚"
+              },
+              {
+                "index": 2,
+                "scheduledAtMs": 120,
+                "stopToResultMs": 61.22080000000278,
+                "currentAtReceipt": true,
+                "roundTripMs": 11.218899999999849,
+                "helperMs": 10.9496,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "今日"
+              },
+              {
+                "index": 3,
+                "scheduledAtMs": 380,
+                "stopToResultMs": 62.62799999999697,
+                "currentAtReceipt": false,
+                "roundTripMs": 12.626900000002934,
+                "helperMs": 12.3191,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "今日は"
+              },
+              {
+                "index": 4,
+                "scheduledAtMs": 440,
+                "stopToResultMs": 63.788799999998446,
+                "currentAtReceipt": false,
+                "roundTripMs": 12.82589999999982,
+                "helperMs": 12.5901,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "今日はい"
+              },
+              {
+                "index": 5,
+                "scheduledAtMs": 500,
+                "stopToResultMs": 66.22130000000107,
+                "currentAtReceipt": false,
+                "roundTripMs": 15.675600000002305,
+                "helperMs": 15.4278,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "今日はいい"
+              },
+              {
+                "index": 6,
+                "scheduledAtMs": 560,
+                "stopToResultMs": 71.46559999999954,
+                "currentAtReceipt": true,
+                "roundTripMs": 21.966700000000856,
+                "helperMs": 21.7319,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "今日はいい天気"
+              }
+            ]
+          ],
+          "stopToResultMs": {
+            "count": 7,
+            "p50": 61.67629999999917,
+            "p95": 79.38390000000072,
+            "p99": 79.38390000000072,
+            "max": 79.38390000000072
+          },
+          "failuresOrFallbacks": 0
+        },
+        {
+          "debounceMs": 75,
+          "trials": [
+            [
+              {
+                "index": 2,
+                "scheduledAtMs": 120,
+                "stopToResultMs": 102.74179999999978,
+                "currentAtReceipt": true,
+                "roundTripMs": 27.687599999997474,
+                "helperMs": 27.3447,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "今日"
+              },
+              {
+                "index": 6,
+                "scheduledAtMs": 560,
+                "stopToResultMs": 106.53980000000229,
+                "currentAtReceipt": true,
+                "roundTripMs": 31.52400000000125,
+                "helperMs": 31.238,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "今日はいい天気"
+              }
+            ],
+            [
+              {
+                "index": 2,
+                "scheduledAtMs": 120,
+                "stopToResultMs": 97.90229999999792,
+                "currentAtReceipt": true,
+                "roundTripMs": 22.58879999999772,
+                "helperMs": 22.2774,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "今日"
+              },
+              {
+                "index": 6,
+                "scheduledAtMs": 560,
+                "stopToResultMs": 104.3161,
+                "currentAtReceipt": true,
+                "roundTripMs": 28.923099999999977,
+                "helperMs": 28.612,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "今日はいい天気"
+              }
+            ],
+            [
+              {
+                "index": 2,
+                "scheduledAtMs": 120,
+                "stopToResultMs": 97.3279999999977,
+                "currentAtReceipt": true,
+                "roundTripMs": 22.324000000000524,
+                "helperMs": 22.0163,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "今日"
+              },
+              {
+                "index": 6,
+                "scheduledAtMs": 560,
+                "stopToResultMs": 106.8760000000002,
+                "currentAtReceipt": true,
+                "roundTripMs": 31.63890000000174,
+                "helperMs": 31.3209,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "今日はいい天気"
+              }
+            ]
+          ],
+          "stopToResultMs": {
+            "count": 6,
+            "p50": 102.74179999999978,
+            "p95": 106.8760000000002,
+            "p99": 106.8760000000002,
+            "max": 106.8760000000002
+          },
+          "failuresOrFallbacks": 0
+        },
+        {
+          "debounceMs": 100,
+          "trials": [
+            [
+              {
+                "index": 2,
+                "scheduledAtMs": 120,
+                "stopToResultMs": 127.46410000000105,
+                "currentAtReceipt": true,
+                "roundTripMs": 27.428400000000693,
+                "helperMs": 27.1109,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "今日"
+              },
+              {
+                "index": 6,
+                "scheduledAtMs": 560,
+                "stopToResultMs": 133.06800000000294,
+                "currentAtReceipt": true,
+                "roundTripMs": 32.732300000003306,
+                "helperMs": 32.4162,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "今日はいい天気"
+              }
+            ],
+            [
+              {
+                "index": 2,
+                "scheduledAtMs": 120,
+                "stopToResultMs": 122.36260000000038,
+                "currentAtReceipt": true,
+                "roundTripMs": 22.37430000000313,
+                "helperMs": 22.0613,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "今日"
+              },
+              {
+                "index": 6,
+                "scheduledAtMs": 560,
+                "stopToResultMs": 129.21630000000005,
+                "currentAtReceipt": true,
+                "roundTripMs": 28.715700000000652,
+                "helperMs": 28.4208,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "今日はいい天気"
+              }
+            ],
+            [
+              {
+                "index": 2,
+                "scheduledAtMs": 120,
+                "stopToResultMs": 127.17160000000149,
+                "currentAtReceipt": true,
+                "roundTripMs": 27.114399999998568,
+                "helperMs": 26.7573,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "今日"
+              },
+              {
+                "index": 6,
+                "scheduledAtMs": 560,
+                "stopToResultMs": 133.3683000000019,
+                "currentAtReceipt": true,
+                "roundTripMs": 32.868799999996554,
+                "helperMs": 32.523,
+                "engine": "zenzai",
+                "reason": null,
+                "candidate": "今日はいい天気"
+              }
+            ]
+          ],
+          "stopToResultMs": {
+            "count": 6,
+            "p50": 127.46410000000105,
+            "p95": 133.3683000000019,
+            "p99": 133.3683000000019,
+            "max": 133.3683000000019
+          },
+          "failuresOrFallbacks": 0
+        }
+      ],
+      "resources": {
+        "before": {
+          "cpuMs": 1125,
+          "workingSetBytes": 123748352,
+          "peakWorkingSetBytes": 123748352,
+          "privateBytes": 94683136
+        },
+        "after": {
+          "cpuMs": 117968.75,
+          "workingSetBytes": 136941568,
+          "peakWorkingSetBytes": 136941568,
+          "privateBytes": 106446848
+        },
+        "phaseWallMs": 18050.478099999997,
+        "cpuDeltaMs": 116843.75,
+        "averageMachineCpuPercent": 40.457290574480695
+      },
+      "readyMs": {
+        "count": 3,
+        "p50": 90.35130000000026,
+        "p95": 92.89980000000105,
+        "p99": 92.89980000000105,
+        "max": 92.89980000000105
+      },
+      "firstUserRoundTripMs": {
+        "count": 3,
+        "p50": 23.570299999999406,
+        "p95": 25.184699999999793,
+        "p99": 25.184699999999793,
+        "max": 25.184699999999793
+      }
+    }
+  ],
+  "completedAt": "2026-10-10T11:35:16.661Z"
+}

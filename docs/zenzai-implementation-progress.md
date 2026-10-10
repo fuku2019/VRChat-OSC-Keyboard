@@ -263,3 +263,26 @@ machine's runtime availability. Actual NSIS installation/application GUI startup
 Swift-uninstalled clean Windows and VR/OSC display acceptance have not been
 performed. The release gate rejects the current stage for its outstanding
 checks. P8 hardware/performance work is still open; see docs/distribution.md.
+
+## P8: helper performance baseline recorded; hardware Gate B open
+
+Added a versioned kana corpus and `npm run ime:benchmark` for both pinned v3.2
+Q5_K_M models. It records three spawn-to-ready/first-user trials, 30 samples per
+length for memoized replay and distinct-context workloads, real service-queue
+traces at 50/75/100 ms debounce, CPU deltas, RAM snapshots, hashes and diagnostics.
+Results include all failures/fallbacks/stale replies; successful current-result
+percentiles are labelled separately. No production debounce/thread changes.
+
+The retained run used a clean benchmark source tree (9951793), the verified P7
+helper stage, and no concurrent tests/builds. Distinct-context long round-trip
+p95: xsmall 132.77 ms, small 273.62 ms. With 75 ms debounce, estimated totals
+before renderer work are 208/349 ms; actual UI latency is unmeasured. Both models
+completed all requests without fallback, with one model load and zero decode
+failures. Memoized results are explicitly separated from inference workloads.
+Tests (488 +31) and typecheck pass. Production files/native code were unchanged.
+
+See validation/2026-10-10-ime-performance.md and the adjacent raw JSON for
+methodology, distributions and the acceptance matrix. SteamVR/VRChat were not
+running at measurement start. Model-load/first-inference separation, Electron
+IPC/UI paint, installed controller/OSC display, concurrent VR frame time and P7
+distribution checks remain open. P8/Gate B is not accepted; P9 must wait.
