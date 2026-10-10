@@ -180,6 +180,8 @@ export class HelperProcessService {
         sessionId: message.sessionId, revision: message.revision, engine: message.engine,
         candidates: message.candidates, elapsedMs: message.elapsedMs,
       });
+      this.currentStatus = { state: 'ready', engine: message.engine,
+        reason: typeof message.reason === 'string' ? message.reason : undefined };
     } else { throw new ImeEngineError('unexpected-response'); }
     clearTimeout(entry.timer);
     this.active = undefined;

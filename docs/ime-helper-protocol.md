@@ -1,8 +1,9 @@
 # IME helper JSON Lines v1
 
-Status: Electron transport and fake-helper contract tests implemented. The Swift
-helper and real model integration have not yet been validated. This protocol is
-not connected to the production IME until Windows CPU inference passes Gate A.
+Status: Electron transport, Windows release Swift helper and real-model contract
+tests pass. See [helper build instructions](../helper/README.md) and
+[validation results](validation/2026-10-10-helper-smoke.json). Production IME
+integration is the next step; the existing application path is still unchanged.
 
 ## Transport
 
@@ -95,5 +96,7 @@ transport failure; the transport does not silently swallow cancellation/errors.
 Run `npm run test:ime-helper` for dependency-free Node tests. The normal
 `npm run test:run` also runs these tests after Vitest. The fixture exercises a
 real child pipe with Japanese UTF-8 and CRLF; it performs no model inference.
-Real Swift-helper integration, resource staging, clean Windows and VR checks
-remain separate gates.
+Real Swift-helper integration runs with `scripts/test-ime-helper-integration.ps1`;
+stage checks run with `node scripts/test-ime-stage.mjs`. The helper reports
+decode/load diagnostics only to stderr. Clean Windows and VR checks remain
+separate gates.

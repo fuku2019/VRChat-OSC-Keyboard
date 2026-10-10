@@ -1,0 +1,62 @@
+diff --git a/Sources/KanaKanjiConverterModule/ConversionAlgorithms/Zenzai/Zenz/Zenz.swift b/Sources/KanaKanjiConverterModule/ConversionAlgorithms/Zenzai/Zenz/Zenz.swift
+index 571bd65..6a560fc 100644
+--- a/Sources/KanaKanjiConverterModule/ConversionAlgorithms/Zenzai/Zenz/Zenz.swift
++++ b/Sources/KanaKanjiConverterModule/ConversionAlgorithms/Zenzai/Zenz/Zenz.swift
+@@ -33,6 +33,9 @@ private final class SharedZenzCache: @unchecked Sendable {
+ package final class Zenz {
+     package var resourceURL: URL
+     private var zenzContext: ZenzContext?
++    package var inferenceDiagnostics: (successfulDecodes: Int, failedDecodes: Int) {
++        (self.zenzContext?.successfulDecodeCount ?? 0, self.zenzContext?.failedDecodeCount ?? 0)
++    }
+     private let inferenceLock = NSLock()
+ 
+     package static func shared(resourceURL: URL) throws -> Zenz {
+diff --git a/Sources/KanaKanjiConverterModule/ConversionAlgorithms/Zenzai/Zenz/ZenzContext.swift b/Sources/KanaKanjiConverterModule/ConversionAlgorithms/Zenzai/Zenz/ZenzContext.swift
+index f17a93e..78bf235 100644
+--- a/Sources/KanaKanjiConverterModule/ConversionAlgorithms/Zenzai/Zenz/ZenzContext.swift
++++ b/Sources/KanaKanjiConverterModule/ConversionAlgorithms/Zenzai/Zenz/ZenzContext.swift
+@@ -343,6 +343,8 @@ final class ZenzContext {
+     private let sharedModel: SharedZenzModel
+     private var context: OpaquePointer
+     private var batch: llama_batch
++    private(set) var successfulDecodeCount = 0
++    private(set) var failedDecodeCount = 0
+     private var prevInputBySeq: [llama_seq_id: [llama_token]] = [:]
+     private var prevPromptBySeq: [llama_seq_id: String] = [:]
+ 
+@@ -510,9 +512,11 @@ final class ZenzContext {
+         }
+         // 評価
+         if llama_decode(context, self.batch) != 0 {
++            self.failedDecodeCount += 1
+             debug("llama_decode() failed")
+             return nil
+         }
++        self.successfulDecodeCount += 1
+         // update cached input for next call (for KV cache management)
+         self.prevInputBySeq[seqId] = tokens
+         return llama_get_logits(context)
+diff --git a/Sources/KanaKanjiConverterModule/ConverterAPI/KanaKanjiConverter.swift b/Sources/KanaKanjiConverterModule/ConverterAPI/KanaKanjiConverter.swift
+index d039137..4c8163e 100644
+--- a/Sources/KanaKanjiConverterModule/ConverterAPI/KanaKanjiConverter.swift
++++ b/Sources/KanaKanjiConverterModule/ConverterAPI/KanaKanjiConverter.swift
+@@ -71,6 +71,10 @@ public final class KanaKanjiConverter {
+     var zenzaiMemoizationCache = ZenzaiMemoizationCache()
+     private var zenzaiPersonalization: (mode: ConvertRequestOptions.ZenzaiMode.PersonalizationMode, base: EfficientNGram, personal: EfficientNGram)?
+     public private(set) var zenzStatus: String = ""
++    public private(set) var zenzaiModelLoadAttempts = 0
++    public var zenzaiDiagnostics: (successfulDecodes: Int, failedDecodes: Int) {
++        self.zenz?.inferenceDiagnostics ?? (0, 0)
++    }
+     private var dicdataStoreState: DicdataStoreState
+ 
+     private var currentSessionState: ConversionSessionState {
+@@ -264,6 +268,7 @@ public final class KanaKanjiConverter {
+             return model
+         } else {
+             do {
++                self.zenzaiModelLoadAttempts += 1
+                 self.zenz = try Zenz.shared(resourceURL: modelURL)
+                 self.purgeZenzaiMemoizationCache()
+                 self.sessions = self.sessions.mapValues { state in

@@ -180,6 +180,20 @@ test('helper errors terminate request and allow next conversion', async (t) => {
   assert.equal((await next).revision, 2);
 });
 
+test('status follows per-request fallback and recovery', async (t) => {
+  const s = setup(t);
+  await s.client.start();
+  const fallback = s.client.convert(request());
+  reply(s.child, 0, { engine: 'azookey', reason: 'inference-failed' });
+  await fallback;
+  assert.deepEqual(s.client.status, { state: 'ready', engine: 'azookey', reason: 'inference-failed' });
+  const recovery = s.client.convert(request(2));
+  reply(s.child);
+  await recovery;
+  assert.equal(s.client.status.engine, 'zenzai');
+  assert.equal(s.client.status.reason, undefined);
+});
+
 for (const mode of ['exit', 'timeout', 'write']) {
   test(mode + ' terminates active and waiting requests', async (t) => {
     const s = setup(t, { requestTimeoutMs: 15, writeError: mode === 'write' });

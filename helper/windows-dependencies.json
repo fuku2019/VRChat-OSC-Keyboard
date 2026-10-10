@@ -1,0 +1,17 @@
+{
+  "swiftVersion": "6.1.3",
+  "azooKeyRevision": "d59a28e4c7ca049aef04f29a91eae9677a7753f2",
+  "dictionaryRevision": "4d418525b090cf49c219819d05a7e3cc2a4346eb",
+  "llama": {
+    "tag": "b4846",
+    "url": "https://github.com/fkunn1326/llama.cpp/releases/download/b4846/llama-b4846-bin-win-avx-x64.zip",
+    "sha256": "af34e4dfc7154df650ed705421f26b3a56c685f2e35abfdd6df0cc0cb5c4b259",
+    "files": {
+      "llama.dll": "dbc31e52b278254cf5a711a5b50f269c183b08d2cdbf2179dc505c211618f090",
+      "llama.lib": "4103fff7c99f156220819d112275a2856483e1e7955e1e1b904b3e52fc7d55a1",
+      "ggml.dll": "ce5eba1928a916df52c18f0da3b992207b8afc3baf6b016b553e1efe77e63d63",
+      "ggml-base.dll": "3e99bb368fc9459426d3fc175d89d88b744ef2ac23735ae9fe060545fbe8e026",
+      "ggml-cpu.dll": "bb48fc2b46d934f5af9d16da8f0a0758c26f752a40018a9b3d6859e310e1d2a8"
+    }
+  }
+}
