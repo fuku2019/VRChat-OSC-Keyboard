@@ -24,6 +24,7 @@
  * @property {{minCutoff: number, beta: number}|null} pointerFilter  1e filter tuning / 1€フィルタの調整値
  * @property {number|null} cursorEpsilon  Cursor send threshold / カーソル送信しきい値
  * @property {boolean} keepIdleCursors  Keep cursors for idle controllers / 休止中コントローラーのカーソルを残す
+ * @property {string|null} imeModel Main-process-only manual GGUF path
  */
 
 /** @returns {LaunchArgs} */
@@ -36,6 +37,7 @@ function createDefaults() {
     pointerFilter: null,
     cursorEpsilon: null,
     keepIdleCursors: false,
+    imeModel: null,
   };
 }
 
@@ -100,6 +102,11 @@ export function parseLaunchArgs(argv) {
     };
 
     switch (name) {
+      case 'ime-model': {
+        const value = takeValue();
+        if (value?.trim()) args.imeModel = value;
+        break;
+      }
       case 'debug':
         args.debug = true;
         break;

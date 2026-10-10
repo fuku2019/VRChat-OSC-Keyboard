@@ -4,6 +4,7 @@
  */
 
 import { app, BrowserWindow } from 'electron';
+import { APP_ID, APP_NAME } from './appIdentity.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
@@ -65,6 +66,9 @@ const __dirname = path.dirname(__filename);
 const packageJsonPath = path.join(__dirname, '../package.json');
 const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
 const APP_VERSION = packageJson.version;
+app.setName(APP_NAME);
+app.setPath('userData', path.join(app.getPath('appData'), APP_NAME));
+if (process.platform === 'win32') app.setAppUserModelId(APP_ID);
 
 // Parse launch arguments first: everything below may depend on them.
 // 以降の処理が参照しうるので、起動引数を最初に解析する。
@@ -99,7 +103,7 @@ if (launchArgs.keepIdleCursors) {
   setFilterIdleControllers(false);
 }
 
-let APP_TITLE = `VRChat OSC Keyboard v${APP_VERSION}`;
+let APP_TITLE = `${APP_NAME} v${APP_VERSION}`;
 if (debugConfig.enableDebugMode) {
   APP_TITLE = `[DEBUG] ${APP_TITLE}`;
 }
@@ -398,7 +402,7 @@ if (!gotTheLock) {
     japaneseIme = configureJapaneseConversionService(createAppEngine({
       appDir: path.join(__dirname, '..'), resourcesPath: process.resourcesPath,
       isPackaged: app.isPackaged, helperDir: process.env.VRC_IME_HELPER_DIR,
-      modelPath: process.env.VRC_IME_MODEL,
+      modelPath: launchArgs.imeModel ?? process.env.VRC_IME_MODEL,
       log: (message) => console.log('[IME helper]', message),
     }));
     startBridge();

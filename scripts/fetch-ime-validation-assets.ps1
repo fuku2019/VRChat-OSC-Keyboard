@@ -1,4 +1,4 @@
-param([switch]$IncludeSmall)
+param([switch]$IncludeSmall, [switch]$SkipModels)
 $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path $PSScriptRoot -Parent
 $tools = Join-Path $repoRoot '.tools'
@@ -39,6 +39,7 @@ $changes = & git -C $dictionary status --porcelain
 if ($LASTEXITCODE -ne 0 -or $changes) { throw 'Validation dictionary must have a clean working tree' }
 
 $manifest = Get-Content -LiteralPath (Join-Path $repoRoot 'models/manifest.json') -Raw | ConvertFrom-Json
+if ($SkipModels) { return }
 foreach ($model in $manifest.models) {
     if (!$IncludeSmall -and $model.id -ne 'zenz-v3.2-xsmall-q5-k-m') { continue }
     $url = "https://huggingface.co/$($model.repository)/resolve/$($model.revision)/$($model.filename)"

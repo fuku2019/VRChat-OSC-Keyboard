@@ -1,12 +1,22 @@
 import assert from 'node:assert/strict';
 import path from 'node:path';
+import { readFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { createAppEngine } from '../electron/services/ime/createAppEngine.js';
 import { JapaneseConversionService } from '../electron/services/JapaneseConversionService.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const helperDir = path.resolve(process.argv[2] ?? path.join(root, '.tools/ime-helper-stage'));
-const modelPath = path.resolve(process.argv[3] ?? path.join(root, '.tools/models/zenz-v3.2-xsmall-q5-k-m/ggml-model-Q5_K_M.gguf'));
+const dictionaryOnly = process.argv.includes('--dictionary-only');
+const modelPath = path.resolve((process.argv[3] && !process.argv[3].startsWith('--') ? process.argv[3] : undefined) ?? path.join(root, '.tools/models/zenz-v3.2-xsmall-q5-k-m/ggml-model-Q5_K_M.gguf'));
+if (!dictionaryOnly) {
+  const manifest = JSON.parse(await readFile(path.join(root, 'models/manifest.json'), 'utf8'));
+  const model = manifest.models.find(item => item.id === 'zenz-v3.2-xsmall-q5-k-m');
+  const bytes = await readFile(modelPath);
+  assert.equal(bytes.length, model.bytes);
+  assert.equal(createHash('sha256').update(bytes).digest('hex'), model.sha256);
+}
 const checks = [];
 for (const [label, directory, model, expected] of [
   ['staged xsmall', helperDir, modelPath, 'zenzai'],
@@ -14,6 +24,7 @@ for (const [label, directory, model, expected] of [
   ['missing model', helperDir, path.join(root, '.tools/not-installed.gguf'), 'azookey'],
   ['missing helper', path.join(root, '.tools/not-installed-helper'), undefined, 'kana'],
 ]) {
+  if (dictionaryOnly && expected === 'zenzai') continue;
   const engine = createAppEngine({ appDir: root, resourcesPath: root, isPackaged: false,
     helperDir: directory, modelPath: model });
   const service = new JapaneseConversionService(engine);

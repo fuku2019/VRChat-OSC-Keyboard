@@ -16,6 +16,7 @@ interface GetOscPortResult {
 }
 
 interface CheckUpdateResult {
+  disabled?: boolean;
   success: boolean;
   updateAvailable: boolean;
   latestVersion?: string;

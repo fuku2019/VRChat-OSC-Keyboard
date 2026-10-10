@@ -2,12 +2,13 @@ import fs from 'fs';
 import path from 'path';
 import { execFileSync } from 'child_process';
 import { app } from 'electron';
+import { APP_NAME, STEAMVR_APP_KEY } from '../appIdentity.js';
 import { getAssetPath } from '../overlay/native.js';
 import { writeFileAtomicSync } from './atomicWrite.js';
 
-const MANIFEST_FILE_NAME = 'vrchat-osc-keyboard.vrmanifest';
+const MANIFEST_FILE_NAME = 'vrcliveime.vrmanifest';
 const ACTIONS_FILE_NAME = 'actions.json';
-const STEAMVR_APP_NAME = 'VRChat OSC Keyboard';
+const STEAMVR_APP_NAME = APP_NAME;
 const CONTROLLER_TYPES = [
   'knuckles',
   'vive_controller',
@@ -17,11 +18,7 @@ const CONTROLLER_TYPES = [
 ];
 
 export function getSteamVrAppKey() {
-  const executableName = path.basename(process.execPath || '').toLowerCase();
-  if (!executableName) {
-    return 'VRChat-OSC-Keyboard';
-  }
-  return `system.generated.${executableName}`;
+  return STEAMVR_APP_KEY;
 }
 
 function normalizePathForComparison(targetPath) {

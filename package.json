@@ -1,6 +1,6 @@
 {
-  "name": "vrchat-osc-keyboard",
-  "productName": "VRChat OSC Keyboard",
+  "name": "vrcliveime",
+  "productName": "VrcLiveIme",
   "version": "3.0.1",
   "description": "A Japanese/English virtual keyboard and chatbox interface designed for SteamVR overlays to send text to VRChat via OSC.",
   "napi": {
@@ -23,7 +23,10 @@
     "electron:dev:perf": "concurrently -k \"cross-env IS_ELECTRON=true vite\" \"wait-on tcp:5173 && electron . --desktop --perf-log\"",
     "electron:dev:vr": "concurrently -k \"cross-env IS_ELECTRON=true vite\" \"wait-on tcp:5173 && electron . --vr --perf-log\"",
     "electron:dev:vr:eps": "concurrently -k \"cross-env IS_ELECTRON=true vite\" \"wait-on tcp:5173 && electron . --vr --perf-log --cursor-epsilon=0.005\"",
-    "dist": "vite build && electron-builder && node scripts/rename-build-output.js",
+    "dist": "npm run ime:verify-stage && vite build && electron-builder --win --x64 --publish never && node scripts/verify-ime-package.mjs --app release/win-unpacked",
+    "dist:validation": "node scripts/verify-ime-package.mjs --stage .tools/ime-helper-package --development && vite build && electron-builder --win --x64 --publish never && node scripts/verify-ime-package.mjs --app release/win-unpacked --development",
+    "ime:verify-stage": "node scripts/verify-ime-package.mjs --stage .tools/ime-helper-package",
+    "ime:stage": "pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/stage-ime-helper.ps1 -Destination .tools/ime-helper-package",
     "test": "vitest",
     "test:run": "vitest run && npm run test:ime-helper",
     "test:ime-helper": "node --test electron/services/ime/tests/*.node-test.mjs",
@@ -70,21 +73,25 @@
   },
   "build": {
     "npmRebuild": false,
-    "afterPack": "./scripts/removeLocales.cjs",
+    "afterPack": "./scripts/afterPack.cjs",
     "asarUnpack": [
       "img/**/*",
       "native/**/*",
       "steamvr/**/*"
     ],
     "publish": null,
-    "appId": "com.vrchat.osc.keyboard",
-    "productName": "VRChat OSC Keyboard",
+    "appId": "io.github.vrcliveime",
+    "productName": "VrcLiveIme",
+    "extraResources": [{ "from": ".tools/ime-helper-package", "to": "ime-helper/win-x64", "filter": ["**/*"] }],
     "files": [
       "dist/**/*",
       "electron/**/*",
-      "electron/assets/ime/mozc/**/*",
+      "!electron/assets/ime/mozc/**/*",
       "package.json",
-      "THIRD_PARTY_MOZC_DICTIONARY_LICENSES.txt",
+      "LICENSE",
+      "Openvr-LICENSE.txt",
+      "THIRD_PARTY_NOTICES.md",
+      "docs/distribution.md",
       "native/index.node",
       "native/openvr_api.dll",
       "img/**/*",
@@ -98,13 +105,14 @@
       "output": "release"
     },
     "win": {
-      "target": "nsis",
+      "target": ["nsis", "zip"],
       "icon": "build/icon.png",
-      "legalTrademarks": "VRChat OSC Keyboard",
-      "executableName": "VRChat-OSC-Keyboard",
+      "legalTrademarks": "VrcLiveIme",
+      "executableName": "VrcLiveIme",
       "verifyUpdateCodeSignature": false
     },
     "nsis": {
+      "artifactName": "VrcLiveIme-Setup-${version}-${arch}.${ext}",
       "oneClick": false,
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,

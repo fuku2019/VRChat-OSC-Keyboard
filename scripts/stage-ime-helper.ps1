@@ -29,7 +29,7 @@ while ($queue.Count) {
     $name = Split-Path $source -Leaf
     if ($copied.ContainsKey($name)) { continue }
     Copy-Item -LiteralPath $source -Destination (Join-Path $Destination $name)
-    $copied[$name] = @{ name = $name; source = $source; bytes = (Get-Item -LiteralPath $source).Length; sha256 = (Get-FileHash -LiteralPath $source).Hash.ToLowerInvariant() }
+    $copied[$name] = @{ name = $name; bytes = (Get-Item -LiteralPath $source).Length; sha256 = (Get-FileHash -LiteralPath $source).Hash.ToLowerInvariant() }
     $imports = & $readobj --coff-imports $source
     if ($LASTEXITCODE -ne 0) { throw "Cannot inspect PE imports: $source" }
     foreach ($line in $imports) {
@@ -56,11 +56,33 @@ New-Item -ItemType Directory -Force $licenses | Out-Null
 Copy-Item -LiteralPath (Join-Path $dictionary 'LICENSE') -Destination (Join-Path $licenses 'AzooKeyDictionary-LICENSE.txt')
 Copy-Item -LiteralPath (Join-Path $repoRoot 'helper/.build/checkouts/AzooKeyKanaKanjiConverter/LICENSE') -Destination (Join-Path $licenses 'AzooKey-LICENSE.txt')
 Copy-Item -LiteralPath (Join-Path $llama 'llama.cpp.txt') -Destination (Join-Path $licenses 'llama.cpp-LICENSE.txt')
+foreach ($pin in (Get-Content -LiteralPath (Join-Path $repoRoot 'helper/Package.resolved') -Raw | ConvertFrom-Json).pins) {
+    $checkout = Join-Path $repoRoot "helper/.build/checkouts/$($pin.identity)"
+    $licenseFile = Get-ChildItem -LiteralPath $checkout -File | Where-Object { $_.Name -match '^LICENSE(\.txt)?$' } | Select-Object -First 1
+    if (!$licenseFile) { throw "Dependency license not found: $($pin.identity)" }
+    Copy-Item -LiteralPath $licenseFile.FullName -Destination (Join-Path $licenses "$($pin.identity)-LICENSE.txt")
+}
 Copy-Item -LiteralPath (Join-Path $repoRoot 'helper/.build/build-metadata.json') -Destination (Join-Path $Destination 'build-metadata.json')
+$metadata = Get-Content -LiteralPath (Join-Path $Destination 'build-metadata.json') -Raw | ConvertFrom-Json
+$metadata.PSObject.Properties.Remove('sdkRoot')
+$metadata | Add-Member -NotePropertyName dictionaryRevision -NotePropertyValue $revision -Force
+$appRevision = & git -C $repoRoot rev-parse HEAD
+if ($LASTEXITCODE -ne 0) { throw 'Cannot resolve application source revision' }
+$metadata | Add-Member -NotePropertyName appRevision -NotePropertyValue $appRevision -Force
+$sourceChanges = & git -C $repoRoot status --porcelain
+if ($LASTEXITCODE -ne 0) { throw 'Cannot inspect application source status' }
+$metadata | Add-Member -NotePropertyName appSourceDirty -NotePropertyValue ([bool]$sourceChanges) -Force
+$metadata | Add-Member -NotePropertyName packageLockSha256 -NotePropertyValue (Get-FileHash -LiteralPath (Join-Path $repoRoot 'package-lock.json')).Hash.ToLowerInvariant() -Force
+$metadata | ConvertTo-Json -Depth 8 | Set-Content -Encoding utf8 (Join-Path $Destination 'build-metadata.json')
+$payload = @(Get-ChildItem -LiteralPath $Destination -Recurse -File | Sort-Object FullName | ForEach-Object {
+    @{ path = $_.FullName.Substring($Destination.Length + 1).Replace('\', '/'); bytes = $_.Length; sha256 = (Get-FileHash -LiteralPath $_.FullName).Hash.ToLowerInvariant() }
+})
 @{
+    schemaVersion = 1
     distributionReady = $false
     remainingChecks = @('Swift/runtime/transitive redistribution notices', 'Swift-uninstalled Windows validation', 'Dictionary data provenance')
     files = @($copied.Values | Sort-Object name)
+    payload = $payload
     systemImports = @($systemImports | Sort-Object)
     totalBytes = (Get-ChildItem -LiteralPath $Destination -Recurse -File | Measure-Object Length -Sum).Sum
 } | ConvertTo-Json -Depth 8 | Set-Content -Encoding utf8 (Join-Path $Destination 'stage-manifest.json')
