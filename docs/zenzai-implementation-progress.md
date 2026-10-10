@@ -12,35 +12,66 @@ Working branch: `codex/zenzai-mvp`. The original working tree was clean.
 | --- | --- |
 | Node / npm | 24.14.0 / 11.9.0 |
 | Rust | 1.94.0 |
-| Swift / CMake / clang on PATH | Not found |
-| Visual Studio | Community 2022 directory exists; required CMake/LLVM tools not found in checked component paths |
+| Swift / CMake | Initially absent; installed Swift 6.1.3 / CMake 3.31.8 |
+| Visual Studio / LLVM | MSVC 19.43.34810.0 / Windows SDK 10.0.22621.0; Swift's libclang used for bindgen |
 | `npm ci` | Passed outside sandbox after sandbox npm failure; lockfile unchanged |
 | Existing Vitest suite | 36 files / 445 tests passed outside sandbox |
 | `npm run typecheck` | Passed |
 | `npm run build` | Passed outside sandbox |
-| `npm run build:native` | Failed: `openvr_sys` build cannot execute `cmake` (program not found) |
+| `npm run build:native` | Passed after CMake installation and `LIBCLANG_PATH` pointing to Swift usr/bin |
 | Desktop / SteamVR / controller / actual OSC post | Not tested |
 
 Sandbox test/build attempts failed with Vite `realpath` EPERM. The native
 sandbox attempt failed resolving crates.io; the authorized retry fetched crates
-and reached the CMake error above. These are recorded separately from source
-regressions. No settings or learning database was edited. Native output was not
-produced, so desktop/VR behavior has not been claimed as a passed baseline.
+and exposed missing CMake, then libclang. Both dependencies are now resolved.
+No settings or learning database was edited. Desktop/VR behavior has not been
+claimed as a passed baseline.
 
-## P1 / P2: not yet validated
+## P1: Windows release inference passes Gate A
 
-Swift is not available on PATH or in the checked standard Swift toolchain
-locations. No Swift helper, GGUF inference, DLL ABI compatibility, model hash
-verification, runtime staging or clean Windows validation has been completed.
-Gate A remains open. No model was downloaded, no global toolchain was installed,
-and no fake-helper result is counted as inference evidence.
+Implemented a persistent Swift `ZenzaiHelper` and isolated `ZenzaiProbe`, pinned
+AzooKey with ZenzaiCPU, Package.resolved, dictionary revision and both v3.2
+Q5_K_M model revisions/sizes/SHA256. Model files remain in ignored `.tools/`.
+The build validates b4846 binary hashes and records dependency/patch metadata.
 
-Next environment work: install/activate Swift 6.1+ Windows development tools
-supporting dependency traits, CMake and the required MSVC/LLVM components; rerun
-the native baseline, then build the pinned AzooKey revision with ZenzaiCPU and
-the b4846 headers/libraries before evaluating verified v3.2 model files.
+Windows-specific findings and fixes:
 
-## P3: transport implementation complete; real-helper contract test pending
+- Process-local Git long paths resolve SPM dictionary-submodule path failures.
+- External packages cannot use the upstream package-private `requestQuery`;
+  whole-input candidates are filtered through public composing-count metadata.
+- b4846 lacks the import library for `ggml_backend_dev_by_type`. A minimal
+  `.def` generates the library from the existing ggml.dll export; no DLL or
+  header was replaced.
+- Separate tracked patches expose successful/failed llama_decode counts and
+  model load attempts, and bound token batches before KV cache mutation.
+- Direct Win32 ReadFile fixes Foundation stdin short-request buffering. A
+  bounded reader queue and serial converter worker keep mutable state isolated.
+
+Real-helper tests pass for dictionary-only, missing/corrupt model, xsmall,
+small, Japanese/space paths and missing dictionary. Both models execute decode
+successfully and load only once across requests/reset. Empty input and left
+context work. Long readings fall back to AzooKey, then short readings recover
+to Zenzai. The client status follows the actual per-request engine.
+
+## P2: staging verified on development host; clean host/notices remain open
+
+PE dependency traversal stages 21 DLLs, helper, dictionary and available
+licenses, approximately 104.3 MB excluding models. An isolated PATH without
+Swift SDK/runtime directories runs dictionary conversion and xsmall inference.
+Actual-helper checks also pass for split UTF-8/CRLF, multiple lines, EOF,
+malformed JSON, invalid UTF-8, oversized frames, terminal request errors and
+missing DLL startup failure. Latest stage: `.tools/ime-helper-stage-v2`.
+
+This does not establish behavior on a Swift-uninstalled clean Windows PC.
+Swift/runtime/transitive dependency redistribution notices and detailed
+dictionary provenance are incomplete. The stage manifest explicitly marks it
+not ready for distribution; no installer/zip has been produced.
+
+See [smoke evidence](validation/2026-10-10-helper-smoke.json) and
+[reproduction instructions](../helper/README.md). Sample conversion times are
+smoke measurements only, not P8 latency/VR acceptance or a model recommendation.
+
+## P3: transport and real-helper contract tests pass
 
 Implemented independently of Gate A:
 
@@ -53,11 +84,12 @@ Implemented independently of Gate A:
   guards across crashes/restarts, ready/request/shutdown timeouts, bounded
   restart backoff and disposal.
 - [Protocol documentation](ime-helper-protocol.md), Node tests and real-child
-  fake-helper fixture. `npm run test:ime-helper`: 30 passed. The fixture does no
+  fake-helper fixture. `npm run test:ime-helper`: 31 passed. The fixture does no
   inference. Standard `test:run` now includes this suite after Vitest.
 - Test fixtures excluded from electron-builder application files.
 
 Production JapaneseConversionService, IPC, renderer, native overlay and OSC
 paths are unchanged. No legacy dictionary or learning data was removed. P4–P7
-switch/removal work awaits Gate A and the real-helper contract test. P8/VR and
-P9/model download UI have not been started.
+integration starts next now that Gate A and real-helper contract tests pass.
+P8/VR and P9/model download UI have not been started. Final regression checks:
+445 existing tests + 31 transport tests pass; typecheck passes.
