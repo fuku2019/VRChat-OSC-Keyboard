@@ -287,3 +287,31 @@ describe('useIME asynchronous live conversion', () => {
     expect(result.current.input).toBe('か');
   });
 });
+
+ describe('committed send snapshots', () => {
+  it('withholds the snapshot during preedit and commit wait, then captures the completed text', async () => {
+    installApi();
+    const { result } = renderHook(() => useIME());
+    type(result, 'kanji'); advance(75);
+    expect(result.current.getCommittedSnapshot()).toBeNull();
+    act(() => result.current.commitPreedit());
+    expect(result.current.getCommittedSnapshot()).toBeNull();
+    await answer(requests[0], ['漢字']);
+    expect(result.current.getCommittedSnapshot()?.text).toBe('漢字');
+    const snapshot = result.current.getCommittedSnapshot()!;
+    act(() => result.current.clearSentText(snapshot));
+    expect(result.current.input).toBe('');
+  });
+  it('does not clear an edited and restored string or a queued edit', () => {
+    const { result } = renderHook(() => useIME(InputMode.ENGLISH));
+    act(() => result.current.replaceAll('hello'));
+    const snapshot = result.current.getCommittedSnapshot()!;
+    act(() => result.current.replaceAll('other'));
+    act(() => result.current.replaceAll('hello'));
+    act(() => result.current.clearSentText(snapshot));
+    expect(result.current.input).toBe('hello');
+    const current = result.current.getCommittedSnapshot()!;
+    act(() => { result.current.handleCharInput('!'); result.current.clearSentText(current); });
+    expect(result.current.input).toBe('hello!');
+  });
+});

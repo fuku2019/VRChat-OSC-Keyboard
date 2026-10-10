@@ -164,3 +164,41 @@ completion, length limits, unmount and StrictMode. The real-helper facade smoke
 still passes for xsmall, dictionary-only, missing model and missing helper.
 These are automated logic/service checks, not measured UI latency or VR/OSC
 acceptance. P6 is next; P2 clean-host/notices and P7–P9 remain open.
+
+## P6: committed snapshots, OSC send integration and engine status implemented
+
+The primary action commits preedit first and sends only on a later press with
+no composition/commit wait. useIME exposes a committed text/edit-sequence
+snapshot. useOscSender consumes that immutable snapshot without relying on a
+setState flush; a synchronous in-flight guard prevents concurrent manual sends.
+Failures retain input for retry. Successful sends record the captured text and
+clear only the matching edit generation. The reducer checks again, protecting
+queued edits as well as text edited and subsequently restored to the same value.
+Newer input and its typing indicator survive a late send completion. Copy mode
+uses the same snapshot/conditional-clear path with a separate concurrency guard.
+
+Manual send and Clear cancel trailing auto-send. Empty input, disabling autoSend,
+copy mode and unmount also discard queued previews. Previews remain silent and
+are initiated by user mutations only; conversion replies alone do not send.
+The existing WebSocket JSON and /chatbox/input OSC wire formats are unchanged.
+
+A read-only status hook polls sequentially, stops on unmount and does not open
+an IME editing session. The keyboard (including VR) and settings show preparing,
+Zenzai, dictionary conversion or kana fallback, with visible explanations for
+missing models, inference failure and unavailable helpers. Settings renderers
+remain independent of keyboard editing/OSC hooks. No model download UI is added.
+
+Validation: 497 Vitest tests in 38 files and 31 helper transport tests pass;
+typecheck and production frontend build pass. Tests include commit-then-send,
+unfinished preview versus conversion arrival, simultaneous presses, failed send
+and retry, input changed during send, restored strings, queued edits, unmount,
+status recovery and polling disposal. Vite test/build need the existing
+outside-sandbox realpath workaround on this host.
+
+Run node scripts/test-ime-osc-loopback.mjs for a real local WebSocket-to-UDP
+check: Japanese text and emoji arrive as /chatbox/input with direct=true and
+both sound=true and sound=false. The script uses an ephemeral localhost UDP
+receiver, never VRChat's port 9000. Localhost connection requires execution
+outside the sandbox on this host. This verifies bridge receive/wire behavior;
+VRChat display, VR layout/controller acceptance and performance remain P8 work.
+P7 packaging/legacy removal/CI is next; P2 clean-host/notices remain open.

@@ -9,6 +9,7 @@ import { OscConfig, UpdateConfigFn } from '../../types';
 import { TranslationStrings } from '../../constants';
 import { UpdateInfo } from '../../hooks/useUpdateChecker';
 import packageJson from '../../package.json';
+import ImeEngineStatus from '../ImeEngineStatus';
 import { SECTION_LABEL_CLASS, selectedBtnClass, SettingLabel, ToggleRow } from './settingsRows';
 
 const APP_VERSION = packageJson.version;
@@ -82,6 +83,7 @@ const GeneralTab: FC<GeneralTabProps> = ({
       </section>
 
       <section className='pt-6 border-t dark:border-white/10 border-black/10'>
+        <ImeEngineStatus language={localConfig.language} />
         <label className={SECTION_LABEL_CLASS}>{t.checkInterval}</label>
         <div className='bg-gray-100/50 dark:bg-slate-900/50 rounded-xl p-1 mb-3 flex gap-1 overflow-x-auto border dark:border-white/10 border-black/10 backdrop-blur-sm'>
           {[

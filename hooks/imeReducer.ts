@@ -48,6 +48,7 @@ export type ImeAction =
   | { type: 'CANCEL_CONVERSION' }
   | { type: 'CLEAR' }
   | { type: 'CLEAR_ALL' }
+  | { type: 'CLEAR_SENT'; text: string; mutationSeq: number }
   | { type: 'REPLACE_ALL'; text: string }
   | { type: 'SET_SELECTION'; start: number; end: number }
   | { type: 'SET_MODE'; mode: InputMode }
@@ -257,6 +258,9 @@ export function imeReducer(state: ImeCoreState, action: ImeAction): ImeCoreState
     case 'CLEAR':
       return state.isConverting && !state.commitWait ? touchMutation(cancelConversion(state))
         : imeReducer(state, { type: 'CLEAR_ALL' });
+    case 'CLEAR_SENT':
+      if (state.preeditStart !== null || state.commitWait || state.input !== action.text || state.mutationSeq !== action.mutationSeq) return state;
+      return imeReducer(state, { type: 'CLEAR_ALL' });
     case 'CLEAR_ALL':
       return touchMutation({ ...dropPreedit(state), input: '', caret: 0, selectionEnd: 0 });
     case 'REPLACE_ALL': {

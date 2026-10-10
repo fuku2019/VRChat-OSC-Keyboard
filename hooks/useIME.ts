@@ -20,7 +20,7 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { InputMode } from '../types';
 import { CHATBOX } from '../constants';
-import type { ImeCandidate } from '../types/ime';
+import type { ImeCandidate, ImeTextSnapshot } from '../types/ime';
 import {
   createInitialImeState,
   displayCaretOf,
@@ -67,6 +67,8 @@ export interface UseIMEReturn {
   // Wholesale replacement (history recall, send, copy mode) / 一括置換（履歴呼び出し・送信・コピーモード）
   replaceAll: (text: string) => string;
   clearAll: () => void;
+  getCommittedSnapshot: () => ImeTextSnapshot | null;
+  clearSentText: (snapshot: ImeTextSnapshot) => boolean;
 }
 
 const hasImeIpcApi = () => {
@@ -88,6 +90,8 @@ export const useIME = (
     createInitialImeState(initialMode, maxLength),
   );
   const [sessionId] = useState(() => crypto.randomUUID());
+  const stateRef = useRef(state);
+  stateRef.current = state;
   const lastSent = useRef('');
   const latestRequestId = useRef(0);
   latestRequestId.current = state.requestId;
@@ -194,6 +198,18 @@ export const useIME = (
     [],
   );
   const clearAll = useCallback(() => dispatch({ type: 'CLEAR_ALL' }), []);
+  const getCommittedSnapshot = useCallback((): ImeTextSnapshot | null => {
+    const current = stateRef.current;
+    return current.preeditStart !== null || current.commitWait ? null
+      : { text: current.input, mutationSeq: current.mutationSeq };
+  }, []);
+  const clearSentText = useCallback((snapshot: ImeTextSnapshot) => {
+    const current = stateRef.current;
+    const matches = current.preeditStart === null && !current.commitWait
+      && current.input === snapshot.text && current.mutationSeq === snapshot.mutationSeq;
+    dispatch({ type: 'CLEAR_SENT', ...snapshot });
+    return matches;
+  }, []);
 
   // Returns the text that was actually applied. History navigation compares it
   // against what it handed us, so a silently trimmed value would make it think
@@ -238,5 +254,7 @@ export const useIME = (
     setSelection,
     replaceAll,
     clearAll,
+    getCommittedSnapshot,
+    clearSentText,
   };
 };

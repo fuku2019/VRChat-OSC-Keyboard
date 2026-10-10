@@ -47,6 +47,7 @@ export interface ImeResponse {
 }
 
 export interface ImeTarget { sessionId: string; revision: number }
+export interface ImeTextSnapshot { text: string; mutationSeq: number }
 export interface ImeEngineStatus {
   state: string;
   engine?: 'zenzai' | 'azookey' | 'kana';

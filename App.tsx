@@ -3,7 +3,7 @@
  * メインアプリケーションコンポーネント
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Settings, Zap, ZapOff, Copy, RefreshCw } from 'lucide-react';
 import VirtualKeyboard from './components/VirtualKeyboard';
 import SettingsModal from './components/SettingsModal';
@@ -12,6 +12,7 @@ import NotificationToast from './components/NotificationToast';
 import StatusDisplay from './components/StatusDisplay';
 import CursorOverlay from './components/CursorOverlay';
 import PreeditUnderline from './components/PreeditUnderline';
+import ImeEngineStatus from './components/ImeEngineStatus';
 import { InputMode } from './types';
 import { useIME } from './hooks/useIME';
 import { useUpdateChecker } from './hooks/useUpdateChecker';
@@ -84,14 +85,16 @@ const App = () => {
     setMode,
     handleCharInput,
     handleBackspace,
-    handleClear,
+    handleClear: clearIme,
     handleSpace,
     handleCommitCandidate,
     commitPreedit,
     setSelection,
     replaceAll,
-    clearAll,
+    getCommittedSnapshot,
+    clearSentText,
   } = useIME(InputMode.HIRAGANA);
+  const copying = useRef(false);
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
@@ -117,13 +120,15 @@ const App = () => {
     throttledAutoSend,
     handleSend: triggerSend,
   } = useOscSender(
-    displayText,
-    clearAll,
+    clearSentText,
     sendTypingStatus,
     cancelTypingTimeout,
-    commitPreedit,
     pushHistory,
   );
+  const handleClear = useCallback(() => {
+    throttledAutoSend.cancel();
+    clearIme();
+  }, [throttledAutoSend, clearIme]);
 
   // Use update checker hook / アップデート確認フックを使用
   const { updateAvailable, setUpdateAvailable, isDownloading, downloadProgress, downloadError, downloadedPath, startDownload, cancelDownload, installUpdate } = useUpdateChecker();
@@ -135,6 +140,7 @@ const App = () => {
   const handleInputEffect = useCallback((text: string) => {
     // Editing the text leaves history navigation / テキストを編集したら履歴走査を抜ける
     notifyInputChanged(text);
+    if (!text || config.copyMode) throttledAutoSend.cancel();
 
     if (config.copyMode) {
       cancelTypingTimeout();
@@ -153,7 +159,7 @@ const App = () => {
     }
 
     // Auto-Send Logic 自動送信ロジック
-    if (config.autoSend) {
+    if (config.autoSend && text) {
       throttledAutoSend(text, config.bridgeUrl);
     }
   }, [
@@ -187,27 +193,29 @@ const App = () => {
 
   // Handle primary action (Send or Copy) / プライマリアクション（送信またはコピー）の処理
   const handlePrimaryAction = useCallback(async () => {
+    const snapshot = getCommittedSnapshot();
+    if (!snapshot) { commitPreedit(); return; }
     if (!config.copyMode) {
-      await triggerSend();
+      await triggerSend(snapshot);
       return;
     }
 
-    if (!displayText.trim()) return;
-
-    const copied = await copyTextToClipboard(displayText);
-    if (!copied) {
-      console.error('[Clipboard] Copy failed');
-      return;
-    }
-
-    clearAll();
-    cancelTypingTimeout();
-    sendTypingStatus(false);
+    if (copying.current || !snapshot.text.trim()) return;
+    copying.current = true;
+    throttledAutoSend.cancel();
+    try {
+      if (await copyTextToClipboard(snapshot.text) && clearSentText(snapshot)) {
+        cancelTypingTimeout();
+        sendTypingStatus(false);
+      }
+    } finally { copying.current = false; }
   }, [
     config.copyMode,
     triggerSend,
-    displayText,
-    clearAll,
+    getCommittedSnapshot,
+    commitPreedit,
+    clearSentText,
+    throttledAutoSend,
     cancelTypingTimeout,
     sendTypingStatus,
   ]);
@@ -431,6 +439,7 @@ const App = () => {
 
       {/* Text Input Area / テキスト入力エリア */}
       <div className='w-full max-w-5xl mb-4 relative shrink-0 group px-1'>
+        <ImeEngineStatus language={config.language} />
         <div
           className={`
           relative w-full h-24 md:h-32 dark:bg-slate-900/60 bg-white/60 rounded-xl border
