@@ -44,7 +44,7 @@ const report = {
     samplesPerCase: samples, startupTrials: 3, traceTrialsPerDebounce: 3,
     requestTimeoutMs: 10000, productionRequestTimeoutMs: 2000,
     startup: 'Process spawn to ready includes dictionary initialization, model load and warm-up; OS file cache is NOT flushed.',
-    conversion: 'Fresh composition after reset, same persistent model. elapsedMs is helper conversion; roundTripMs includes JSONL/service overhead, not Electron IPC.',
+    conversion: 'Fresh composition after reset, same persistent model. Short/medium/long rotate each iteration to avoid consecutive identical-prompt cache hits; internal prefix caches are not disabled. elapsedMs is helper conversion; roundTripMs includes JSONL/service overhead, not Electron IPC.',
     trace: 'Real Node timer debounce and helper queue; stopToResultMs ends at service receipt, NOT React paint/VR display. Stale responses are recorded but excluded from current-result latency.',
     resources: 'Process CPU delta over warm conversions and trace phase, divided by wall time and logical CPU count. Lifetime peak working set includes startup; end private bytes are not peak RAM.',
     unmeasured: ['model load separate from first warm-up inference', 'Electron IPC alone', 'input stop to UI/VR paint', 'VRChat/SteamVR frame time', 'uncached disk cold start'],
@@ -108,12 +108,15 @@ try {
         if (trial !== 2) continue;
         const before = resources(client.child.pid);
         const phaseStart = performance.now();
-        for (const item of corpus.cases) {
-          const measurements = [];
-          for (let i = 0; i < samples; i++) {
+        const batches = corpus.cases.map((item) => ({ item, measurements: [] }));
+        for (let i = 0; i < samples; i++) {
+          for (const batch of batches) {
             await client.reset('benchmark');
-            measurements.push(await convert(client, item.text, item.leftContext));
+            batch.measurements.push(await convert(client, batch.item.text, batch.item.leftContext));
           }
+          if ((i + 1) % 10 === 0) console.log(`${model.id}: rotating corpus ${i + 1}/${samples}`);
+        }
+        for (const { item, measurements } of batches) {
           const successful = measurements.filter((value) => !value.error && value.engine === 'zenzai');
           record.cases.push({ id: item.id, measurements, neuralSuccesses: successful.length,
             helperMs: summary(successful.map((value) => value.helperMs)),
