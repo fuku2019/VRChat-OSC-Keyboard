@@ -88,8 +88,42 @@ Implemented independently of Gate A:
   inference. Standard `test:run` now includes this suite after Vitest.
 - Test fixtures excluded from electron-builder application files.
 
-Production JapaneseConversionService, IPC, renderer, native overlay and OSC
-paths are unchanged. No legacy dictionary or learning data was removed. P4–P7
-integration starts next now that Gate A and real-helper contract tests pass.
-P8/VR and P9/model download UI have not been started. Final regression checks:
-445 existing tests + 31 transport tests pass; typecheck passes.
+At the P3 checkpoint, application integration was still unchanged; 445 Vitest
+tests and 31 transport tests passed, along with typecheck.
+
+## P4: asynchronous facade and existing IPC connected
+
+JapaneseConversionService now uses the async engine contract, with one segment
+for the full unfinished reading and the engine's first candidate as preedit.
+Kana fallback is last, rather than forced first. The application conversion
+path no longer constructs legacy providers, Segmenter or LearningStore.
+Legacy files/assets remain for separate removal in P7; existing DBs are untouched.
+
+Main validates session/revision before mutation as well as after inference.
+Cancel/release/disposal invalidate synchronously. Commit/cancel responses carry
+their captured snapshot across reset acknowledgements. Stale results, candidate
+snapshots and foreign sessions are rejected. Transport failure uses kana; helper
+dictionary fallback retains its AzooKey classification and recovery is allowed.
+
+Existing IPC channels and preload APIs now await the service and carry targets.
+Only the keyboard main frame can edit. Reload/navigation completion, renderer
+crash and destruction release the session. Settings can obtain status immediately.
+Main warms the helper independently of window/overlay startup and waits for its
+bounded shutdown before quitting. Renderer integration forwards session and
+conversion revision; its live debounce/commit state machine is still P5 work.
+
+Development defaults to .tools/ime-helper-stage. VRC_IME_HELPER_DIR overrides the
+development stage, and VRC_IME_MODEL selects a manually installed model path.
+Packaged helper paths are resolved centrally to resources/ime-helper/win-x64;
+actual extraResources/installer integration is still P7. Missing helper yields
+kana input; missing model yields helper dictionary conversion. No automatic
+model download occurs.
+
+Validation: 461 Vitest tests and 31 transport tests; typecheck and production
+frontend build pass. New facade/IPC tests exercise inverted responses,
+reset/commit overlap, stale targets, recovery and renderer lifecycle. Run
+node scripts/test-ime-app-integration.mjs .tools/ime-helper-stage-v2 for the real
+helper: xsmall gives 今日はいい天気, no/missing model uses AzooKey, missing helper
+uses kana; cycling, commit, reset and a new session also pass. These are service
+and mocked IPC checks, not a VR/OSC acceptance test. P2 clean-host/notices,
+P5–P9 and installer/VR acceptance remain open.

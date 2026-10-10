@@ -90,7 +90,7 @@ startup; overlay startup must not wait on the model.
 `convert(request): Promise<result>`, `reset(sessionId): Promise<void>`,
 `dispose(): Promise<void>` and a synchronous `status` getter form the engine
 boundary. `ZenzaiEngine` adapts the transport. `KanaFallbackEngine` is independent
-of Mozc, dictionaries and learning stores. The future facade chooses it on
+of Mozc, dictionaries and learning stores. The application facade chooses it on
 transport failure; the transport does not silently swallow cancellation/errors.
 
 Run `npm run test:ime-helper` for dependency-free Node tests. The normal
@@ -100,3 +100,22 @@ Real Swift-helper integration runs with `scripts/test-ime-helper-integration.ps1
 stage checks run with `node scripts/test-ime-stage.mjs`. The helper reports
 decode/load diagnostics only to stderr. Clean Windows and VR checks remain
 separate gates.
+
+## Renderer IPC
+
+The existing convert/next-candidate/commit/cancel channel names are retained.
+Convert takes a reading and context containing a sessionId, increasing revision
+and optional previousText (only the committed prefix in the same field).
+Next-candidate and commit target the last conversion's sessionId/revision;
+cancel targets the current or a newer revision and invalidates synchronously.
+Commit may include expectedText; mismatched candidate snapshots are rejected.
+Replies are awaited and failures contain a stable code. The main snapshot is
+invalidated before inference and updated only if its local epoch and returned
+session/revision still match. No dictionary learning is performed.
+
+Only the keyboard window's main frame can edit. Its session is reset on reload,
+renderer crash or destruction. Settings can read jp-ime:status without opening
+an editing session. Status is immediately available during helper/model load.
+Application quit waits for helper disposal, bounded by the transport's grace
+period. The renderer forwards its existing request generation as a conversion
+revision; debounce and bounded commit waiting are the next P5 change.

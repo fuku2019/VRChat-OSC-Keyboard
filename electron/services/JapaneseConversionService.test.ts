@@ -1,358 +1,195 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { JapaneseConversionService } from './JapaneseConversionService.js';
+import { ImeEngineError } from './ime/ConversionEngine.js';
 
-type FakeCandidate = {
-  text: string;
-  reading: string;
-  source?: string;
-  dictSource?: string;
-  score?: number;
-};
-
-// The service only needs hasReading / getCandidates from a provider, so a
-// duck-typed object is enough. Passing one explicitly keeps createDefaultProvider
-// unevaluated, so no Mozc shard, sqlite file or electron import is touched.
-// サービスがプロバイダーに求めるのは hasReading / getCandidates だけなので、
-// ダックタイピングのオブジェクトで足りる。明示的に渡すことで createDefaultProvider が
-// 評価されず、Mozc シャードも sqlite も electron も一切触らない。
-const createProvider = (
-  entries: Record<string, FakeCandidate[]>,
-  extra: Record<string, unknown> = {},
-) => ({
-  hasReading: (reading: string) => entries[reading] !== undefined,
-  getCandidates: (reading: string) => entries[reading] ?? [],
-  ...extra,
+const target = (revision = 1, sessionId = 'keyboard') => ({ sessionId, revision });
+const result = (request: any, texts = ['日本語', '日本語', '']) => ({
+  sessionId: request.sessionId, revision: request.revision, engine: 'zenzai' as 'zenzai' | 'azookey' | 'kana',
+  elapsedMs: 12, candidates: texts.map(text => ({ text })),
 });
+function setup() {
+  const engine = {
+    status: { state: 'ready', engine: 'zenzai' },
+    convert: vi.fn(async (request: any) => result(request)),
+    reset: vi.fn(async (_sessionId: string) => {}),
+    dispose: vi.fn(async () => {}),
+  };
+  return { engine, service: new JapaneseConversionService(engine) };
+}
+function deferred() {
+  let resolve!: (value: any) => void;
+  let reject!: (error: any) => void;
+  const promise = new Promise<any>((yes, no) => { resolve = yes; reject = no; });
+  return { promise, resolve, reject };
+}
 
-// A dictionary-sourced candidate, i.e. dictSource !== 'fallback'
-// 辞書由来の候補。つまり dictSource !== 'fallback' のもの
-const dictCandidate = (
-  text: string,
-  reading: string,
-  score = 1000,
-): FakeCandidate => ({
-  text,
-  reading,
-  source: 'dictionary',
-  dictSource: 'mozc',
-  score,
-});
-
-// An empty fallback keeps the built-in MicroDictionaryProvider out of the results.
-// 空のフォールバックにして、組み込みの MicroDictionaryProvider を結果から締め出す。
-const createService = (
-  entries: Record<string, FakeCandidate[]>,
-  options: Record<string, unknown> = {},
-) =>
-  new JapaneseConversionService(createProvider(entries) as any, {
-    fallbackProvider: createProvider({}),
-    ...options,
-  } as any);
-
-describe('JapaneseConversionService / 日本語変換サービス', () => {
-  describe('convert / 変換開始', () => {
-    it('puts the plain hiragana reading first in every segment', () => {
-      const service = createService({
-        にほん: [dictCandidate('日本', 'にほん')],
-        ご: [dictCandidate('語', 'ご')],
-      });
-
-      const state = service.convert('にほんご');
-
-      expect(state.segments.map((segment: any) => segment.raw)).toEqual([
-        'にほん',
-        'ご',
-      ]);
-      // The reading itself always outranks dictionary hits, so the user can
-      // always fall back to kana. / 読みそのものが常に辞書ヒットより優先されるので、
-      // ユーザーはいつでもかなに戻せる。
-      for (const segment of state.segments) {
-        expect(segment.candidates[0].text).toBe(segment.raw);
-      }
-      expect(state.candidates[0].text).toBe('にほんご');
-    });
-
-    it("feeds the previous segment's top candidate into the next lookup", () => {
-      const entries: Record<string, FakeCandidate[]> = {
-        にほん: [dictCandidate('日本', 'にほん')],
-        ご: [dictCandidate('語', 'ご')],
-      };
-      const getCandidates = vi.fn(
-        (reading: string, _context?: Record<string, unknown>) =>
-          entries[reading] ?? [],
-      );
-      const service = new JapaneseConversionService(
-        {
-          hasReading: (reading: string) => entries[reading] !== undefined,
-          getCandidates,
-        } as any,
-        { fallbackProvider: createProvider({}) } as any,
-      );
-
-      service.convert('にほんご', { previousWord: 'わたし' });
-
-      expect(getCandidates).toHaveBeenCalledTimes(2);
-      expect(getCandidates.mock.calls[0][1]).toMatchObject({
-        previousWord: 'わたし',
-      });
-      // The top candidate is the hiragana reading, so that is what rolls
-      // forward - not the kanji surface.
-      // 先頭候補はひらがな読みなので、次へ引き継がれるのは漢字表記ではなく読み。
-      expect(getCandidates.mock.calls[1][1]).toMatchObject({
-        previousWord: 'にほん',
-      });
-    });
-
-    it('collapses to a whole-reading fallback when nothing matched the dictionary', () => {
-      const service = createService({});
-
-      const state = service.convert('あいう');
-
-      // Three single-char segments with no dictionary candidate become one.
-      // 辞書候補のない1文字セグメント3つが1本にまとめられる。
-      expect(state.segments).toHaveLength(1);
-      expect(state.segments[0].raw).toBe('あいう');
-      expect(state.candidates.map((candidate: any) => candidate.text)).toEqual([
-        'あいう',
-        'アイウ',
-      ]);
-    });
-
-    it('keeps the segments when at least one of them has a dictionary candidate', () => {
-      const service = createService({ あ: [dictCandidate('亜', 'あ')] });
-
-      const state = service.convert('あいう');
-
-      expect(state.segments.map((segment: any) => segment.raw)).toEqual([
-        'あ',
-        'い',
-        'う',
-      ]);
-    });
-
-    it('resets to an empty state for whitespace-only input', () => {
-      const service = createService({ にほん: [dictCandidate('日本', 'にほん')] });
-      service.convert('にほん');
-
-      const state = service.convert('   ');
-
-      expect(state.isConverting).toBe(false);
-      expect(state.segments).toEqual([]);
-      expect(state.rawKana).toBe('');
-    });
+describe('asynchronous Japanese conversion facade', () => {
+  it('converts the full reading and same-field left context without provider segmentation', async () => {
+    const { engine, service } = setup();
+    const state = await service.convert('ニホンゴ', { ...target(), previousText: '私は', previousWord: 'ignored' });
+    expect(engine.convert).toHaveBeenCalledWith({ ...target(), text: 'にほんご', leftContext: '私は' });
+    expect(state.candidates).toEqual([{ text: '日本語' }, { text: 'にほんご' }]);
+    expect(state.segments).toEqual([{ raw: 'にほんご', candidates: state.candidates, selectedIndex: 0 }]);
+    expect(state).toMatchObject({ ...target(), selectedCandidate: '日本語', preedit: '日本語', engine: 'zenzai', elapsedMs: 12 });
   });
 
-  describe('candidate cycling / 候補の巡回', () => {
-    it('wraps from the last candidate back to the first', () => {
-      const service = createService({
-        にほん: [dictCandidate('日本', 'にほん'), dictCandidate('二本', 'にほん')],
-      });
-      const initial = service.convert('にほん');
-      expect(initial.candidates).toHaveLength(3); // にほん / 日本 / 二本
-
-      expect(service.nextCandidate().selectedCandidate).toBe('日本');
-      expect(service.nextCandidate().selectedCandidate).toBe('二本');
-      expect(service.nextCandidate().selectedCandidate).toBe('にほん');
-      expect(service.nextCandidate().candidateIndex).toBe(1);
-    });
-
-    it('ignores a candidate index outside the list', () => {
-      const service = createService({
-        にほん: [dictCandidate('日本', 'にほん'), dictCandidate('二本', 'にほん')],
-      });
-      service.convert('にほん');
-
-      expect(service.setCandidateIndex(2).candidateIndex).toBe(2);
-      expect(service.setCandidateIndex(5).candidateIndex).toBe(2);
-      expect(service.setCandidateIndex(-1).candidateIndex).toBe(2);
-    });
+  it('returns detached snapshots and cycles/commits full candidates without learning', async () => {
+    const { engine, service } = setup();
+    const state = await service.convert('にほんご', target());
+    state.candidates[0].text = 'changed';
+    expect((await service.nextCandidate(target())).preedit).toBe('にほんご');
+    expect((await service.nextCandidate(target())).preedit).toBe('日本語');
+    expect(await service.commit(1, target())).toMatchObject({ committed: 'にほんご', state: { isConverting: false, rawKana: '' } });
+    expect(engine.reset).toHaveBeenCalledWith('keyboard');
+    await expect(service.commit(0, target())).rejects.toMatchObject({ code: 'no-candidates' });
   });
 
-  describe('commit / 確定', () => {
-    it('returns the composed text and leaves conversion inactive', () => {
-      const service = createService({
-        にほん: [dictCandidate('日本', 'にほん')],
-        ご: [dictCandidate('語', 'ご')],
-      });
-      service.convert('にほんご');
-      service.nextCandidate(); // Select 日本 for the active segment / アクティブセグメントで日本を選ぶ
-
-      const { committed, state } = service.commit();
-
-      expect(committed).toBe('日本ご');
-      expect(state.isConverting).toBe(false);
-      expect(state.segments).toEqual([]);
-      expect(state.rawKana).toBe('');
-    });
-
-    it('commits the candidate selected by the given index', () => {
-      const service = createService({
-        にほん: [dictCandidate('日本', 'にほん'), dictCandidate('二本', 'にほん')],
-      });
-      service.convert('にほん');
-
-      expect(service.commit(2).committed).toBe('二本');
-    });
-
-    it('records only the active segment, not the untouched ones', () => {
-      // There is no UI to move the active segment, so every other segment is
-      // still on selectedIndex 0 - a pick the user never made. Learning those
-      // would reinforce whatever the dictionary ranked first.
-      // アクティブ文節を移動するUIが無いため、他の文節は selectedIndex 0 のまま
-      // ＝ユーザーが選んでいない候補である。学習すると辞書の先頭候補が強化される。
-      const recordCommit = vi.fn();
-      const service = createService(
-        {
-          にほん: [dictCandidate('日本', 'にほん')],
-          ご: [dictCandidate('語', 'ご')],
-        },
-        {},
-      );
-      (service.provider as any).learningStore = { recordCommit };
-      service.convert('にほんご');
-      service.nextCandidate(); // 日本
-
-      service.commit(undefined, { previousWord: 'わたし' });
-
-      expect(recordCommit.mock.calls).toEqual([['にほん', '日本', 'わたし']]);
-    });
-
-    it("uses the preceding segment's surface as context for a later active segment", () => {
-      const recordCommit = vi.fn();
-      // withHiraganaCandidateFirst prepends the reading to every segment, so a
-      // segment only ends up with a single candidate when its dictionary entry
-      // IS the reading. That makes 'ご' the first segment with a real choice,
-      // and selectBestActiveSegment lands on it.
-      // withHiraganaCandidateFirst が全文節に読みを先頭追加するため、候補が1件になるのは
-      // 辞書項目が読みそのものの場合だけ。よって選択肢を持つ最初の文節は'ご'になり、
-      // selectBestActiveSegment はそこを選ぶ。
-      const service = createService(
-        {
-          にほん: [dictCandidate('にほん', 'にほん')],
-          ご: [dictCandidate('語', 'ご'), dictCandidate('午', 'ご')],
-        },
-        {},
-      );
-      (service.provider as any).learningStore = { recordCommit };
-      service.convert('にほんご');
-      service.nextCandidate(); // 語
-
-      service.commit(undefined, { previousWord: 'わたし' });
-
-      // Context is 'にほん' (the first segment's selection), not 'わたし'.
-      // 文脈語は 'わたし' ではなく先頭文節の選択 'にほん'。
-      expect(recordCommit.mock.calls).toEqual([['ご', '語', 'にほん']]);
-    });
-
-    it('skips learning when expectedText disagrees with the composed text', () => {
-      // Happens when the renderer dropped our IPC response and committed from
-      // its own local fallback list instead.
-      // レンダラーがIPC応答を破棄し、自前のローカル候補から確定した場合に起きる。
-      const recordCommit = vi.fn();
-      const service = createService({
-        にほん: [dictCandidate('日本', 'にほん'), dictCandidate('二本', 'にほん')],
-      });
-      (service.provider as any).learningStore = { recordCommit };
-      service.convert('にほん');
-
-      const { committed } = service.commit(1, { expectedText: 'ニホン' });
-
-      expect(committed).toBe('日本');
-      expect(recordCommit).not.toHaveBeenCalled();
-    });
-
-    it('learns when expectedText matches the composed text', () => {
-      const recordCommit = vi.fn();
-      const service = createService({
-        にほん: [dictCandidate('日本', 'にほん'), dictCandidate('二本', 'にほん')],
-      });
-      (service.provider as any).learningStore = { recordCommit };
-      service.convert('にほん');
-
-      service.commit(1, { expectedText: '日本' });
-
-      expect(recordCommit.mock.calls).toEqual([['にほん', '日本', '']]);
-    });
-
-    it('commits when the provider has no learning store', () => {
-      // The MicroDictionaryProvider fallback has no learning store, so this is
-      // the production path whenever Mozc is unavailable.
-      // MicroDictionaryProvider へのフォールバックは学習ストアを持たないため、
-      // Mozc が使えないときはこれが本番経路になる。
-      const service = createService({ にほん: [dictCandidate('日本', 'にほん')] });
-      service.convert('にほん');
-
-      expect(service.commit(1).committed).toBe('日本');
-    });
-
-    it('returns an empty commit when nothing is being converted', () => {
-      const service = createService({});
-
-      const { committed, state } = service.commit();
-
-      expect(committed).toBe('');
-      expect(state.isConverting).toBe(false);
-    });
+  it('rejects invalid candidate indexes without changing the snapshot', async () => {
+    const { service } = setup();
+    await service.convert('にほんご', target());
+    await expect(service.commit(9, target())).rejects.toMatchObject({ code: 'invalid-candidate' });
+    expect(service.buildState().preedit).toBe('日本語');
   });
 
-  describe('error containment / エラーの封じ込め', () => {
-    it('falls through to the fallback provider when the primary one throws', () => {
-      const service = new JapaneseConversionService(
-        {
-          hasReading: () => true,
-          getCandidates: () => {
-            throw new Error('dictionary exploded');
-          },
-        } as any,
-        {
-          fallbackProvider: createProvider({
-            にほん: [dictCandidate('日本', 'にほん')],
-          }),
-        } as any,
-      );
-
-      const state = service.convert('にほん');
-
-      expect(state.isConverting).toBe(true);
-      expect(state.candidates.map((candidate: any) => candidate.text)).toEqual([
-        'にほん',
-        '日本',
-      ]);
-    });
+  it('rejects a renderer commit snapshot that differs from the selected candidate', async () => {
+    const { engine, service } = setup();
+    await service.convert('にほんご', target());
+    await expect(service.commit(0, { ...target(), expectedText: 'different' })).rejects.toMatchObject({ code: 'stale-candidate' });
+    expect(engine.reset).not.toHaveBeenCalled();
+    expect(service.buildState().preedit).toBe('日本語');
   });
 
-  describe('state isolation / 状態の隔離', () => {
-    it('does not let callers mutate the internals through the returned snapshot', () => {
-      const service = createService({
-        にほん: [dictCandidate('日本', 'にほん'), dictCandidate('二本', 'にほん')],
-      });
-
-      const state = service.convert('にほん');
-      state.segments[0].candidates[0].text = 'HACKED';
-      state.candidates[0].text = 'HACKED';
-
-      const reread = service.setCandidateIndex(0);
-      expect(reread.segments[0].candidates[0].text).toBe('にほん');
-      expect(reread.candidates[0].text).toBe('にほん');
-      expect(service.commit().committed).toBe('にほん');
-    });
+  it('does not apply an older result that arrives last', async () => {
+    const { engine, service } = setup();
+    const old = deferred();
+    engine.convert.mockImplementationOnce(() => old.promise);
+    const first = service.convert('にほん', target());
+    const rejected = expect(first).rejects.toMatchObject({ code: 'superseded' });
+    await service.convert('にほんご', target(2));
+    old.resolve(result(target(), ['日本']));
+    await rejected;
+    expect(service.buildState()).toMatchObject({ revision: 2, rawKana: 'にほんご', preedit: '日本語' });
   });
 
-  describe('cancel / キャンセル', () => {
-    it('clears the conversion but keeps the raw kana', () => {
-      const service = createService({ にほん: [dictCandidate('日本', 'にほん')] });
-      service.convert('にほん');
+  it('invalidates next and commit while a newer conversion is still pending', async () => {
+    const { engine, service } = setup();
+    await service.convert('にほんご', target());
+    const wait = deferred();
+    engine.convert.mockImplementationOnce(() => wait.promise);
+    const pending = service.convert('きょう', target(2));
+    await expect(service.nextCandidate(target())).rejects.toMatchObject({ code: 'stale-revision' });
+    await expect(service.commit(0, target())).rejects.toMatchObject({ code: 'stale-revision' });
+    await expect(service.commit(0, target(2))).rejects.toMatchObject({ code: 'no-candidates' });
+    wait.resolve(result(target(2), ['今日']));
+    await pending;
+  });
 
-      const state = service.cancel();
+  it('invalidates synchronously on cancel, before the reset acknowledgement', async () => {
+    const { engine, service } = setup();
+    const inference = deferred(), reset = deferred();
+    engine.convert.mockImplementationOnce(() => inference.promise);
+    engine.reset.mockImplementationOnce(() => reset.promise);
+    const pending = service.convert('にほんご', target());
+    const rejected = expect(pending).rejects.toMatchObject({ code: 'superseded' });
+    const cancelling = service.cancel(target(2));
+    inference.resolve(result(target()));
+    await rejected;
+    expect(service.buildState()).toMatchObject({ revision: 2, isConverting: false });
+    await service.convert('きょう', target(3));
+    reset.resolve(undefined);
+    expect(await cancelling).toMatchObject({ revision: 2, isConverting: false });
+    expect(service.buildState().revision).toBe(3);
+  });
 
-      expect(state.isConverting).toBe(false);
-      expect(state.segments).toEqual([]);
-      expect(state.candidates).toEqual([]);
-      // cancel() uses clearConversionState, which deliberately keeps rawKana so
-      // the caller can restore the unconverted reading.
-      // cancel() は clearConversionState を使い、未変換の読みを呼び出し側が復元できるよう
-      // 意図的に rawKana を残す。
-      expect(state.rawKana).toBe('にほん');
-    });
+  it('returns the captured commit state if reset overlaps a new conversion', async () => {
+    const { engine, service } = setup();
+    await service.convert('にほんご', target());
+    const reset = deferred();
+    engine.reset.mockImplementationOnce(() => reset.promise);
+    const committing = service.commit(0, target());
+    await service.convert('きょう', target(2));
+    reset.resolve(undefined);
+    expect(await committing).toMatchObject({ committed: '日本語', state: { revision: 1, isConverting: false } });
+    expect(service.buildState().revision).toBe(2);
+  });
+
+  it('rejects old, duplicate and foreign session operations', async () => {
+    const { service } = setup();
+    await service.convert('にほんご', target(3));
+    for (const stale of [target(2), target(3), target(4, 'other')]) {
+      await expect(service.convert('かな', stale)).rejects.toMatchObject({ code: 'stale-revision' });
+    }
+    await expect(service.nextCandidate(target(2))).rejects.toMatchObject({ code: 'stale-revision' });
+    await expect(service.cancel(target(2))).rejects.toMatchObject({ code: 'stale-revision' });
+  });
+
+  it('releases a closed renderer and ignores its late result even if revision is reused', async () => {
+    const { engine, service } = setup();
+    const old = deferred();
+    engine.convert.mockImplementationOnce(() => old.promise);
+    const pending = service.convert('にほん', target());
+    const rejected = expect(pending).rejects.toMatchObject({ code: 'superseded' });
+    await service.releaseSession();
+    await service.convert('にほんご', target(1, 'new-renderer'));
+    old.resolve(result(target()));
+    await rejected;
+    expect(service.buildState().sessionId).toBe('new-renderer');
+  });
+
+  it.each(['exit', 'request-timeout', 'unavailable'])('preserves kana on helper %s and recovers next time', async (code) => {
+    const { engine, service } = setup();
+    engine.convert.mockRejectedValueOnce(new ImeEngineError(code));
+    expect(await service.convert('にほんご', target())).toMatchObject({ engine: 'kana', preedit: 'にほんご' });
+    expect(service.status).toMatchObject({ engine: 'kana', reason: code });
+    expect(await service.convert('にほんご', target(2))).toMatchObject({ engine: 'zenzai' });
+    expect(service.status.engine).toBe('zenzai');
+  });
+
+  it.each(['superseded', 'cancelled', 'disposed', 'invalid-request'])('does not turn %s into a successful fallback', async (code) => {
+    const { engine, service } = setup();
+    engine.convert.mockRejectedValueOnce(new ImeEngineError(code));
+    await expect(service.convert('かな', target())).rejects.toMatchObject({ code });
+    expect(service.buildState().isConverting).toBe(false);
+  });
+
+  it('preserves helper AzooKey fallback classification', async () => {
+    const { engine, service } = setup();
+    engine.convert.mockImplementationOnce(async request => ({ ...result(request), engine: 'azookey' }));
+    expect(await service.convert('かな', target())).toMatchObject({ engine: 'azookey' });
+  });
+
+  it('validates requests before invoking the engine', async () => {
+    const { engine, service } = setup();
+    await expect(service.convert('かな', {})).rejects.toMatchObject({ code: 'invalid-request' });
+    await expect(service.convert('かな', { ...target(), previousText: 'x'.repeat(4097) })).rejects.toMatchObject({ code: 'invalid-request' });
+    expect(engine.convert).not.toHaveBeenCalled();
+  });
+
+  it('rejects a mismatched engine result', async () => {
+    const { engine, service } = setup();
+    engine.convert.mockImplementationOnce(async request => result({ ...request, revision: 99 }));
+    await expect(service.convert('かな', target())).rejects.toMatchObject({ code: 'invalid-result' });
+    expect(service.buildState().candidates).toEqual([]);
+  });
+
+  it('empty input resets without inference', async () => {
+    const { engine, service } = setup();
+    expect(await service.convert('', target())).toMatchObject({ rawKana: '', isConverting: false });
+    expect(engine.convert).not.toHaveBeenCalled();
+    expect(engine.reset).toHaveBeenCalledWith('keyboard');
+  });
+
+  it('disposes once and invalidates late inference', async () => {
+    const { engine, service } = setup();
+    const wait = deferred();
+    engine.convert.mockImplementationOnce(() => wait.promise);
+    const pending = service.convert('かな', target());
+    const rejected = expect(pending).rejects.toMatchObject({ code: 'superseded' });
+    await service.dispose();
+    wait.resolve(result(target()));
+    await rejected;
+    await service.dispose();
+    expect(engine.dispose).toHaveBeenCalledTimes(1);
+    await expect(service.convert('かな', target(2))).rejects.toMatchObject({ code: 'disposed' });
   });
 });

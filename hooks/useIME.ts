@@ -20,7 +20,7 @@
  * 進め忘れていたため、古い変換が確定済みの未確定文字列を復活させていた。
  */
 
-import { useCallback, useEffect, useMemo, useReducer } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
 import { InputMode } from '../types';
 import { CHATBOX } from '../constants';
 import type { ImeCandidate } from '../types/ime';
@@ -82,6 +82,8 @@ export const useIME = (
   const [state, dispatch] = useReducer(imeReducer, undefined, () =>
     createInitialImeState(initialMode, maxLength),
   );
+  const sessionId = useRef(crypto.randomUUID());
+  const conversionRevision = useRef(0);
 
   const displayText = useMemo(() => displayTextOf(state), [state]);
   const displayCaret = useMemo(() => displayCaretOf(state), [state]);
@@ -115,14 +117,19 @@ export const useIME = (
     }
 
     const api = window.electronAPI!;
+    if (pending.kind === 'convert') conversionRevision.current = pending.id;
+    const target = {
+      sessionId: sessionId.current,
+      revision: pending.kind === 'cancel' ? pending.id : conversionRevision.current,
+    };
     const request =
       pending.kind === 'convert'
-        ? api.imeConvert!(pending.kana, pending.context)
+        ? api.imeConvert!(pending.kana, { ...pending.context, ...target })
         : pending.kind === 'next'
-          ? api.imeNextCandidate!()
+          ? api.imeNextCandidate!(target)
           : pending.kind === 'commit'
-            ? api.imeCommitCandidate!(pending.index, pending.context)
-            : api.imeCancelConversion!();
+            ? api.imeCommitCandidate!(pending.index, { ...pending.context, ...target })
+            : api.imeCancelConversion!(target);
 
     void request
       .then((response) => {

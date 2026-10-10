@@ -15,6 +15,10 @@ export interface ImeSegment {
 }
 
 export interface ImeState {
+  sessionId?: string;
+  revision?: number;
+  engine?: 'zenzai' | 'azookey' | 'kana';
+  elapsedMs?: number;
   rawKana: string;
   segments: ImeSegment[];
   candidates: ImeCandidate[];
@@ -25,12 +29,11 @@ export interface ImeState {
 }
 
 export interface ImeContext {
+  sessionId?: string;
+  revision?: number;
   previousText?: string;
   previousWord?: string;
-  // Text the renderer actually committed. Main skips learning when it does not
-  // match its own composition, i.e. when the two sides disagree on the pick.
-  // レンダラーが実際に確定したテキスト。main側の合成結果と一致しないとき
-  // （＝両者の選択が食い違っているとき）は学習をスキップする。
+  // Renderer commit snapshot; no learning is performed.
   expectedText?: string;
 }
 
@@ -39,4 +42,12 @@ export interface ImeResponse {
   state?: ImeState;
   committed?: string;
   error?: string;
+  code?: string;
+}
+
+export interface ImeTarget { sessionId: string; revision: number }
+export interface ImeEngineStatus {
+  state: string;
+  engine?: 'zenzai' | 'azookey' | 'kana';
+  reason?: string;
 }

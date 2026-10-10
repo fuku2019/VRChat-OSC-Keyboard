@@ -16,33 +16,42 @@ import { InputMode } from '../types';
 
 type Deferred = {
   kana: string;
+  context: { sessionId: string; revision: number };
   resolve: (response: unknown) => void;
 };
 
 let pendingConverts: Deferred[] = [];
 let commitCalls: Array<[number, unknown]> = [];
 let cancelCalls = 0;
+let nextTargets: unknown[] = [];
+let cancelTargets: Array<{ sessionId: string; revision: number }> = [];
 
 const installElectronApi = () => {
   pendingConverts = [];
   commitCalls = [];
   cancelCalls = 0;
+  nextTargets = [];
+  cancelTargets = [];
   vi.stubGlobal('electronAPI', undefined);
   (window as unknown as { electronAPI: unknown }).electronAPI = {
     // Held open so a test can decide exactly when the reply lands, which is the
     // race the old implementation lost. / 応答の着弾タイミングをテストが決められるよう
     // 保留する。旧実装が負けていたのはこの競合である。
-    imeConvert: (kana: string) =>
+    imeConvert: (kana: string, context: Deferred['context']) =>
       new Promise((resolve) => {
-        pendingConverts.push({ kana, resolve });
+        pendingConverts.push({ kana, context, resolve });
       }),
-    imeNextCandidate: () => Promise.resolve({ success: false }),
+    imeNextCandidate: (target: unknown) => {
+      nextTargets.push(target);
+      return Promise.resolve({ success: false });
+    },
     imeCommitCandidate: (index: number, context: unknown) => {
       commitCalls.push([index, context]);
       return Promise.resolve({ success: true, committed: '' });
     },
-    imeCancelConversion: () => {
+    imeCancelConversion: (target: Deferred['context']) => {
       cancelCalls += 1;
+      cancelTargets.push(target);
       return Promise.resolve({ success: true });
     },
   };
@@ -438,6 +447,31 @@ describe('useKeyboardController - caret / キャレット', () => {
   });
 
   describe('main process sync / メインプロセスとの同期', () => {
+    it('targets conversion, cycling and commit at the same session/revision', async () => {
+      typeKeys('ka');
+      const { sessionId, revision } = pendingConverts.at(-1)!.context;
+      expect(sessionId).toEqual(expect.any(String));
+      expect(revision).toBeGreaterThan(0);
+      await resolveConvert(['か', '課']);
+      press('key-space');
+      await act(async () => {});
+      expect(nextTargets.at(-1)).toEqual({ sessionId, revision });
+      press('candidate-1');
+      expect(commitCalls.at(-1)![1]).toMatchObject({ sessionId, revision, expectedText: '課' });
+    });
+
+    it('cancels at a newer revision before restarting the reading', async () => {
+      typeKeys('ka');
+      const first = pendingConverts.at(-1)!.context;
+      await resolveConvert(['か', '課']);
+      press('key-clear');
+      const cancelled = cancelTargets.at(-1)!;
+      expect(cancelled.sessionId).toBe(first.sessionId);
+      expect(cancelled.revision).toBeGreaterThan(first.revision);
+      typeKeys('ka');
+      expect(pendingConverts.at(-1)!.context.revision).toBeGreaterThan(cancelled.revision);
+    });
+
     it('tells main to cancel when the renderer drops the conversion itself', async () => {
       typeKeys('ka');
       await resolveConvert(['か', '課']);

@@ -98,6 +98,28 @@ PATH isolation on the development host, not a substitute for validation on a
 Swift-uninstalled clean Windows machine. The manifest marks the stage as not
 ready for distribution while notices/provenance remain open.
 
+## Application integration (P4)
+
+The main process uses the staged helper asynchronously. In PowerShell, select
+the tested stage and a manually installed model before starting the app:
+
+```powershell
+$env:VRC_IME_HELPER_DIR = (Resolve-Path .tools/ime-helper-stage-v2).Path
+$env:VRC_IME_MODEL = (Resolve-Path .tools/models/zenz-v3.2-xsmall-q5-k-m/ggml-model-Q5_K_M.gguf).Path
+npm run electron:dev
+```
+
+Without a helper override, development uses .tools/ime-helper-stage. Without a
+model, the helper uses AzooKey dictionary conversion. Without the staged helper,
+the app preserves kana input. Executable/model paths are never accepted from a
+renderer. Packaged resources are not staged automatically yet (P7).
+
+Test the real application facade without launching SteamVR or posting OSC:
+
+```powershell
+node scripts/test-ime-app-integration.mjs .tools/ime-helper-stage-v2
+```
+
 ## Provenance checks still open
 
 The fixed dictionary checkout contains an Apache-2.0 LICENSE and a `TBW` README,

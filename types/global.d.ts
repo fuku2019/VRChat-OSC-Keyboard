@@ -1,7 +1,7 @@
 // Global TypeScript declarations / グローバルTypeScript宣言
 // This file defines global types and constants / このファイルはグローバル型と定数を定義
 
-import type { ImeContext, ImeResponse } from './ime';
+import type { ImeContext, ImeResponse, ImeTarget, ImeEngineStatus } from './ime';
 import type { OscConfig, VrStatus } from '../types';
 
 // Electron API exposed via preload / preload経由で公開されるElectron API
@@ -49,13 +49,14 @@ interface ElectronAPI {
     newValue: any,
   ) => Promise<{ success: boolean; error?: string }>;
   sendTypingStatus: (isTyping: boolean) => Promise<{ success: boolean; error?: string }>;
-  imeConvert: (kana: string, context?: ImeContext) => Promise<ImeResponse>;
-  imeNextCandidate: () => Promise<ImeResponse>;
+  imeConvert: (kana: string, context: ImeContext & ImeTarget) => Promise<ImeResponse>;
+  imeNextCandidate: (target: ImeTarget) => Promise<ImeResponse>;
   imeCommitCandidate: (
-    candidateIndex?: number,
-    context?: { previousWord?: string; currentInput?: string },
+    candidateIndex: number | undefined,
+    context: ImeContext & ImeTarget,
   ) => Promise<ImeResponse>;
-  imeCancelConversion: () => Promise<ImeResponse>;
+  imeCancelConversion: (target: ImeTarget) => Promise<ImeResponse>;
+  imeGetStatus: () => Promise<ImeEngineStatus>;
   resetOverlayPosition: () => Promise<{ success: boolean }>;
   restartApp: () => Promise<{ success: boolean; error?: string }>;
   // Check if running in debug mode  デバッグモードが有効か確認
