@@ -118,4 +118,30 @@ renderer crash or destruction. Settings can read jp-ime:status without opening
 an editing session. Status is immediately available during helper/model load.
 Application quit waits for helper disposal, bounded by the transport's grace
 period. The renderer forwards its existing request generation as a conversion
-revision; debounce and bounded commit waiting are the next P5 change.
+revision. Unmount uses jp-ime:release-session, which validates the target before
+releasing ownership and resetting the helper session. A new hook can establish
+a new session in the same document.
+
+## Live input and commit deadlines (P5)
+
+Every kana/buffer edit invalidates the prior result and queues the latest full
+reading with a 75ms debounce. Buffer text is displayed after converted kana;
+Backspace removes buffer first, then one kana. Space flushes debounce or cycles
+a matching result and enables numeric candidate shortcuts. Automatic live
+conversion keeps numbers as ordinary input. Candidate clicks carry the displayed
+result revision and text; they cannot select a newer list by accident.
+
+Commit freezes the current input, flushes any unsent conversion, and waits up
+to 200ms. A completed result or candidate cycle commits the selected full text.
+On expiry, that fixed reading and remaining romaji are committed; trailing n
+resolves to ん. Clear/Cancel invalidate both requests and deadlines. Mode changes
+and caret moves outside preedit commit the current visible text or kana without
+waiting; history replacement discards composition. During an explicit commit
+wait, typing, mode changes and duplicate commits are refused.
+
+The pure reducer exposes commitSeq and committedText as the completion snapshot;
+it contains no Promise, timer or DOM calls. The hook owns timers and IPC, guards
+duplicate sends during flush/StrictMode, and releases the session on unmount.
+Candidate overflow is filtered against the textarea limit while retaining engine
+indexes for commits. Conversion-only changes do not bump mutationSeq. Wiring
+the completion snapshot into OSC/manual-send handling is P6 work.

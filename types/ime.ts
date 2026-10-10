@@ -1,5 +1,6 @@
 export interface ImeCandidate {
   text: string;
+  engineIndex?: number;
   reading?: string;
   cost?: number;
   posId?: number;

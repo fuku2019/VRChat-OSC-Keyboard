@@ -69,6 +69,8 @@ const Harness = () => {
     caretRevision: ime.caretRevision,
     mutationSeq: ime.mutationSeq,
     isConverting: ime.isConverting,
+    hasPreedit: ime.hasPreedit,
+    isCommitPending: ime.isCommitPending,
     mode: ime.mode,
     setMode: ime.setMode,
     handleCharInput: ime.handleCharInput,
@@ -148,6 +150,7 @@ const press = (testId: string) =>
 
 const typeKeys = (chars: string) => {
   for (const char of chars) press(`key-${char}`);
+  act(() => { vi.advanceTimersByTime(75); });
 };
 
 // Answer the newest outstanding convert request the way main would. Typing
@@ -216,6 +219,7 @@ const echoSelection = () => {
 };
 
 beforeEach(() => {
+  vi.useFakeTimers();
   installElectronApi();
   onInputEffect.mockClear();
   onPrimaryAction.mockClear();
@@ -224,6 +228,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  vi.useRealTimers();
   vi.unstubAllGlobals();
 });
 
@@ -447,6 +452,19 @@ describe('useKeyboardController - caret / キャレット', () => {
   });
 
   describe('main process sync / メインプロセスとの同期', () => {
+    it('makes the primary key commit an unfinished reading before it can send', async () => {
+      press('key-k');
+      press('key-a');
+      press('key-send');
+      press('key-send');
+      expect(onPrimaryAction).not.toHaveBeenCalled();
+      expect(pendingConverts).toHaveLength(1);
+      await resolveConvert(['課']);
+      expect(textarea().value).toBe('課');
+      press('key-send');
+      expect(onPrimaryAction).toHaveBeenCalledTimes(1);
+    });
+
     it('targets conversion, cycling and commit at the same session/revision', async () => {
       typeKeys('ka');
       const { sessionId, revision } = pendingConverts.at(-1)!.context;
@@ -482,10 +500,10 @@ describe('useKeyboardController - caret / キャレット', () => {
       expect(cancelCalls).toBe(before + 1);
     });
 
-    it('tells main to cancel when continued romaji leaves candidate mode', async () => {
+    it('requests a newer revision when continued romaji leaves candidate mode', async () => {
       typeKeys('ka');
       await resolveConvert(['か', '課']);
-      const before = cancelCalls;
+      const before = pendingConverts.length;
 
       // Typing on leaves candidate mode and keeps building the reading. Main
       // must be told, or it answers the next commit from these stale segments.
@@ -493,9 +511,9 @@ describe('useKeyboardController - caret / キャレット', () => {
       // 次の確定がこの古いsegmentsに対して処理されてしまう。
       press('key-n');
 
-      await act(async () => {});
+      await act(async () => { vi.advanceTimersByTime(75); });
 
-      expect(cancelCalls).toBe(before + 1);
+      expect(pendingConverts.length).toBe(before + 1);
       expect(textarea().value).toBe('かn');
     });
 

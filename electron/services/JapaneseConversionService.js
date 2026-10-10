@@ -127,7 +127,13 @@ export class JapaneseConversionService {
     }
   }
 
-  releaseSession() {
+  releaseSession(target) {
+    if (target) {
+      validateRequest({ ...target, text: '' });
+      if (this.state.sessionId && (target.sessionId !== this.state.sessionId || target.revision < this.state.revision)) {
+        throw new ImeEngineError('stale-revision');
+      }
+    }
     const sessionId = this.state.sessionId;
     ++this.epoch;
     this.state = emptyState();

@@ -71,6 +71,9 @@ const App = () => {
     candidates,
     candidateIndex,
     isConverting,
+    hasPreedit,
+    isCommitPending,
+    candidateSelectionMode,
     displayText,
     displayCaret,
     displaySelectionEnd,
@@ -224,6 +227,8 @@ const App = () => {
     caretRevision,
     mutationSeq,
     isConverting,
+    hasPreedit,
+    isCommitPending,
     mode,
     setMode,
     handleCharInput,
@@ -448,6 +453,7 @@ const App = () => {
             <button
               className='cursor-pointer text-[10px] font-bold dark:bg-slate-800 bg-slate-100 px-2 py-0.5 rounded dark:text-slate-400 text-slate-500 border dark:border-slate-700 border-slate-200 hover:text-primary-600 dark:hover:text-[rgb(var(--rgb-on-primary))] hover:border-primary-500 transition-colors'
               onClick={toggleMode}
+              disabled={isCommitPending}
               tabIndex={-1}
             >
               {t.modes[mode]}
@@ -455,6 +461,11 @@ const App = () => {
           </div>
 
           <div className='relative w-full h-full mt-6'>
+            {isCommitPending && (
+              <span role='status' className='absolute right-0 -top-5 text-xs dark:text-slate-300 text-slate-600'>
+                {config.language === 'ja' ? '確定中…' : 'Committing…'}
+              </span>
+            )}
             <PreeditUnderline
               textareaRef={textareaRef}
               text={displayText}
@@ -465,6 +476,7 @@ const App = () => {
             <textarea
               ref={textareaRef}
               value={displayText}
+              aria-busy={isCommitPending}
               onChange={handleTextareaChange}
               onBlur={handleBlur}
               onSelect={handleSelect}
@@ -486,6 +498,8 @@ const App = () => {
           candidates={candidates}
           candidateIndex={candidateIndex}
           isConverting={isConverting}
+          candidateSelectionMode={candidateSelectionMode}
+          isCommitPending={isCommitPending}
           onCommitCandidate={virtualKeyHandlers.onCommitCandidate}
           language={config.language}
           keySoundEnabled={config.keySoundEnabled}

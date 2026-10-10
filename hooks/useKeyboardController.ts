@@ -43,6 +43,8 @@ interface UseKeyboardControllerProps {
   caretRevision: number;
   mutationSeq: number;
   isConverting: boolean;
+  hasPreedit?: boolean;
+  isCommitPending?: boolean;
   mode: InputMode;
   setMode: (mode: InputMode) => void;
   handleCharInput: (char: string) => void;
@@ -77,6 +79,8 @@ export const useKeyboardController = ({
   caretRevision,
   mutationSeq,
   isConverting,
+  hasPreedit = isConverting,
+  isCommitPending = false,
   mode,
   setMode,
   handleCharInput,
@@ -225,7 +229,11 @@ export const useKeyboardController = ({
       onChar: handleCharInput,
       onBackspace: handleBackspace,
       onClear: handleClear,
-      onSend: () => (isConverting ? handleCommitCandidate() : handlePrimaryAction()),
+      onSend: () => {
+        if (isCommitPending) return;
+        if (hasPreedit) handleCommitCandidate();
+        else handlePrimaryAction();
+      },
       onSpace: handleSpace,
       onToggleMode: toggleMode,
       onCommitCandidate: handleCommitCandidate,
@@ -240,6 +248,8 @@ export const useKeyboardController = ({
       handleCommitCandidate,
       handlePrimaryAction,
       isConverting,
+      hasPreedit,
+      isCommitPending,
       toggleMode,
       onHistoryUp,
       onHistoryDown,

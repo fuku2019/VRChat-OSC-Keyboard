@@ -57,6 +57,7 @@ interface ElectronAPI {
   ) => Promise<ImeResponse>;
   imeCancelConversion: (target: ImeTarget) => Promise<ImeResponse>;
   imeGetStatus: () => Promise<ImeEngineStatus>;
+  imeReleaseSession: (target: ImeTarget) => Promise<ImeResponse>;
   resetOverlayPosition: () => Promise<{ success: boolean }>;
   restartApp: () => Promise<{ success: boolean; error?: string }>;
   // Check if running in debug mode  デバッグモードが有効か確認

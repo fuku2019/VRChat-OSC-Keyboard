@@ -101,6 +101,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('jp-ime:commit', candidateIndex, context),
   imeCancelConversion: (target) => ipcRenderer.invoke('jp-ime:cancel', target),
   imeGetStatus: () => ipcRenderer.invoke('jp-ime:status'),
+  imeReleaseSession: (target) => ipcRenderer.invoke('jp-ime:release-session', target),
 
   // Send window size to main process / メインプロセスにウィンドウサイズを送信
   sendWindowSize: (width, height) =>

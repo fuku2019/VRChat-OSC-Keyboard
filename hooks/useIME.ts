@@ -2,12 +2,9 @@
  * useIME - Binds the pure IME state machine to React and to the main process.
  * 純粋なIME状態機械をReactとメインプロセスへ結びつけるフック。
  *
- * All of the logic lives in imeReducer.ts. This hook only does the two things a
- * reducer cannot: hold the state in React, and fire the IPC requests the
- * reducer asks for through its `pending` slot.
- * ロジックはすべて imeReducer.ts にある。このフックはリデューサにできない2点だけを担う。
- * すなわち状態をReactで保持することと、リデューサが `pending` に置いた注文票に従って
- * IPCを発射することである。
+ * imeReducer owns input and completion snapshots. This hook owns the debounce
+ * and commit deadline timers, and sends the reducer's pending IPC requests.
+ * 入力と確定snapshotはリデューサ、debounce・確定期限のtimerとIPCはこのフックが担う。
  *
  * Driving IPC from state rather than from the call sites is what keeps the
  * generation counter honest: every action that throws work away bumps it inside
@@ -20,7 +17,7 @@
  * 進め忘れていたため、古い変換が確定済みの未確定文字列を復活させていた。
  */
 
-import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { InputMode } from '../types';
 import { CHATBOX } from '../constants';
 import type { ImeCandidate } from '../types/ime';
@@ -33,6 +30,9 @@ import {
   preeditRangeOf,
 } from './imeReducer';
 
+const CONVERSION_DEBOUNCE_MS = 75;
+const COMMIT_DEADLINE_MS = 200;
+
 export interface UseIMEReturn {
   input: string; // Committed text / 確定したテキスト
   displayText: string; // What the textarea shows / テキストエリアに表示される文字列
@@ -43,6 +43,11 @@ export interface UseIMEReturn {
   candidates: ImeCandidate[];
   candidateIndex: number;
   isConverting: boolean;
+  isConversionPending: boolean;
+  isCommitPending: boolean;
+  candidateSelectionMode: boolean;
+  commitSeq: number;
+  committedText: string;
   hasPreedit: boolean;
   preeditRange: { start: number; end: number } | null; // Preedit span in displayText / displayText上の未確定範囲
   mode: InputMode;
@@ -82,8 +87,19 @@ export const useIME = (
   const [state, dispatch] = useReducer(imeReducer, undefined, () =>
     createInitialImeState(initialMode, maxLength),
   );
-  const sessionId = useRef(crypto.randomUUID());
-  const conversionRevision = useRef(0);
+  const [sessionId] = useState(() => crypto.randomUUID());
+  const lastSent = useRef('');
+  const latestRequestId = useRef(0);
+  latestRequestId.current = state.requestId;
+  const mounted = useRef(true);
+
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      void window.electronAPI?.imeReleaseSession?.({ sessionId, revision: latestRequestId.current + 1 }).catch(() => {});
+    };
+  }, [sessionId]);
 
   const displayText = useMemo(() => displayTextOf(state), [state]);
   const displayCaret = useMemo(() => displayCaretOf(state), [state]);
@@ -97,51 +113,52 @@ export const useIME = (
   const pending = state.pending;
   useEffect(() => {
     if (!pending) return;
-
-    const settle = (state?: unknown, kana?: string) =>
+    const settle = (result?: unknown, kana?: string) => {
+      if (!mounted.current) return;
       dispatch({
         type: 'IPC_RESULT',
         requestId: pending.id,
         kind: pending.kind,
-        state: (state as never) ?? null,
+        state: (result as never) ?? null,
         kana,
       });
-
-    // Outside Electron (npm run dev) there is no main process to ask, so let
-    // the reducer fall back to its local candidate list straight away.
-    // Electron外(npm run dev)には問い合わせ先のメインプロセスが無いため、
-    // 即座にリデューサのローカル候補へフォールバックさせる。
-    if (!hasImeIpcApi()) {
-      settle(null, pending.kind === 'convert' ? pending.kana : undefined);
-      return;
-    }
-
-    const api = window.electronAPI!;
-    if (pending.kind === 'convert') conversionRevision.current = pending.id;
-    const target = {
-      sessionId: sessionId.current,
-      revision: pending.kind === 'cancel' ? pending.id : conversionRevision.current,
     };
-    const request =
-      pending.kind === 'convert'
-        ? api.imeConvert!(pending.kana, { ...pending.context, ...target })
-        : pending.kind === 'next'
-          ? api.imeNextCandidate!(target)
-          : pending.kind === 'commit'
-            ? api.imeCommitCandidate!(pending.index, { ...pending.context, ...target })
-            : api.imeCancelConversion!(target);
+    const send = () => {
+      const key = `${pending.kind}:${pending.id}`;
+      // Flush/debounce and StrictMode must not send the same conversion twice.
+      if (lastSent.current === key) return;
+      lastSent.current = key;
+      const kana = pending.kind === 'convert' ? pending.kana : undefined;
+      if (!hasImeIpcApi()) { settle(null, kana); return; }
+      const target = { sessionId, revision: 'revision' in pending ? pending.revision : pending.id };
+      const api = window.electronAPI!;
+      try {
+        const request = pending.kind === 'convert'
+          ? api.imeConvert(pending.kana, { ...pending.context, ...target })
+          : pending.kind === 'next' ? api.imeNextCandidate(target)
+            : pending.kind === 'commit' ? api.imeCommitCandidate(pending.index, { ...pending.context, ...target })
+              : api.imeCancelConversion(target);
+        void request.then(response => {
+          const result = response?.success ? response.state : null;
+          if ((result?.sessionId !== undefined && result.sessionId !== sessionId) ||
+              (result?.revision !== undefined && result.revision !== target.revision)) { settle(null, kana); return; }
+          settle(result, kana);
+        }).catch(() => settle(null, kana));
+      } catch { settle(null, kana); }
+    };
+    if (pending.kind === 'convert' && !pending.immediate) {
+      const timer = setTimeout(send, CONVERSION_DEBOUNCE_MS);
+      return () => clearTimeout(timer);
+    }
+    send();
+  }, [pending, sessionId]);
 
-    void request
-      .then((response) => {
-        settle(
-          response?.success ? response.state : null,
-          pending.kind === 'convert' ? pending.kana : undefined,
-        );
-      })
-      .catch(() => {
-        settle(null, pending.kind === 'convert' ? pending.kana : undefined);
-      });
-  }, [pending]);
+  const commitWait = state.commitWait;
+  useEffect(() => {
+    if (!commitWait) return;
+    const timer = setTimeout(() => dispatch({ type: 'COMMIT_TIMEOUT', revision: commitWait.revision }), COMMIT_DEADLINE_MS);
+    return () => clearTimeout(timer);
+  }, [commitWait]);
 
   // dispatch is stable, so every handler below is stable too. That is what lets
   // the virtual keyboard stay memoised. / dispatch は安定なので以下のハンドラも
@@ -158,8 +175,10 @@ export const useIME = (
   const handleSpace = useCallback(() => dispatch({ type: 'SPACE' }), []);
   const handleClear = useCallback(() => dispatch({ type: 'CLEAR' }), []);
   const handleCommitCandidate = useCallback(
-    (index?: number) => dispatch({ type: 'COMMIT_PREEDIT', index }),
-    [],
+    (index?: number) => dispatch({ type: 'COMMIT_PREEDIT', index,
+      resultRevision: index === undefined ? undefined : state.resultRevision ?? undefined,
+      expectedText: index === undefined ? undefined : state.candidates[index]?.text }),
+    [state.resultRevision, state.candidates],
   );
   const handleCancelConversion = useCallback(
     () => dispatch({ type: 'CANCEL_CONVERSION' }),
@@ -199,6 +218,11 @@ export const useIME = (
     candidates: state.candidates,
     candidateIndex: state.candidateIndex,
     isConverting: state.isConverting,
+    isConversionPending: state.pending?.kind === 'convert',
+    isCommitPending: state.commitWait !== null,
+    candidateSelectionMode: state.candidateSelectionMode,
+    commitSeq: state.commitSeq,
+    committedText: state.committedText,
     hasPreedit: state.preeditStart !== null,
     preeditRange,
     mode: state.mode,

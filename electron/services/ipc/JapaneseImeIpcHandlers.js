@@ -7,11 +7,12 @@ export function registerJapaneseImeIpcHandlers() {
   let owner;
   let sessionId;
   const hooked = new WeakSet();
-  const release = (sender) => {
+  const release = (sender, target) => {
     if (owner !== sender) return;
+    const resetting = getJapaneseConversionService().releaseSession(target);
     owner = undefined;
     sessionId = undefined;
-    void getJapaneseConversionService().releaseSession();
+    return resetting;
   };
   const authorize = (event, target) => {
     const keyboard = getKeyboardWindow();
@@ -50,6 +51,7 @@ export function registerJapaneseImeIpcHandlers() {
     (_index, target) => target);
   handle('jp-ime:cancel', async (service, target) => ({ state: await service.cancel(target) }),
     (target) => target);
+  handle('jp-ime:release-session', async (_service, target) => { await release(owner, target); return {}; }, (target) => target);
   // Read-only and immediately available to both keyboard and settings windows.
   ipcMain.handle('jp-ime:status', () => getJapaneseConversionService().status);
 }

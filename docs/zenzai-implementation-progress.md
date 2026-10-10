@@ -127,3 +127,40 @@ helper: xsmall gives 今日はいい天気, no/missing model uses AzooKey, missi
 uses kana; cycling, commit, reset and a new session also pass. These are service
 and mocked IPC checks, not a VR/OSC acceptance test. P2 clean-host/notices,
 P5–P9 and installer/VR acceptance remain open.
+
+## P5: live conversion and bounded commit state machine implemented
+
+The renderer now debounces full-reading requests for 75ms, with independent
+input/result revisions and IPC operation IDs. Kana and unfinished romaji remain
+separate; returned candidates display the buffer as a suffix. Backspace deletes
+buffer first and then kana, and re-converts the shortened full reading. Space
+flushes debounce or cycles a current result. Numeric candidate shortcuts are
+enabled only after Space; digits during automatic conversion remain text.
+
+Explicit commit freezes composition and flushes any unsent conversion. It waits
+at most 200ms for conversion or an in-flight candidate cycle, then commits the
+fixed kana/buffer fallback if needed. Trailing n resolves to ん. Clear/Cancel
+invalidate requests and deadlines; mode/caret boundaries commit the current
+snapshot or kana, and history replacement discards composition. The reducer
+exposes commitSeq and the committed text snapshot without timers, Promises or
+DOM calls. The hook owns deadlines/debounce and rejects duplicate/stale replies.
+
+Candidate clicks include the displayed result revision/text. Length filtering
+retains engine indexes, so removing an overflowing candidate cannot commit a
+different main-process candidate. Completion preserves the existing caret and
+mutationSeq synchronization. Unmount releases the editing session, permitting
+a remount in the same document; stale release requests cannot clear newer input.
+
+Minimal application wiring shows committing/aria-busy, disables candidate/mode
+selection while waiting and routes the primary key to commit whenever preedit
+exists. Candidate number hints appear only in explicit selection mode. Full
+OSC snapshot handling, send concurrency and engine/model UI remain P6 work.
+
+Validation: 484 Vitest tests and 31 transport tests pass; typecheck and production
+frontend build pass. Added controlled-timer tests cover burst debounce, buffer
+preservation, inverted replies, Space flush, 200ms fallback, trailing n,
+Clear/Cancel/history during commit, stale candidate clicks, candidate-cycle
+completion, length limits, unmount and StrictMode. The real-helper facade smoke
+still passes for xsmall, dictionary-only, missing model and missing helper.
+These are automated logic/service checks, not measured UI latency or VR/OSC
+acceptance. P6 is next; P2 clean-host/notices and P7–P9 remain open.

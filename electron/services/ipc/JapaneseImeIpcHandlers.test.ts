@@ -69,4 +69,15 @@ describe('Japanese IME IPC', () => {
     expect(await invoke('status')).toEqual({ state: 'ready', engine: 'kana', reason: 'test' });
     expect(service.buildState().sessionId).toBe('');
   });
+  it('releases an unmounted hook and permits a new session in the same document', async () => {
+    await invoke('convert', 'かな', target);
+    expect(await invoke('release-session', { ...target, revision: 2 })).toMatchObject({ success: true });
+    expect(service.buildState().sessionId).toBe('');
+    expect(await invoke('convert', 'かな', { ...target, sessionId: 'remounted' })).toMatchObject({ success: true });
+  });
+  it('does not let an old release clear a newer composition', async () => {
+    await invoke('convert', 'かな', { ...target, revision: 3 });
+    expect(await invoke('release-session', target)).toMatchObject({ success: false, code: 'stale-revision' });
+    expect(service.buildState().rawKana).toBe('かな');
+  });
 });

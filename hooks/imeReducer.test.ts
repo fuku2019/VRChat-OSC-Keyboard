@@ -288,7 +288,7 @@ describe('imeReducer / IME状態機械', () => {
   });
 
   describe('commit context / 確定時のコンテキスト', () => {
-    it('sends the committed text so main can verify before learning', () => {
+    it('sends the committed text so main can verify the candidate snapshot', () => {
       let state = type(fresh(), 'ka');
       state = reply(state, ['か', '課']);
 
@@ -371,8 +371,7 @@ describe('imeReducer / IME状態機械', () => {
       state = type(state, 'ka');
       state = reply(state, ['か']);
 
-      state = imeReducer(state, { type: 'BACKSPACE' }); // leaves candidate mode
-      state = imeReducer(state, { type: 'BACKSPACE' }); // deletes the kana
+      state = imeReducer(state, { type: 'BACKSPACE' }); // deletes the kana immediately
 
       expect(state.input).toBe('ABCD');
       expect(state.rawKana).toBe('');
@@ -487,9 +486,10 @@ describe('imeReducer / IME状態機械', () => {
   });
 
   describe('candidate digits / 数字キーでの候補選択', () => {
-    it('commits the nth candidate instead of typing the digit', () => {
+    it('commits the nth candidate after Space enters candidate selection', () => {
       let state = type(fresh(), 'a');
       state = reply(state, ['あ', 'ア', '亜']);
+      state = imeReducer(state, { type: 'SPACE' });
 
       state = type(state, '3');
 
