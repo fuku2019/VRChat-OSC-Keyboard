@@ -121,13 +121,13 @@ try {
             if ((i + 1) % 10 === 0) console.log(`${model.id}: ${workload} ${i + 1}/${samples}`);
           }
           for (const { item, measurements } of batches) {
-          const successful = measurements.filter((value) => !value.error && value.engine === 'zenzai');
-          record.cases.push({ id: item.id, workload, measurements, neuralSuccesses: successful.length,
-            helperMs: summary(successful.map((value) => value.helperMs)),
-            roundTripMs: summary(successful.map((value) => value.roundTripMs)),
-            failuresOrFallbacks: measurements.filter((value) => value.error || value.engine !== 'zenzai').length });
-          console.log(`${model.id}: ${item.id} ${successful.length}/${samples}, p95=${record.cases.at(-1).roundTripMs.p95} ms`);
-          await save();
+            const successful = measurements.filter((value) => !value.error && value.engine === 'zenzai');
+            record.cases.push({ id: item.id, workload, measurements, neuralSuccesses: successful.length,
+              helperMs: summary(successful.map((value) => value.helperMs)),
+              roundTripMs: summary(successful.map((value) => value.roundTripMs)),
+              failuresOrFallbacks: measurements.filter((value) => value.error || value.engine !== 'zenzai').length });
+            console.log(`${model.id}: ${item.id} ${successful.length}/${samples}, p95=${record.cases.at(-1).roundTripMs.p95} ms`);
+            await save();
           }
         }
         for (const debounceMs of [50, 75, 100]) {
@@ -147,7 +147,9 @@ try {
         await client.dispose();
         const diagnostics = stderr.split(/\r?\n/).filter((line) => line.startsWith('{"imeDiagnostics"'))
           .map((line) => JSON.parse(line).imeDiagnostics);
-        record.startups[trial].diagnostics = { first: diagnostics[0], last: diagnostics.at(-1) };
+        if (record.startups[trial]) {
+          record.startups[trial].diagnostics = { first: diagnostics[0], last: diagnostics.at(-1) };
+        }
       }
     }
     record.readyMs = summary(record.startups.map((value) => value.readyMs));
