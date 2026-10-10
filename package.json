@@ -27,6 +27,7 @@
     "dist:validation": "node scripts/verify-ime-package.mjs --stage .tools/ime-helper-package --development && vite build && electron-builder --win --x64 --publish never && node scripts/verify-ime-package.mjs --app release/win-unpacked --development",
     "ime:verify-stage": "node scripts/verify-ime-package.mjs --stage .tools/ime-helper-package",
     "ime:stage": "pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/stage-ime-helper.ps1 -Destination .tools/ime-helper-package",
+    "ime:benchmark": "node scripts/benchmark-ime.mjs",
     "test": "vitest",
     "test:run": "vitest run && npm run test:ime-helper",
     "test:ime-helper": "node --test electron/services/ime/tests/*.node-test.mjs",
