@@ -25,7 +25,8 @@
     "electron:dev:vr:eps": "concurrently -k \"cross-env IS_ELECTRON=true vite\" \"wait-on tcp:5173 && electron . --vr --perf-log --cursor-epsilon=0.005\"",
     "dist": "vite build && electron-builder && node scripts/rename-build-output.js",
     "test": "vitest",
-    "test:run": "vitest run",
+    "test:run": "vitest run && npm run test:ime-helper",
+    "test:ime-helper": "node --test electron/services/ime/tests/*.node-test.mjs",
     "build:native": "napi build --platform --release --manifest-path ./native/Cargo.toml && node scripts/sync-native.cjs",
     "native:check": "cargo clippy --manifest-path ./native/Cargo.toml --all-targets -- -D warnings",
     "ime:build-dict": "node scripts/ime/build-mozc-shards.mjs",
@@ -90,7 +91,8 @@
       "steamvr/**/*",
       "!**/*.test.ts",
       "!**/*.test.tsx",
-      "!**/*.test.js"
+      "!**/*.test.js",
+      "!electron/services/ime/tests/**/*"
     ],
     "directories": {
       "output": "release"
