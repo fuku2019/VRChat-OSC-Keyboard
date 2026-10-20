@@ -1,0 +1,80 @@
+name: Windows IME validation
+on:
+  pull_request:
+  push:
+    branches: ['main', 'codex/**']
+  workflow_dispatch:
+  workflow_call:
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-2022
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: compnerd/gha-setup-swift@main
+        with:
+          swift-version: swift-6.1.3-release
+          swift-build: 6.1.3-RELEASE
+      - run: npm ci
+      - run: npm run test:run
+      - run: npm run typecheck
+      - name: Fetch pinned helper dependencies (no weights)
+        run: ./scripts/fetch-ime-validation-assets.ps1 -SkipModels
+      - name: Build pinned helper and stage
+        run: |
+          ./scripts/build-ime-helper.ps1
+          npm run ime:stage
+          if ($LASTEXITCODE -ne 0) { throw 'Staging failed' }
+          node scripts/test-ime-package.mjs .tools/ime-helper-package
+          if ($LASTEXITCODE -ne 0) { throw 'Stage verification failed' }
+      - name: Build overlay native module
+        run: |
+          $env:LIBCLANG_PATH = Split-Path (Get-Command swift).Source -Parent
+          npm run build:native
+          if ($LASTEXITCODE -ne 0) { throw 'Native build failed' }
+      - name: Build validation installer and zip
+        run: |
+          npm run dist:validation
+          if ($LASTEXITCODE -ne 0) { throw 'Packaging failed' }
+          ./scripts/test-ime-artifacts.ps1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-validation
+          path: release/
+          retention-days: 7
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ime-helper-validation
+          path: .tools/ime-helper-package/
+          retention-days: 7
+  model-integration:
+    needs: windows
+    runs-on: windows-2022
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: ime-helper-validation
+          path: .tools/ime-helper-package
+      - name: Download and verify fixed xsmall model (download failures)
+        run: ./scripts/fetch-ime-validation-assets.ps1
+      - name: Execute staged model (inference failures)
+        run: |
+          node scripts/test-ime-app-integration.mjs .tools/ime-helper-package
+          if ($LASTEXITCODE -ne 0) { throw 'Model inference failed' }

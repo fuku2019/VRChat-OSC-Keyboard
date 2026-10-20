@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "description": "Fixed kana input at the helper boundary; not a conversion-quality gold set or a renderer/romaji benchmark.",
+  "cases": [
+    { "id": "short", "text": "にほんご", "leftContext": "" },
+    { "id": "medium", "text": "きょうはともだちといっしょにあそびにいきます", "leftContext": "こんにちは。" },
+    { "id": "long", "text": "きょうはともだちといっしょにあたらしいわーるどをたんけんしましたとてもきれいなけしきだったのでまたみんなであそびにいきたいです", "leftContext": "今日のできごと。" }
+  ],
+  "trace": [
+    { "atMs": 0, "text": "き" },
+    { "atMs": 60, "text": "きょ" },
+    { "atMs": 120, "text": "きょう" },
+    { "atMs": 380, "text": "きょうは" },
+    { "atMs": 440, "text": "きょうはい" },
+    { "atMs": 500, "text": "きょうはいい" },
+    { "atMs": 560, "text": "きょうはいいてんき" }
+  ]
+}

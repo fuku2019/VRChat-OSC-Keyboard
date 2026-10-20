@@ -5,7 +5,9 @@
 
 </div>
 
-# VRChat-OSC-Keyboard
+# VrcLiveIme (development fork)
+
+現在は配布検証中です。以下の既存リリースリンクは上流版を指します。VrcLiveImeのビルド・未完了項目は[配布手順](docs/distribution.md)を参照してください。
 
 <div align="center">
 
@@ -142,16 +144,17 @@ VRChatはVRモードでプレイすると、テキストチャットが不便<br
 npm install
 # ネイティブモジュール (Rust) のビルド
 npm run build:native
-# Mozc辞書shardの生成（辞書更新時のみ）
-npm run ime:build-dict
-# ビルドの実行
-npm run dist
+# Swift helperのビルドとstage（依存の準備はhelper/README.md参照）
+pwsh -File scripts/build-ime-helper.ps1
+npm run ime:stage
+# 公開しない配布検証用ビルド
+npm run dist:validation
 ```
 
 ## ライセンス補足
-- Mozc dictionary_oss由来データを同梱しています。
-- 辞書shardは `dictionary00-09` 由来のフル語彙を先頭1文字キー分割で再生成しています。
-- 詳細は `THIRD_PARTY_MOZC_DICTIONARY_LICENSES.txt` を参照してください。
+- この作業版はVrcLiveImeです。旧Mozcシャード・学習処理を撤去し、AzooKey／Zenzai helperへ移行しています。
+- 新辞書の由来・runtimeの再配布表記・Swift未導入環境の検証は未完了で、公開用ビルドは検査で停止します。
+- [配布とモデルの手動指定](docs/distribution.md)、[第三者表記](THIRD_PARTY_NOTICES.md)、[helper手順](helper/README.md)を参照してください。上流版の設定や更新先は共有しません。
 
 ***
 <table>

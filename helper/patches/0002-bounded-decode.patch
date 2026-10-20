@@ -1,0 +1,14 @@
+diff --git a/Sources/KanaKanjiConverterModule/ConversionAlgorithms/Zenzai/Zenz/ZenzContext.swift b/Sources/KanaKanjiConverterModule/ConversionAlgorithms/Zenzai/Zenz/ZenzContext.swift
+--- a/Sources/KanaKanjiConverterModule/ConversionAlgorithms/Zenzai/Zenz/ZenzContext.swift
++++ b/Sources/KanaKanjiConverterModule/ConversionAlgorithms/Zenzai/Zenz/ZenzContext.swift
+@@ -465,6 +465,10 @@
+     private func getLogits(tokens: [llama_token], logits_start_index: Int = 0, seqId: llama_seq_id = 0) -> UnsafeMutablePointer<Float>? {
++        guard tokens.count <= Int(llama_n_ctx(self.context)), tokens.count <= 512 else {
++            self.failedDecodeCount += 1
++            return nil
++        }
+         let currentPrevInput = self.prevInputBySeq[seqId] ?? []
+         var effectivePrevInput = currentPrevInput
+ 
+         // Try to copy KV cache from the other sequence if it gives a longer prefix match.
+         let otherSeqId: llama_seq_id? = if seqId == evalSeqId {

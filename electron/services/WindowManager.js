@@ -31,7 +31,7 @@ const savePositionTimers = new Map();
 
 // Initialize electron-store for window position persistence / ウィンドウ位置の永続化用にelectron-storeを初期化
 const store = new Store({
-  projectName: 'vrchat-osc-keyboard',
+  projectName: 'vrcliveime',
   name: 'window-state',
   defaults: {
     windowPosition: null, // Legacy single-window key / 旧: 単一ウィンドウ時代のキー

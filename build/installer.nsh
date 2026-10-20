@@ -1,6 +1,6 @@
 !macro customHeader
   ; Set Welcome Page title   ; ようこそページのタイトルを設定する
-  !define MUI_WELCOMEPAGE_TITLE "VRChat OSC Keyboard セットアップへようこそ"
+  !define MUI_WELCOMEPAGE_TITLE "VrcLiveIme セットアップへようこそ"
 !macroend
 
 !macro customWelcomePage

@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "models": [
+    {
+      "id": "zenz-v3.2-xsmall-q5-k-m",
+      "repository": "Miwa-Keita/zenz-v3.2-xsmall-gguf",
+      "revision": "4f5423f0fad41a73b1242eb96fe5c12ae4fdca83",
+      "filename": "ggml-model-Q5_K_M.gguf",
+      "bytes": 20970304,
+      "sha256": "00c64b3d318045a708d0cad5434faccab10f5481a49e6362864551fd0995fa58",
+      "license": "Apache-2.0"
+    },
+    {
+      "id": "zenz-v3.2-small-q5-k-m",
+      "repository": "Miwa-Keita/zenz-v3.2-small-gguf",
+      "revision": "c67e03e07d215c869f591b274c1631170d3e11fe",
+      "filename": "ggml-model-Q5_K_M.gguf",
+      "bytes": 73871936,
+      "sha256": "29c223d4c23327b80fd13ebb5ab2555057a46317997d5da391584ffbef0db673",
+      "license": "Apache-2.0"
+    }
+  ]
+}

@@ -2,6 +2,7 @@ import { app, ipcMain, shell } from 'electron';
 import fs from 'fs';
 import path from 'path';
 import { spawn } from 'child_process';
+import { UPDATE_API_URL } from '../../appIdentity.js';
 
 // Allowed domains for download URLs / ダウンロードURL用の許可ドメイン
 const ALLOWED_DOWNLOAD_DOMAINS = [
@@ -18,7 +19,7 @@ const isInstallerVersion = (debugConfig) => {
     const exeDir = path.dirname(app.getPath('exe'));
     const uninstallerPath = path.join(
       exeDir,
-      'Uninstall VRChat-OSC-Keyboard.exe',
+      'Uninstall VrcLiveIme.exe',
     );
     return fs.existsSync(uninstallerPath);
   } catch (error) {
@@ -26,8 +27,7 @@ const isInstallerVersion = (debugConfig) => {
   }
 };
 // GitHub repository info / GitHubリポジトリ情報
-const GITHUB_API_URL =
-  'https://api.github.com/repos/fuku2019/VRChat-OSC-Keyboard/releases/latest';
+const GITHUB_API_URL = UPDATE_API_URL;
 
 export function isSafeExternalUrl(url) {
   if (typeof url !== 'string' || !url.trim()) {
@@ -95,6 +95,7 @@ export function registerSystemIpcHandlers(
 ) {
   // Check for updates / 更新を確認
   ipcMain.handle('check-for-update', async () => {
+    if (!GITHUB_API_URL) return { success: true, updateAvailable: false, disabled: true };
     try {
       if (debugConfig.enableDebugMode) {
         const isInstaller = isInstallerVersion(debugConfig);
@@ -203,6 +204,7 @@ export function registerSystemIpcHandlers(
 
   // Download update / アップデートをダウンロード
   ipcMain.handle('download-update', async (event, url) => {
+    if (!GITHUB_API_URL) return { success: false, error: 'Updates are disabled for this fork' };
     try {
       // #3: Prevent concurrent downloads / 並行ダウンロードを防止
       if (updateAbortController) {
@@ -393,6 +395,7 @@ export function registerSystemIpcHandlers(
 
   // Install update / アップデートをインストール
   ipcMain.handle('install-update', async (event, destPath) => {
+    if (!GITHUB_API_URL) return { success: false, error: 'Updates are disabled for this fork' };
     try {
       if (debugConfig.enableDebugMode) {
         console.log(`[DEBUG] install-update called with destPath: ${destPath}`);

@@ -11,6 +11,13 @@ const DEV_ARGV = ['C:/app/node_modules/electron/dist/electron.exe', '.'];
 const PACKAGED_ARGV = ['C:/Program Files/VRChat OSC Keyboard/app.exe'];
 
 describe('parseLaunchArgs', () => {
+  it('accepts manual model paths with spaces in both argument forms', () => {
+    const model = 'C:/models/manual model.gguf';
+    expect(parseLaunchArgs([...PACKAGED_ARGV, '--ime-model', model]).imeModel).toBe(model);
+    expect(parseLaunchArgs([...DEV_ARGV, `--ime-model=${model}`]).imeModel).toBe(model);
+    expect(parseLaunchArgs([...PACKAGED_ARGV, '--ime-model', '--vr']).imeModel).toBeNull();
+    expect(parseLaunchArgs([...PACKAGED_ARGV, '--ime-model=']).imeModel).toBeNull();
+  });
   it('returns inert defaults with no flags', () => {
     expect(parseLaunchArgs([...PACKAGED_ARGV])).toEqual({
       debug: false,
@@ -20,6 +27,7 @@ describe('parseLaunchArgs', () => {
       pointerFilter: null,
       cursorEpsilon: null,
       keepIdleCursors: false,
+      imeModel: null,
     });
   });
 

@@ -3,130 +3,78 @@ import { useConfigStore } from '../stores/configStore';
 import { sendOscMessage } from '../services/oscService';
 import { throttle } from '../utils/throttle';
 import { TRANSLATIONS, TIMEOUTS, THROTTLE } from '../constants';
+import type { ImeTextSnapshot } from '../types/ime';
 
-/**
- * Hook to handle OSC message sending, including manual and throttled auto-sending
- * 手動送信およびスロットル制御された自動送信を含む、OSCメッセージ送信を処理するフック
- */
+/** Manual sends consume an immutable committed snapshot; previews remain throttled. */
 export const useOscSender = (
-  displayText: string,
-  clearAll: () => void,
+  clearSentText: (snapshot: ImeTextSnapshot) => boolean,
   sendTypingStatus: (isTyping: boolean) => void,
   cancelTypingTimeout: () => void,
-  commitPreedit: () => void,
   onSendSuccess?: (text: string) => void,
 ) => {
   const config = useConfigStore((state) => state.config);
   const [lastSent, setLastSent] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSending, setIsSending] = useState(false);
-
+  const inFlight = useRef(false);
+  const mounted = useRef(true);
   const lastSentTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   const t = TRANSLATIONS[config.language];
 
-  // Throttled sender for auto-send mode / 自動送信モード用のスロットル送信関数
-  const throttledAutoSend = useMemo(
-    () =>
-      throttle((text: string, url: string) => {
-        // Double check autoSend state to prevent lingering sends after disable
-        // OFF切り替え後の送信残りを防ぐためにautoSend状態をダブルチェック
-        if (!useConfigStore.getState().config.autoSend) return;
-        if (!text) return;
-        sendOscMessage(text, url, true, false); // direct=true, sound=false
-      }, THROTTLE.AUTO_SEND), // 750ms throttle
-    [],
-  );
+  const throttledAutoSend = useMemo(() => throttle((text: string, url: string) => {
+    const current = useConfigStore.getState().config;
+    if (!current.autoSend || current.copyMode || inFlight.current || !text) return;
+    // Preview errors do not erase input or count as a completed manual send.
+    void sendOscMessage(text, url, true, false).catch(() => {});
+  }, THROTTLE.AUTO_SEND), []);
 
-  // Cleanup throttled sender on unmount / アンマウント時にスロットル送信をクリーンアップ
   useEffect(() => {
+    if (!config.autoSend || config.copyMode) throttledAutoSend.cancel();
+  }, [config.autoSend, config.copyMode, throttledAutoSend]);
+
+  useEffect(() => {
+    mounted.current = true;
     return () => {
+      mounted.current = false;
       throttledAutoSend.cancel();
-      if (lastSentTimerRef.current) {
-        clearTimeout(lastSentTimerRef.current);
-        lastSentTimerRef.current = null;
-      }
-      if (errorTimerRef.current) {
-        clearTimeout(errorTimerRef.current);
-        errorTimerRef.current = null;
-      }
+      if (lastSentTimerRef.current) clearTimeout(lastSentTimerRef.current);
+      if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
     };
   }, [throttledAutoSend]);
 
-  const handleSend = async () => {
-    const textToSend = displayText;
-
-    if (!textToSend.trim()) return;
-
-    // Keep input state consistent with what is sent (flush pending IME buffer)
-    // 送信テキストと状態を一致させるため、未確定バッファを確定
-    commitPreedit();
-
+  const handleSend = async (snapshot: ImeTextSnapshot) => {
+    throttledAutoSend.cancel();
+    if (inFlight.current || !snapshot.text.trim()) return;
+    // Set synchronously: two presses before React renders must still send once.
+    inFlight.current = true;
+    const sent = { ...snapshot };
     setIsSending(true);
     setError(null);
-
+    if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
     try {
-      const result = await sendOscMessage(textToSend, config.bridgeUrl);
-
-      if (result.success) {
-        // Drop any pending trailing auto-send. Clearing the input below does not
-        // run handleInputEffect, so a queued throttle call would fire afterwards
-        // with the already-sent text and post it to VRChat a second time.
-        // 保留中の自動送信（trailing）を破棄する。下の入力クリアは handleInputEffect を
-        // 通らないため、そのままだと送信済みテキストで再度スロットルが発火し、
-        // VRChat に同じ文が二重送信される。
-        throttledAutoSend.cancel();
-        // Record to send history before clearing input / 入力クリア前に送信履歴に記録
-        if (onSendSuccess) onSendSuccess(textToSend);
-        setLastSent(textToSend);
-        // Clear the IME as well, not just the text. Clearing only the text left
-        // a conversion in flight, whose reply then rebuilt a preedit in the
-        // freshly emptied box.
-        // テキストだけでなくIMEもクリアする。テキストだけ消すと飛行中の変換が残り、
-        // その応答が空になったばかりの入力欄に未確定文字列を作り直していた。
-        clearAll();
-        // Stop typing indicator on successful send / 送信成功時にタイピングインジケーターを停止
+      const result = await sendOscMessage(sent.text, config.bridgeUrl);
+      if (!mounted.current) return;
+      if (!result.success) throw new Error(result.error || t.status.error);
+      onSendSuccess?.(sent.text);
+      setLastSent(sent.text);
+      if (clearSentText(sent)) {
         sendTypingStatus(false);
         cancelTypingTimeout();
-
-        if (lastSentTimerRef.current) {
-          clearTimeout(lastSentTimerRef.current);
-        }
-        lastSentTimerRef.current = setTimeout(
-          () => setLastSent(null),
-          TIMEOUTS.SENT_NOTIFICATION,
-        );
-      } else {
-        console.error('OSC Send Failed:', result.error);
-        setError(result.error || t.status.error);
-        if (errorTimerRef.current) {
-          clearTimeout(errorTimerRef.current);
-        }
-        errorTimerRef.current = setTimeout(
-          () => setError(null),
-          TIMEOUTS.ERROR_NOTIFICATION,
-        );
       }
-    } catch (e: any) {
-      setError(e.message || t.status.error);
-      if (errorTimerRef.current) {
-        clearTimeout(errorTimerRef.current);
-      }
-      errorTimerRef.current = setTimeout(
-        () => setError(null),
-        TIMEOUTS.ERROR_NOTIFICATION,
-      );
+      if (lastSentTimerRef.current) clearTimeout(lastSentTimerRef.current);
+      lastSentTimerRef.current = setTimeout(() => setLastSent(null), TIMEOUTS.SENT_NOTIFICATION);
+    } catch (cause: unknown) {
+      if (!mounted.current) return;
+      setError(cause instanceof Error ? cause.message : t.status.error);
+      errorTimerRef.current = setTimeout(() => setError(null), TIMEOUTS.ERROR_NOTIFICATION);
     } finally {
-      setIsSending(false);
+      inFlight.current = false;
+      // Input changes while sending can have queued another preview.
+      throttledAutoSend.cancel();
+      if (mounted.current) setIsSending(false);
     }
   };
 
-  return {
-    isSending,
-    lastSent,
-    error,
-    throttledAutoSend,
-    handleSend,
-  };
+  return { isSending, lastSent, error, throttledAutoSend, handleSend };
 };

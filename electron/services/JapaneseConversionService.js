@@ -1,435 +1,162 @@
-// Main Japanese conversion service orchestrating segmentation and candidate management
-// メインの日本語変換サービス。セグメンテーションと候補管理をオーケストレーションする。
-import { MicroDictionaryProvider } from './ime/MicroDictionaryProvider.js';
-import { MozcDictionaryProvider } from './ime/MozcDictionaryProvider.js';
-import { Segmenter } from './ime/Segmenter.js';
-import { dedupeCandidates, toHiragana, toKatakana } from './ime/textUtils.js';
+import { KanaFallbackEngine } from './ime/KanaFallbackEngine.js';
+import { ImeEngineError, normalizeCandidates, validateRequest } from './ime/ConversionEngine.js';
+import { toHiragana } from './ime/textUtils.js';
 
-const MAX_CANDIDATES = 20; // Maximum candidates to return / 返す候補の最大数
-const FALLBACK_SOURCE = 'fallback'; // Source label for fallback candidates / フォールバック候補のソースラベル
-let hasLoggedMozcFallback = false; // Prevent duplicate fallback log / フォールバックログの重複防止
+const emptyState = (sessionId = '', revision = 0) => ({
+  sessionId, revision, rawKana: '', segments: [], candidates: [],
+  candidateIndex: 0, isConverting: false, preedit: '', selectedCandidate: '',
+});
 
-// Create default dictionary provider with Mozc -> MicroDictionary fallback
-// Mozc -> MicroDictionaryフォールバック付きのデフォルト辞書プロバイダーを作成
-function createDefaultProvider() {
-  try {
-    return new MozcDictionaryProvider({ maxCandidates: MAX_CANDIDATES });
-  } catch (error) {
-    if (!hasLoggedMozcFallback) {
-      console.warn(
-        '[IME] Mozc provider unavailable, fallback to micro dictionary:',
-        error.message,
-      );
-      hasLoggedMozcFallback = true;
-    }
-    return new MicroDictionaryProvider(MAX_CANDIDATES);
-  }
-}
-
-// Deep clone segments array to prevent external mutation / 外部変更を防ぐためセグメント配列をディープクローン
-function cloneSegments(segments) {
-  return (segments || []).map((segment) => ({
-    raw: segment.raw,
-    selectedIndex: segment.selectedIndex,
-    candidates: cloneCandidates(segment.candidates),
-  }));
-}
-
-// Shallow clone candidates array / 候補配列をシャロークローン
-function cloneCandidates(candidates) {
-  return (candidates || []).map((candidate) => ({ ...candidate }));
-}
-
-// Build a minimal fallback candidate from reading text / 読みテキストから最小フォールバック候補を構築
-function buildFallbackCandidate(reading, score = 0) {
-  return {
-    text: reading,
-    reading,
-    source: FALLBACK_SOURCE,
-    dictSource: FALLBACK_SOURCE,
-    score,
-  };
-}
-
-// Clamp index to valid range [0, size-1] / インデックスを有効範囲[0, size-1]にクランプ
-function normalizeSelectedIndex(index, size) {
-  if (size <= 0) return 0;
-  if (!Number.isInteger(index)) return 0;
-  return Math.max(0, Math.min(index, size - 1));
-}
-
-// Orchestrates kana-to-kanji conversion using a dictionary provider and segmenter.
-// Manages conversion state, candidate cycling, and learning feedback.
-// 辞書プロバイダーとセグメンターを使用したかな→漢字変換をオーケストレーションする。
-// 変換状態、候補切り替え、学習フィードバックを管理する。
+/** One keyboard composition; asynchronous results must match the current input. */
 export class JapaneseConversionService {
-  constructor(provider = createDefaultProvider(), options = {}) {
-    this.provider = provider;
-    this.fallbackProvider =
-      options.fallbackProvider || new MicroDictionaryProvider(MAX_CANDIDATES);
-    this.segmenter =
-      options.segmenter || new Segmenter(this.provider, { maxLength: 8 });
-    this.maxCandidates = options.maxCandidates || MAX_CANDIDATES;
-    this.resetState();
+  /** @param {import('./ime/ConversionEngine.js').ConversionEngine} engine */
+  constructor(engine = new KanaFallbackEngine()) {
+    this.engine = engine;
+    this.fallback = new KanaFallbackEngine();
+    this.state = emptyState();
+    this.epoch = 0;
+    this.disposed = false;
   }
 
-  // Reset all state to initial / すべての状態を初期化にリセット
-  resetState() {
-    this.rawKana = '';
-    this.clearConversionState();
+  get status() {
+    const status = this.engine.status;
+    return this.fallbackReason
+      ? { ...status, engine: 'kana', reason: this.fallbackReason } : status;
   }
 
-  // Clear conversion-specific state while preserving rawKana / rawKanaを保持しつつ変換固有の状態をクリア
-  clearConversionState() {
-    this.segments = [];
-    this.isConverting = false;
-    this.activeSegmentIndex = 0;
-    this.clearCandidateList();
-  }
+  buildState() { return structuredClone(this.state); }
 
-  clearCandidateList() {
-    this.candidates = [];
-    this.candidateIndex = 0;
-  }
-
-  // Get the currently active segment being converted / 現在変換中のアクティブセグメントを取得
-  getActiveSegment() {
-    if (!this.isConverting || this.segments.length === 0) return null;
-    return this.segments[this.activeSegmentIndex] || this.segments[0] || null;
-  }
-
-  // Safely get candidates from a provider with error handling / エラーハンドリング付きでプロバイダーから候補を安全に取得
-  getProviderCandidates(provider, reading, context = {}) {
-    if (!provider?.getCandidates) return [];
-    try {
-      const candidates = provider.getCandidates(reading, context);
-      return Array.isArray(candidates) ? candidates : [];
-    } catch {
-      return [];
+  checkTarget(target) {
+    validateRequest({ ...target, text: '' });
+    if (this.disposed) throw new ImeEngineError('disposed');
+    if (target.sessionId !== this.state.sessionId || target.revision !== this.state.revision) {
+      throw new ImeEngineError('stale-revision');
     }
   }
 
-  // Find the best segment to activate (first with multiple candidates) / アクティブにする最適なセグメントを検索（複数候補を持つ最初のセグメント）
-  selectBestActiveSegment() {
-    const index = this.segments.findIndex(
-      (segment) => (segment.candidates?.length || 0) > 1,
-    );
-    this.activeSegmentIndex = index >= 0 ? index : 0;
-  }
-
-  // Compose full text by joining selected candidates from all segments / 全セグメントの選択候補を結合してフルテキストを構成
-  composeSegmentText(overrideIndex = null, overrideCandidateIndex = null) {
-    return this.segments
-      .map((segment, segmentIndex) => {
-        const candidates = segment.candidates || [];
-        if (candidates.length === 0) return segment.raw;
-
-        const selectedIndex =
-          overrideIndex === segmentIndex &&
-          Number.isInteger(overrideCandidateIndex)
-            ? overrideCandidateIndex
-            : segment.selectedIndex || 0;
-        const safeIndex = normalizeSelectedIndex(
-          selectedIndex,
-          candidates.length,
-        );
-        return candidates[safeIndex]?.text || segment.raw;
-      })
-      .join('');
-  }
-
-  // Build composed candidates by varying the active segment's selection / アクティブセグメントの選択を変えて構成候補を構築
-  buildComposedCandidates(activeSegment) {
-    const segmentCandidates = activeSegment.candidates || [];
-    const composed = segmentCandidates.map((candidate, index) => ({
-      ...candidate,
-      text: this.composeSegmentText(this.activeSegmentIndex, index),
-    }));
-
-    const seen = new Set();
-    const result = [];
-    for (const candidate of composed) {
-      if (!candidate?.text || seen.has(candidate.text)) continue;
-      seen.add(candidate.text);
-      result.push(candidate);
-      if (result.length >= this.maxCandidates) break;
-    }
-    return result;
-  }
-
-  // Rebuild the flat candidate list from active segment's composed candidates / アクティブセグメントの構成候補からフラット候補リストを再構築
-  rebuildCandidates() {
-    const activeSegment = this.getActiveSegment();
-    if (!activeSegment) {
-      this.clearCandidateList();
-      return;
-    }
-
-    this.candidates = this.buildComposedCandidates(activeSegment);
-
-    const safeIndex = normalizeSelectedIndex(
-      activeSegment.selectedIndex || 0,
-      this.candidates.length,
-    );
-    this.candidateIndex = safeIndex;
-    activeSegment.selectedIndex = this.candidateIndex;
-  }
-
-  // Build a snapshot of current conversion state / 現在の変換状態のスナップショットを構築
-  buildState() {
-    const preedit = this.composeSegmentText();
-    const selectedCandidate =
-      this.candidates[this.candidateIndex]?.text || preedit || this.rawKana;
-    return {
-      rawKana: this.rawKana,
-      segments: cloneSegments(this.segments),
-      candidates: cloneCandidates(this.candidates),
-      candidateIndex: this.candidateIndex,
-      isConverting: this.isConverting,
-      preedit: selectedCandidate || '',
-      selectedCandidate: selectedCandidate || '',
+  async convert(kana, context) {
+    const request = {
+      sessionId: context?.sessionId, revision: context?.revision,
+      text: typeof kana === 'string' ? toHiragana(kana) : kana,
+      leftContext: context?.previousText ?? '',
     };
-  }
-
-  // Build fallback candidates when no dictionary match exists / 辞書一致がない場合のフォールバック候補を構築
-  buildWholeFallbackCandidates(raw, context = {}) {
-    const primaryFallback = [
-      buildFallbackCandidate(raw, 100),
-      {
-        ...buildFallbackCandidate(raw, 99),
-        text: toKatakana(raw),
-      },
-    ];
-
-    const providerFallback = this.getProviderCandidates(
-      this.fallbackProvider,
-      raw,
-      context,
-    );
-
-    return dedupeCandidates(
-      [...primaryFallback, ...providerFallback],
-      this.maxCandidates,
-    );
-  }
-
-  // Prepend hiragana as the first candidate to ensure it's always available / ひらがなを最初の候補として追加し常に利用可能にする
-  withHiraganaCandidateFirst(raw, candidates = []) {
-    const normalizedRaw = toHiragana(raw || '');
-    if (!normalizedRaw) return dedupeCandidates(candidates, this.maxCandidates);
-    return dedupeCandidates(
-      [buildFallbackCandidate(normalizedRaw, 100), ...(candidates || [])],
-      this.maxCandidates,
-    );
-  }
-
-  // Check if multi-segment result should collapse to single whole-text fallback / 複数セグメント結果を単一フルテキストフォールバックに折りたたむべきか判定
-  shouldCollapseToWholeFallback(segments) {
-    if (!Array.isArray(segments) || segments.length <= 1) return false;
-    const allSingleChar = segments.every(
-      (segment) => (segment.raw || '').length === 1,
-    );
-    if (!allSingleChar) return false;
-
-    const hasAnyDictionaryCandidate = segments.some((segment) =>
-      (segment.candidates || []).some(
-        (candidate) =>
-          candidate?.dictSource && candidate.dictSource !== 'fallback',
-      ),
-    );
-    return !hasAnyDictionaryCandidate;
-  }
-
-  // Get candidates for a single segment with primary -> fallback provider chain / 単一セグメントの候補をプライマリ→フォールバックプロバイダーチェーンで取得
-  getCandidatesForSegment(raw, context = {}) {
-    const normalizedRaw = toHiragana(raw || '');
-    const fromPrimary = this.getProviderCandidates(
-      this.provider,
-      normalizedRaw,
-      context,
-    );
-    const withFallback =
-      fromPrimary.length > 0
-        ? fromPrimary
-        : this.getProviderCandidates(
-            this.fallbackProvider,
-            normalizedRaw,
-            context,
-          );
-
-    const candidates =
-      withFallback.length > 0
-        ? withFallback
-        : [buildFallbackCandidate(normalizedRaw, 0)];
-
-    return this.withHiraganaCandidateFirst(normalizedRaw, candidates);
-  }
-
-  // Start conversion for given kana reading / 指定されたかな読みの変換を開始
-  convert(kana, context = {}) {
-    const text = toHiragana(String(kana || ''));
-    if (!text.trim()) {
-      this.resetState();
+    validateRequest(request);
+    if (this.disposed) throw new ImeEngineError('disposed');
+    if (this.state.sessionId && (request.sessionId !== this.state.sessionId ||
+        request.revision <= this.state.revision)) throw new ImeEngineError('stale-revision');
+    const epoch = ++this.epoch;
+    this.state = emptyState(request.sessionId, request.revision);
+    if (!request.text) {
+      await this.resetEngine(request.sessionId);
+      if (epoch !== this.epoch) throw new ImeEngineError('superseded');
       return this.buildState();
     }
-
-    const rawSegments = this.segmenter.segment(text, context);
-    this.rawKana = text;
-    const mappedSegments = [];
-    let rollingPrev = context.previousWord || '';
-    for (const segment of rawSegments) {
-      const segmentCandidates = this.getCandidatesForSegment(segment.raw, {
-        ...context,
-        previousWord: rollingPrev,
-      });
-      mappedSegments.push({
-        raw: segment.raw,
-        selectedIndex: 0,
-        candidates: segmentCandidates,
-      });
-      rollingPrev = segmentCandidates[0]?.text || segment.raw;
+    let result;
+    try {
+      result = await this.engine.convert(request);
+    } catch (error) {
+      if (epoch !== this.epoch || this.disposed) throw new ImeEngineError('superseded');
+      if (['superseded', 'cancelled', 'disposed', 'invalid-request'].includes(error.code)) throw error;
+      this.fallbackReason = error.code ?? 'helper-unavailable';
+      result = await this.fallback.convert(request);
     }
-
-    if (this.shouldCollapseToWholeFallback(mappedSegments)) {
-      this.segments = [
-        {
-          raw: text,
-          selectedIndex: 0,
-          candidates: this.buildWholeFallbackCandidates(text, context),
-        },
-      ];
-    } else {
-      this.segments = mappedSegments;
+    if (epoch !== this.epoch || this.disposed) throw new ImeEngineError('superseded');
+    if (result.sessionId !== request.sessionId || result.revision !== request.revision) {
+      throw new ImeEngineError('invalid-result');
     }
-    this.isConverting = true;
-    this.selectBestActiveSegment();
-    this.rebuildCandidates();
+    if (result.engine !== 'kana') this.fallbackReason = undefined;
+    const candidates = normalizeCandidates(result.candidates, request.text);
+    const selectedCandidate = candidates[0]?.text ?? request.text;
+    this.state = {
+      ...emptyState(request.sessionId, request.revision), rawKana: request.text,
+      segments: [{ raw: request.text, candidates, selectedIndex: 0 }],
+      candidates, isConverting: true, preedit: selectedCandidate, selectedCandidate,
+      engine: result.engine, elapsedMs: result.elapsedMs,
+    };
     return this.buildState();
   }
 
-  // Shift active segment's candidate selection by step amount (+1/-1) / アクティブセグメントの候補選択をステップ量(+1/-1)で移動
-  shiftCandidateSelection(step) {
-    const activeSegment = this.getActiveSegment();
-    if (!activeSegment || this.candidates.length === 0) {
-      return this.buildState();
-    }
-
-    const segmentCandidateCount = activeSegment.candidates?.length || 0;
-    if (segmentCandidateCount === 0) {
-      return this.buildState();
-    }
-
-    const current = normalizeSelectedIndex(
-      activeSegment.selectedIndex || 0,
-      segmentCandidateCount,
-    );
-    activeSegment.selectedIndex =
-      (current + step + segmentCandidateCount) % segmentCandidateCount;
-    this.rebuildCandidates();
+  async nextCandidate(target) {
+    this.checkTarget(target);
+    if (!this.state.isConverting) throw new ImeEngineError('no-candidates');
+    this.select((this.state.candidateIndex + 1) % this.state.candidates.length);
     return this.buildState();
   }
 
-  // Move to next candidate / 次の候補に移動
-  nextCandidate() {
-    return this.shiftCandidateSelection(1);
+  select(index) {
+    if (!Number.isInteger(index) || index < 0 || index >= this.state.candidates.length) {
+      throw new ImeEngineError('invalid-candidate');
+    }
+    this.state.candidateIndex = index;
+    this.state.segments[0].selectedIndex = index;
+    this.state.selectedCandidate = this.state.preedit = this.state.candidates[index].text;
   }
 
-  // Jump to a specific candidate by index / インデックスで特定の候補にジャンプ
-  setCandidateIndex(index) {
-    if (!this.isConverting || !Number.isInteger(index)) {
-      return this.buildState();
-    }
-    if (index < 0 || index >= this.candidates.length) {
-      return this.buildState();
-    }
-    const activeSegment = this.getActiveSegment();
-    if (!activeSegment) return this.buildState();
-    // Clamp to segment candidate count to prevent out-of-range / セグメント候補数でクランプして範囲外を防止
-    const segCandidateCount = activeSegment.candidates?.length || 0;
-    activeSegment.selectedIndex = normalizeSelectedIndex(index, segCandidateCount);
-    this.rebuildCandidates();
-    return this.buildState();
+  async commit(index, target) {
+    this.checkTarget(target);
+    if (!this.state.isConverting) throw new ImeEngineError('no-candidates');
+    const selected = index === undefined ? this.state.candidateIndex : index;
+    if (target.expectedText !== undefined &&
+        target.expectedText !== this.state.candidates[selected]?.text) throw new ImeEngineError('stale-candidate');
+    if (index !== undefined) this.select(index);
+    const committed = this.state.selectedCandidate;
+    ++this.epoch;
+    this.state = emptyState(target.sessionId, target.revision);
+    const state = this.buildState();
+    await this.resetEngine(target.sessionId);
+    return { committed, state };
   }
 
-  // Record the selected candidate to learning store for future ranking / 将来のランキングのため選択された候補を学習ストアに記録
-  //
-  // Only the active segment is learned. There is no UI or IPC channel to move
-  // the active segment, so every other segment still carries selectedIndex 0 -
-  // a pick the user never made. Learning those reinforced whatever the
-  // dictionary happened to rank first and made mis-conversions stickier.
-  // 学習対象はアクティブ文節のみ。アクティブ文節を移動するUIもIPCも存在しないため、
-  // 他の文節は selectedIndex 0 のまま = ユーザーが選んでいない候補である。それらを
-  // 学習すると辞書がたまたま先頭に置いた候補が強化され、誤変換が定着してしまう。
-  recordLearning(context = {}) {
-    if (!this.provider?.learningStore?.recordCommit) return;
-
-    const activeSegment = this.getActiveSegment();
-    if (!activeSegment) return;
-
-    // Context word = the committed surface of the segment right before the
-    // active one, or the caller-supplied previous word for the first segment.
-    // 文脈語 = アクティブ文節の直前の文節の確定表層形。先頭文節なら呼び出し側が渡した直前語。
-    const previousSegment = this.segments[this.activeSegmentIndex - 1];
-    const previousWord = previousSegment
-      ? previousSegment.candidates?.[previousSegment.selectedIndex]?.text ||
-        previousSegment.raw
-      : context.previousWord || '';
-
-    const selected = activeSegment.candidates?.[activeSegment.selectedIndex];
-    this.provider.learningStore.recordCommit(
-      selected?.reading || activeSegment.raw,
-      selected?.text || activeSegment.raw,
-      previousWord,
-    );
+  async cancel(target) {
+    validateRequest({ ...target, text: '' });
+    if (this.disposed) throw new ImeEngineError('disposed');
+    if (this.state.sessionId && (target.sessionId !== this.state.sessionId ||
+        target.revision < this.state.revision)) throw new ImeEngineError('stale-revision');
+    ++this.epoch;
+    this.state = emptyState(target.sessionId, target.revision);
+    const state = this.buildState();
+    await this.resetEngine(target.sessionId);
+    return state;
   }
 
-  // Commit the current conversion and return committed text / 現在の変換を確定し確定テキストを返す
-  commit(index, context = {}) {
-    if (Number.isInteger(index)) {
-      this.setCandidateIndex(index);
+  async resetEngine(sessionId) {
+    const epoch = this.epoch;
+    try { await this.engine.reset(sessionId); }
+    catch (error) {
+      if (epoch === this.epoch && !this.disposed) this.fallbackReason = error.code ?? 'helper-unavailable';
     }
-    if (!this.isConverting || this.segments.length === 0) {
-      return { committed: '', state: this.buildState() };
-    }
-
-    const committed = this.composeSegmentText();
-
-    // Learn only when the renderer tells us it committed this very text. The
-    // renderer owns the text it inserts and falls back to a local candidate
-    // list whenever an IPC response is dropped, so a mismatch means the two
-    // sides disagree about what was selected. Learning our own pick then would
-    // record a word the user never chose.
-    // レンダラーが「このテキストを確定した」と明示したときだけ学習する。挿入テキストの正は
-    // レンダラー側にあり、IPC応答が破棄されるとローカル候補へフォールバックするため、
-    // 不一致は両者の選択が食い違っていることを意味する。その状態でmain側の選択を学習すると、
-    // ユーザーが選んでいない語を記録してしまう。
-    const { expectedText } = context;
-    if (typeof expectedText !== 'string' || expectedText === committed) {
-      this.recordLearning(context);
-    }
-
-    this.resetState();
-    return { committed, state: this.buildState() };
   }
 
-  // Cancel conversion and return to unconverted state / 変換をキャンセルし未変換状態に戻る
-  cancel() {
-    this.clearConversionState();
-    return this.buildState();
+  releaseSession(target) {
+    if (target) {
+      validateRequest({ ...target, text: '' });
+      if (this.state.sessionId && (target.sessionId !== this.state.sessionId || target.revision < this.state.revision)) {
+        throw new ImeEngineError('stale-revision');
+      }
+    }
+    const sessionId = this.state.sessionId;
+    ++this.epoch;
+    this.state = emptyState();
+    if (sessionId) return this.resetEngine(sessionId);
+    return Promise.resolve();
+  }
+
+  async dispose() {
+    if (this.disposed) return;
+    this.disposed = true;
+    ++this.epoch;
+    this.state = emptyState();
+    await Promise.allSettled([this.engine.dispose(), this.fallback.dispose()]);
   }
 }
 
-let singletonService = null;
-
-// Singleton accessor for the conversion service / 変換サービスのシングルトンアクセサー
+let instance;
 export function getJapaneseConversionService() {
-  if (!singletonService) {
-    singletonService = new JapaneseConversionService();
-  }
-  return singletonService;
+  return instance ??= new JapaneseConversionService();
 }
-
-// Reset singleton for test isolation / テスト分離のためシングルトンをリセット
-export function _resetJapaneseConversionServiceForTests() {
-  singletonService = null;
+export function configureJapaneseConversionService(engine) {
+  if (instance) throw new Error('IME service already initialized');
+  instance = new JapaneseConversionService(engine);
+  return instance;
 }
+export function _resetJapaneseConversionServiceForTests() { instance = undefined; }

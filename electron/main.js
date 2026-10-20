@@ -4,6 +4,7 @@
  */
 
 import { app, BrowserWindow } from 'electron';
+import { APP_NAME } from './appIdentity.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
@@ -51,6 +52,8 @@ import {
 } from './input_handler.js';
 import { isSteamVrRunningAsync } from './overlay/native.js';
 import { parseLaunchArgs } from './cli.js';
+import { configureJapaneseConversionService } from './services/JapaneseConversionService.js';
+import { createAppEngine } from './services/ime/createAppEngine.js';
 import { loadDebugConfig } from './debugConfig.js';
 import { setPerfLogEnabled } from './overlay/perf.js';
 import { resolveWindowMode } from './services/launchMode.js';
@@ -67,6 +70,7 @@ const APP_VERSION = packageJson.version;
 // Parse launch arguments first: everything below may depend on them.
 // 以降の処理が参照しうるので、起動引数を最初に解析する。
 const launchArgs = parseLaunchArgs(process.argv);
+let japaneseIme;
 
 // Load debug config  デバッグ設定ファイルを読み込む
 // app.getPath('userData') is available before app.whenReady().
@@ -96,7 +100,7 @@ if (launchArgs.keepIdleCursors) {
   setFilterIdleControllers(false);
 }
 
-let APP_TITLE = `VRChat OSC Keyboard v${APP_VERSION}`;
+let APP_TITLE = `${APP_NAME} v${APP_VERSION}`;
 if (debugConfig.enableDebugMode) {
   APP_TITLE = `[DEBUG] ${APP_TITLE}`;
 }
@@ -353,8 +357,10 @@ function startSteamVrLifecycle() {
  * 冪等なので window-all-closed と before-quit の両方から呼んで問題ない。
  */
 let servicesShutdown = false;
+let imeDisposal;
+let imeDisposed = false;
 function shutdownServices() {
-  if (servicesShutdown) return;
+  if (servicesShutdown) return imeDisposal;
   servicesShutdown = true;
   if (stopWatchingSteamVr) {
     stopWatchingSteamVr();
@@ -366,6 +372,8 @@ function shutdownServices() {
   shutdownOverlay();
   // Close bridge connections / ブリッジ接続を閉じる
   cleanupBridge();
+  imeDisposal = japaneseIme?.dispose() ?? Promise.resolve();
+  return imeDisposal;
 }
 
 // Single instance lock / 単一インスタンスロック
@@ -388,6 +396,12 @@ if (!gotTheLock) {
   });
 
   app.whenReady().then(() => {
+    japaneseIme = configureJapaneseConversionService(createAppEngine({
+      appDir: path.join(__dirname, '..'), resourcesPath: process.resourcesPath,
+      isPackaged: app.isPackaged, helperDir: process.env.VRC_IME_HELPER_DIR,
+      modelPath: launchArgs.imeModel ?? process.env.VRC_IME_MODEL,
+      log: (message) => console.log('[IME helper]', message),
+    }));
     startBridge();
 
     // The app is VR-only; the desktop keyboard is a debugging aid. The mode is
@@ -420,8 +434,13 @@ if (!gotTheLock) {
 
   // Also covers quit paths that never close a window (e.g. restart / installer).
   // ウィンドウを閉じずに終了する経路（再起動やインストーラ実行など）もここで拾う。
-  app.on('before-quit', () => {
-    shutdownServices();
+  app.on('before-quit', (event) => {
+    if (imeDisposed) return;
+    event.preventDefault();
+    void shutdownServices().finally(() => {
+      imeDisposed = true;
+      app.quit();
+    });
   });
 
   app.on('window-all-closed', () => {

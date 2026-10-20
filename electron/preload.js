@@ -96,10 +96,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Japanese IME candidate conversion / 日本語IME候補変換
   imeConvert: (kana, context) =>
     ipcRenderer.invoke('jp-ime:convert', kana, context),
-  imeNextCandidate: () => ipcRenderer.invoke('jp-ime:next-candidate'),
+  imeNextCandidate: (target) => ipcRenderer.invoke('jp-ime:next-candidate', target),
   imeCommitCandidate: (candidateIndex, context) =>
     ipcRenderer.invoke('jp-ime:commit', candidateIndex, context),
-  imeCancelConversion: () => ipcRenderer.invoke('jp-ime:cancel'),
+  imeCancelConversion: (target) => ipcRenderer.invoke('jp-ime:cancel', target),
+  imeGetStatus: () => ipcRenderer.invoke('jp-ime:status'),
+  imeReleaseSession: (target) => ipcRenderer.invoke('jp-ime:release-session', target),
 
   // Send window size to main process / メインプロセスにウィンドウサイズを送信
   sendWindowSize: (width, height) =>

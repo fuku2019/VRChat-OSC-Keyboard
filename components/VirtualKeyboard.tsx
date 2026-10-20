@@ -21,6 +21,8 @@ interface VirtualKeyboardProps {
   candidates: ImeCandidate[];
   candidateIndex: number;
   isConverting: boolean;
+  candidateSelectionMode?: boolean;
+  isCommitPending?: boolean;
   onCommitCandidate: (index: number) => void;
   language: Language;
   keySoundEnabled: boolean;
@@ -51,6 +53,8 @@ const VirtualKeyboard: FC<VirtualKeyboardProps> = ({
   candidates,
   candidateIndex,
   isConverting,
+  candidateSelectionMode = false,
+  isCommitPending = false,
   onCommitCandidate,
   language,
   keySoundEnabled,
@@ -145,6 +149,7 @@ const VirtualKeyboard: FC<VirtualKeyboardProps> = ({
                 <button
                   key={`${candidate.text}-${index}`}
                   type='button'
+                  disabled={isCommitPending}
                   onClick={() => handleCandidateCommit(index)}
                   // Keep the textarea focused, same as Key.tsx. Without this the
                   // candidate click blurs it and the caret jumps to the end.
@@ -161,7 +166,7 @@ const VirtualKeyboard: FC<VirtualKeyboardProps> = ({
                   }`}
                   title={candidate.source ? `${candidate.source}` : 'candidate'}
                 >
-                  <span className='mr-1 text-[10px] opacity-70'>{index + 1}</span>
+                  {candidateSelectionMode && <span className='mr-1 text-[10px] opacity-70'>{index + 1}</span>}
                   {candidate.text}
                 </button>
               ))}

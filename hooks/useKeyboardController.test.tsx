@@ -16,33 +16,42 @@ import { InputMode } from '../types';
 
 type Deferred = {
   kana: string;
+  context: { sessionId: string; revision: number };
   resolve: (response: unknown) => void;
 };
 
 let pendingConverts: Deferred[] = [];
 let commitCalls: Array<[number, unknown]> = [];
 let cancelCalls = 0;
+let nextTargets: unknown[] = [];
+let cancelTargets: Array<{ sessionId: string; revision: number }> = [];
 
 const installElectronApi = () => {
   pendingConverts = [];
   commitCalls = [];
   cancelCalls = 0;
+  nextTargets = [];
+  cancelTargets = [];
   vi.stubGlobal('electronAPI', undefined);
   (window as unknown as { electronAPI: unknown }).electronAPI = {
     // Held open so a test can decide exactly when the reply lands, which is the
     // race the old implementation lost. / 応答の着弾タイミングをテストが決められるよう
     // 保留する。旧実装が負けていたのはこの競合である。
-    imeConvert: (kana: string) =>
+    imeConvert: (kana: string, context: Deferred['context']) =>
       new Promise((resolve) => {
-        pendingConverts.push({ kana, resolve });
+        pendingConverts.push({ kana, context, resolve });
       }),
-    imeNextCandidate: () => Promise.resolve({ success: false }),
+    imeNextCandidate: (target: unknown) => {
+      nextTargets.push(target);
+      return Promise.resolve({ success: false });
+    },
     imeCommitCandidate: (index: number, context: unknown) => {
       commitCalls.push([index, context]);
       return Promise.resolve({ success: true, committed: '' });
     },
-    imeCancelConversion: () => {
+    imeCancelConversion: (target: Deferred['context']) => {
       cancelCalls += 1;
+      cancelTargets.push(target);
       return Promise.resolve({ success: true });
     },
   };
@@ -60,6 +69,8 @@ const Harness = () => {
     caretRevision: ime.caretRevision,
     mutationSeq: ime.mutationSeq,
     isConverting: ime.isConverting,
+    hasPreedit: ime.hasPreedit,
+    isCommitPending: ime.isCommitPending,
     mode: ime.mode,
     setMode: ime.setMode,
     handleCharInput: ime.handleCharInput,
@@ -139,6 +150,7 @@ const press = (testId: string) =>
 
 const typeKeys = (chars: string) => {
   for (const char of chars) press(`key-${char}`);
+  act(() => { vi.advanceTimersByTime(75); });
 };
 
 // Answer the newest outstanding convert request the way main would. Typing
@@ -207,6 +219,7 @@ const echoSelection = () => {
 };
 
 beforeEach(() => {
+  vi.useFakeTimers();
   installElectronApi();
   onInputEffect.mockClear();
   onPrimaryAction.mockClear();
@@ -215,6 +228,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  vi.useRealTimers();
   vi.unstubAllGlobals();
 });
 
@@ -438,6 +452,44 @@ describe('useKeyboardController - caret / キャレット', () => {
   });
 
   describe('main process sync / メインプロセスとの同期', () => {
+    it('makes the primary key commit an unfinished reading before it can send', async () => {
+      press('key-k');
+      press('key-a');
+      press('key-send');
+      press('key-send');
+      expect(onPrimaryAction).not.toHaveBeenCalled();
+      expect(pendingConverts).toHaveLength(1);
+      await resolveConvert(['課']);
+      expect(textarea().value).toBe('課');
+      press('key-send');
+      expect(onPrimaryAction).toHaveBeenCalledTimes(1);
+    });
+
+    it('targets conversion, cycling and commit at the same session/revision', async () => {
+      typeKeys('ka');
+      const { sessionId, revision } = pendingConverts.at(-1)!.context;
+      expect(sessionId).toEqual(expect.any(String));
+      expect(revision).toBeGreaterThan(0);
+      await resolveConvert(['か', '課']);
+      press('key-space');
+      await act(async () => {});
+      expect(nextTargets.at(-1)).toEqual({ sessionId, revision });
+      press('candidate-1');
+      expect(commitCalls.at(-1)![1]).toMatchObject({ sessionId, revision, expectedText: '課' });
+    });
+
+    it('cancels at a newer revision before restarting the reading', async () => {
+      typeKeys('ka');
+      const first = pendingConverts.at(-1)!.context;
+      await resolveConvert(['か', '課']);
+      press('key-clear');
+      const cancelled = cancelTargets.at(-1)!;
+      expect(cancelled.sessionId).toBe(first.sessionId);
+      expect(cancelled.revision).toBeGreaterThan(first.revision);
+      typeKeys('ka');
+      expect(pendingConverts.at(-1)!.context.revision).toBeGreaterThan(cancelled.revision);
+    });
+
     it('tells main to cancel when the renderer drops the conversion itself', async () => {
       typeKeys('ka');
       await resolveConvert(['か', '課']);
@@ -448,10 +500,10 @@ describe('useKeyboardController - caret / キャレット', () => {
       expect(cancelCalls).toBe(before + 1);
     });
 
-    it('tells main to cancel when continued romaji leaves candidate mode', async () => {
+    it('requests a newer revision when continued romaji leaves candidate mode', async () => {
       typeKeys('ka');
       await resolveConvert(['か', '課']);
-      const before = cancelCalls;
+      const before = pendingConverts.length;
 
       // Typing on leaves candidate mode and keeps building the reading. Main
       // must be told, or it answers the next commit from these stale segments.
@@ -459,9 +511,9 @@ describe('useKeyboardController - caret / キャレット', () => {
       // 次の確定がこの古いsegmentsに対して処理されてしまう。
       press('key-n');
 
-      await act(async () => {});
+      await act(async () => { vi.advanceTimersByTime(75); });
 
-      expect(cancelCalls).toBe(before + 1);
+      expect(pendingConverts.length).toBe(before + 1);
       expect(textarea().value).toBe('かn');
     });
 

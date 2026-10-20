@@ -67,6 +67,11 @@ export const useUpdateCheckStatus = (
 
     try {
       const result = await window.electronAPI.checkForUpdate();
+      if (result.disabled) {
+        setCheckStatus(t.updateDisabled);
+        setUpdateUrl('');
+        return;
+      }
       if (!result.success) {
         setCheckStatus(t.updateError);
         return;

@@ -1,97 +1,39 @@
 name: Release
-
 on:
-  push:
-    tags:
-      - 'v*'
-
+  workflow_dispatch:
 permissions:
-  contents: write
-
+  contents: read
 jobs:
-  build-and-release:
-    runs-on: windows-latest
-    
+  validate:
+    uses: ./.github/workflows/ime-build.yml
+  draft:
+    needs: validate
+    runs-on: windows-2022
+    permissions:
+      contents: write
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: 'npm'
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build native module (Rust)
-        run: npm run build:native
-
-      - name: Build and Dist
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npm run dist
-
-      - name: Enforce installer size gate
-        shell: pwsh
-        run: |
-          $installer = Get-ChildItem -Path release -Filter "VRChat OSC Keyboard Setup *.exe" | Select-Object -First 1
-          if (-not $installer) {
-            Write-Error "Installer not found in release directory."
-            exit 1
-          }
-
-          $sizeBytes = $installer.Length
-          $sizeMB = [math]::Round($sizeBytes / 1MB, 2)
-          $warnBytes = 140MB
-          $failBytes = 150MB
-
-          Write-Host "Installer: $($installer.Name)"
-          Write-Host "Installer size: $sizeMB MB"
-
-          if ($sizeBytes -gt $warnBytes) {
-            Write-Warning "Installer size warning: over 140MB ($sizeMB MB)."
-          }
-
-          if ($sizeBytes -gt $failBytes) {
-            Write-Error "Installer size exceeds 150MB limit ($sizeMB MB)."
-            exit 1
-          }
-
-      - name: Create Zip archive
-        shell: pwsh
-        run: |
-          # Get version from tag (remove 'v' prefix)
-          $version = "${{ github.ref_name }}".Substring(1)
-          
-          # Define paths
-          $releaseDir = "release"
-          $folderName = "VRChat-OSC-Keyboard-v$version"
-          $targetFolder = Join-Path $releaseDir $folderName
-          $zipName = "VRChat-OSC-Keyboard-v$version.zip"
-          $zipPath = Join-Path $releaseDir $zipName
-          
-          Write-Host "Looking for target folder: $targetFolder"
-          
-          if (Test-Path $targetFolder) {
-            Write-Host "Compressing '$targetFolder' to '$zipPath'..."
-            Compress-Archive -Path "$targetFolder" -DestinationPath $zipPath
-            Write-Host "Compression complete."
-          } else {
-            Write-Error "Target folder '$targetFolder' not found. 'npm run dist' might have failed or rename script behavior changed."
-            exit 1
-          }
-
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
+      - run: npm ci
+      - uses: actions/download-artifact@v4
         with:
+          name: windows-validation
+          path: release
+      - name: Require completed redistribution and clean-host checks
+        shell: pwsh
+        run: |
+          if ($env:GITHUB_REF_TYPE -ne 'tag') { throw 'Select an existing version tag when dispatching Release' }
+          node scripts/verify-ime-package.mjs --app release/win-unpacked
+          if ($LASTEXITCODE -ne 0) { throw 'Release readiness checks are incomplete' }
+      - name: Archive application sources at the built revision
+        run: git archive --format=zip --output=release/VrcLiveIme-sources.zip HEAD
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          draft: true
           files: |
-            release/VRChat OSC Keyboard Setup *.exe
+            release/*.exe
             release/*.zip
-          draft: false
-          prerelease: false
           generate_release_notes: true

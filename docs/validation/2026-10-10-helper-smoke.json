@@ -1,0 +1,144 @@
+{
+  "stage": {
+    "checks": [
+      "isolated stage dictionary",
+      "isolated stage xsmall",
+      "split UTF-8 / CRLF / multiple lines / EOF",
+      "malformed JSON exits",
+      "invalid UTF-8 exits",
+      "oversized frame exits",
+      "invalid request gets terminal error",
+      "missing runtime DLL fails startup"
+    ],
+    "scope": "PATH isolated on development host; not a Swift-uninstalled clean machine",
+    "totalBytes": 104331679,
+    "dllCount": 21
+  },
+  "date": "2026-10-10",
+  "scope": "Windows release smoke tests; not VR performance acceptance",
+  "swiftVersion": "6.1.3",
+  "cases": [
+    {
+      "name": "dictionary-only",
+      "sampleElapsedMs": [
+        0.6318,
+        46.5708,
+        5.772,
+        1.1358
+      ],
+      "warmupDiagnostics": {
+        "successfulDecodes": 0,
+        "failedDecodes": 0,
+        "modelLoadAttempts": 0
+      },
+      "finalDiagnostics": {
+        "successfulDecodes": 0,
+        "failedDecodes": 0,
+        "modelLoadAttempts": 0
+      },
+      "engine": "azookey"
+    },
+    {
+      "name": "missing-model",
+      "sampleElapsedMs": [
+        0.5109,
+        46.2003,
+        5.3673,
+        1.065
+      ],
+      "warmupDiagnostics": {
+        "successfulDecodes": 0,
+        "failedDecodes": 0,
+        "modelLoadAttempts": 0
+      },
+      "finalDiagnostics": {
+        "successfulDecodes": 0,
+        "failedDecodes": 0,
+        "modelLoadAttempts": 0
+      },
+      "engine": "azookey"
+    },
+    {
+      "name": "corrupt-model",
+      "sampleElapsedMs": [
+        0.5475,
+        39.5103,
+        5.3772,
+        1.2888
+      ],
+      "warmupDiagnostics": {
+        "successfulDecodes": 0,
+        "failedDecodes": 0,
+        "modelLoadAttempts": 1
+      },
+      "finalDiagnostics": {
+        "successfulDecodes": 0,
+        "failedDecodes": 0,
+        "modelLoadAttempts": 1
+      },
+      "engine": "azookey"
+    },
+    {
+      "name": "zenz-v3.2-xsmall-q5-k-m",
+      "sampleElapsedMs": [
+        0.3796,
+        34.9078,
+        10.0554,
+        0.7331
+      ],
+      "warmupDiagnostics": {
+        "successfulDecodes": 1,
+        "failedDecodes": 0,
+        "modelLoadAttempts": 1
+      },
+      "finalDiagnostics": {
+        "successfulDecodes": 5,
+        "failedDecodes": 1,
+        "modelLoadAttempts": 1
+      },
+      "engine": "zenzai"
+    },
+    {
+      "name": "zenz-v3.2-small-q5-k-m",
+      "sampleElapsedMs": [
+        0.3683,
+        60.2774,
+        18.8978,
+        0.7078
+      ],
+      "warmupDiagnostics": {
+        "successfulDecodes": 1,
+        "failedDecodes": 0,
+        "modelLoadAttempts": 1
+      },
+      "finalDiagnostics": {
+        "successfulDecodes": 5,
+        "failedDecodes": 1,
+        "modelLoadAttempts": 1
+      },
+      "engine": "zenzai"
+    },
+    {
+      "name": "Japanese and space paths",
+      "sampleElapsedMs": [
+        0.3624,
+        144.6192,
+        34.4707,
+        0.7212
+      ],
+      "warmupDiagnostics": {
+        "successfulDecodes": 1,
+        "failedDecodes": 0,
+        "modelLoadAttempts": 1
+      },
+      "finalDiagnostics": {
+        "successfulDecodes": 5,
+        "failedDecodes": 1,
+        "modelLoadAttempts": 1
+      },
+      "engine": "zenzai"
+    }
+  ],
+  "azooKeyRevision": "d59a28e4c7ca049aef04f29a91eae9677a7753f2",
+  "llamaTag": "b4846"
+}

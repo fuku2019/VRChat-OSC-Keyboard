@@ -3,7 +3,7 @@
  * メインアプリケーションコンポーネント
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Settings, Zap, ZapOff, Copy, RefreshCw } from 'lucide-react';
 import VirtualKeyboard from './components/VirtualKeyboard';
 import SettingsModal from './components/SettingsModal';
@@ -12,6 +12,7 @@ import NotificationToast from './components/NotificationToast';
 import StatusDisplay from './components/StatusDisplay';
 import CursorOverlay from './components/CursorOverlay';
 import PreeditUnderline from './components/PreeditUnderline';
+import ImeEngineStatus from './components/ImeEngineStatus';
 import { InputMode } from './types';
 import { useIME } from './hooks/useIME';
 import { useUpdateChecker } from './hooks/useUpdateChecker';
@@ -71,6 +72,9 @@ const App = () => {
     candidates,
     candidateIndex,
     isConverting,
+    hasPreedit,
+    isCommitPending,
+    candidateSelectionMode,
     displayText,
     displayCaret,
     displaySelectionEnd,
@@ -81,14 +85,16 @@ const App = () => {
     setMode,
     handleCharInput,
     handleBackspace,
-    handleClear,
+    handleClear: clearIme,
     handleSpace,
     handleCommitCandidate,
     commitPreedit,
     setSelection,
     replaceAll,
-    clearAll,
+    getCommittedSnapshot,
+    clearSentText,
   } = useIME(InputMode.HIRAGANA);
+  const copying = useRef(false);
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
@@ -114,13 +120,15 @@ const App = () => {
     throttledAutoSend,
     handleSend: triggerSend,
   } = useOscSender(
-    displayText,
-    clearAll,
+    clearSentText,
     sendTypingStatus,
     cancelTypingTimeout,
-    commitPreedit,
     pushHistory,
   );
+  const handleClear = useCallback(() => {
+    throttledAutoSend.cancel();
+    clearIme();
+  }, [throttledAutoSend, clearIme]);
 
   // Use update checker hook / アップデート確認フックを使用
   const { updateAvailable, setUpdateAvailable, isDownloading, downloadProgress, downloadError, downloadedPath, startDownload, cancelDownload, installUpdate } = useUpdateChecker();
@@ -132,6 +140,7 @@ const App = () => {
   const handleInputEffect = useCallback((text: string) => {
     // Editing the text leaves history navigation / テキストを編集したら履歴走査を抜ける
     notifyInputChanged(text);
+    if (!text || config.copyMode) throttledAutoSend.cancel();
 
     if (config.copyMode) {
       cancelTypingTimeout();
@@ -150,7 +159,7 @@ const App = () => {
     }
 
     // Auto-Send Logic 自動送信ロジック
-    if (config.autoSend) {
+    if (config.autoSend && text) {
       throttledAutoSend(text, config.bridgeUrl);
     }
   }, [
@@ -184,27 +193,29 @@ const App = () => {
 
   // Handle primary action (Send or Copy) / プライマリアクション（送信またはコピー）の処理
   const handlePrimaryAction = useCallback(async () => {
+    const snapshot = getCommittedSnapshot();
+    if (!snapshot) { commitPreedit(); return; }
     if (!config.copyMode) {
-      await triggerSend();
+      await triggerSend(snapshot);
       return;
     }
 
-    if (!displayText.trim()) return;
-
-    const copied = await copyTextToClipboard(displayText);
-    if (!copied) {
-      console.error('[Clipboard] Copy failed');
-      return;
-    }
-
-    clearAll();
-    cancelTypingTimeout();
-    sendTypingStatus(false);
+    if (copying.current || !snapshot.text.trim()) return;
+    copying.current = true;
+    throttledAutoSend.cancel();
+    try {
+      if (await copyTextToClipboard(snapshot.text) && clearSentText(snapshot)) {
+        cancelTypingTimeout();
+        sendTypingStatus(false);
+      }
+    } finally { copying.current = false; }
   }, [
     config.copyMode,
     triggerSend,
-    displayText,
-    clearAll,
+    getCommittedSnapshot,
+    commitPreedit,
+    clearSentText,
+    throttledAutoSend,
     cancelTypingTimeout,
     sendTypingStatus,
   ]);
@@ -224,6 +235,8 @@ const App = () => {
     caretRevision,
     mutationSeq,
     isConverting,
+    hasPreedit,
+    isCommitPending,
     mode,
     setMode,
     handleCharInput,
@@ -426,6 +439,7 @@ const App = () => {
 
       {/* Text Input Area / テキスト入力エリア */}
       <div className='w-full max-w-5xl mb-4 relative shrink-0 group px-1'>
+        <ImeEngineStatus language={config.language} />
         <div
           className={`
           relative w-full h-24 md:h-32 dark:bg-slate-900/60 bg-white/60 rounded-xl border
@@ -448,6 +462,7 @@ const App = () => {
             <button
               className='cursor-pointer text-[10px] font-bold dark:bg-slate-800 bg-slate-100 px-2 py-0.5 rounded dark:text-slate-400 text-slate-500 border dark:border-slate-700 border-slate-200 hover:text-primary-600 dark:hover:text-[rgb(var(--rgb-on-primary))] hover:border-primary-500 transition-colors'
               onClick={toggleMode}
+              disabled={isCommitPending}
               tabIndex={-1}
             >
               {t.modes[mode]}
@@ -455,6 +470,11 @@ const App = () => {
           </div>
 
           <div className='relative w-full h-full mt-6'>
+            {isCommitPending && (
+              <span role='status' className='absolute right-0 -top-5 text-xs dark:text-slate-300 text-slate-600'>
+                {config.language === 'ja' ? '確定中…' : 'Committing…'}
+              </span>
+            )}
             <PreeditUnderline
               textareaRef={textareaRef}
               text={displayText}
@@ -465,6 +485,7 @@ const App = () => {
             <textarea
               ref={textareaRef}
               value={displayText}
+              aria-busy={isCommitPending}
               onChange={handleTextareaChange}
               onBlur={handleBlur}
               onSelect={handleSelect}
@@ -486,6 +507,8 @@ const App = () => {
           candidates={candidates}
           candidateIndex={candidateIndex}
           isConverting={isConverting}
+          candidateSelectionMode={candidateSelectionMode}
+          isCommitPending={isCommitPending}
           onCommitCandidate={virtualKeyHandlers.onCommitCandidate}
           language={config.language}
           keySoundEnabled={config.keySoundEnabled}
