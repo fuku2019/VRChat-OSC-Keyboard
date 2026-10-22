@@ -43,7 +43,7 @@ const SettingsWindow: FC = () => {
   } = useUpdateChecker();
 
   return (
-    <div className='h-screen w-screen overflow-hidden flex flex-col dark:bg-slate-950 pure-black:bg-black bg-slate-50'>
+    <div className='h-screen w-screen overflow-hidden flex flex-col bg-canvas text-ink'>
       {/* Outside the keyed panel so a config remount does not reset it.
           キー付きのパネルの外に置き、設定による再マウントでリセットされないようにする。 */}
       <VrStatusBanner />

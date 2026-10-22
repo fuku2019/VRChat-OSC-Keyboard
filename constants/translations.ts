@@ -7,6 +7,7 @@ export interface TranslationStrings {
     language: string;
     oscPort: string;
     oscPortDesc: string;
+    steamVrSection: string;
     vrStatusWaiting: string;
     vrStatusStarting: string;
     vrStatusFailed: string;
@@ -39,7 +40,7 @@ export interface TranslationStrings {
     themeDark: string;
     themePureBlack: string;
     accentColor: string;
-    accentColorCyan: string;
+    accentColorBlue: string;
     accentColorPurple: string;
     accentColorCustom: string;
     checkInterval: string;
@@ -107,6 +108,18 @@ export interface TranslationStrings {
     HIRAGANA: string;
     KATAKANA: string;
   };
+  // Shown on the space bar, like Gboard's language label / Gboard の言語表示のようにスペースキーに出す
+  modesShort: {
+    ENGLISH: string;
+    HIRAGANA: string;
+    KATAKANA: string;
+  };
+  // Label of the mode key / モードキーのラベル
+  modeKeys: {
+    ENGLISH: string;
+    HIRAGANA: string;
+    KATAKANA: string;
+  };
   controls: {
     copyModeOn: string;
     copyModeOff: string;
@@ -114,6 +127,9 @@ export interface TranslationStrings {
     copyOffShort: string;
     autoSendOn: string;
     autoSendOff: string;
+    autoSendOnShort: string;
+    autoSendOffShort: string;
+    resetOverlay: string;
     autoSendDisabledByCopyMode: string;
   };
   history: {
@@ -131,6 +147,7 @@ export const TRANSLATIONS: TranslationsMap = {
       language: '言語 / Language',
       oscPort: 'VRChat OSC ポート',
       oscPortDesc: 'VRChatにOSCメッセージを送信するポート（デフォルト: 9000）\n 注意:間違ったOSCポートを指定しても、エラーは表示されずVRChatにはチャットが送信されません。',
+      steamVrSection: 'SteamVR連携',
       vrStatusWaiting: 'SteamVRを起動してください。起動すると自動でVR内にキーボードが表示されます。',
       vrStatusStarting: 'SteamVRに接続しています…',
       vrStatusFailed: 'VRオーバーレイを開始できませんでした。SteamVRを再起動してから、このアプリを起動し直してください。',
@@ -163,7 +180,7 @@ export const TRANSLATIONS: TranslationsMap = {
       themeDark: 'ダーク',
       themePureBlack: 'ピュアブラック',
       accentColor: 'アクセントカラー',
-      accentColorCyan: '水色',
+      accentColorBlue: '青',
       accentColorPurple: '紫',
       accentColorCustom: 'カスタム',
       checkInterval: '更新確認頻度',
@@ -205,7 +222,7 @@ export const TRANSLATIONS: TranslationsMap = {
       step1Title: 'OSCの有効化',
       step1Desc: 'VRChat内のアクションメニューからOSC設定を開きOSCを有効にしてください。',
       step2Title: '入力モード',
-      step2Desc: '画面のボタンで入力モードを切り替えられます。',
+      step2Desc: '左端の「あ」キーかTabキーで入力モードを切り替えられます。',
       step3Title: '送信',
       step3Desc: '送信ボタンでVRChatへチャットを送信します。',
       startButton: 'はじめる'
@@ -231,13 +248,26 @@ export const TRANSLATIONS: TranslationsMap = {
       HIRAGANA: 'ひらがな(TABで切り替え)',
       KATAKANA: 'カタカナ(TABで切り替え)'
     },
+    modesShort: {
+      ENGLISH: 'English',
+      HIRAGANA: 'ひらがな',
+      KATAKANA: 'カタカナ'
+    },
+    modeKeys: {
+      ENGLISH: 'abc',
+      HIRAGANA: 'あ',
+      KATAKANA: 'ア'
+    },
     controls: {
       copyModeOn: 'コピー機能: ON',
       copyModeOff: 'コピー機能: OFF',
-      copyOnShort: 'COPY',
-      copyOffShort: 'SEND',
+      copyOnShort: 'コピー',
+      copyOffShort: 'コピー',
       autoSendOn: 'チャット自動送信: ON',
       autoSendOff: 'チャット自動送信: OFF',
+      autoSendOnShort: '自動送信',
+      autoSendOffShort: '自動送信',
+      resetOverlay: 'オーバーレイを正面に戻す',
       autoSendDisabledByCopyMode: 'コピー機能ON中はチャット自動送信は無効です'
     },
     history: {
@@ -251,6 +281,7 @@ export const TRANSLATIONS: TranslationsMap = {
       language: 'Language',
       oscPort: 'VRChat OSC Port',
       oscPortDesc: 'VRChat OSC Send Port (Default: 9000) \n Note: Incorrect port settings will not trigger an error, but chat will not be sent.',
+      steamVrSection: 'SteamVR integration',
       vrStatusWaiting: 'Please start SteamVR. The keyboard will appear in VR automatically once it is running.',
       vrStatusStarting: 'Connecting to SteamVR…',
       vrStatusFailed: 'Could not start the VR overlay. Restart SteamVR, then launch this app again.',
@@ -283,7 +314,7 @@ export const TRANSLATIONS: TranslationsMap = {
       themeDark: 'Dark',
       themePureBlack: 'Pure Black',
       accentColor: 'Accent Color',
-      accentColorCyan: 'Cyan (Default)',
+      accentColorBlue: 'Blue (Default)',
       accentColorPurple: 'Purple',
       accentColorCustom: 'Custom',
       checkInterval: 'Update Check Interval',
@@ -325,7 +356,7 @@ export const TRANSLATIONS: TranslationsMap = {
       step1Title: 'Enable OSC',
       step1Desc: 'Enable OSC in VRChat via Action Menu > OSC > Enable.',
       step2Title: 'Input Modes',
-      step2Desc: 'Switch input modes with the on-screen button.',
+      step2Desc: 'Switch input modes with the mode key on the left (あ / abc) or Tab.',
       step3Title: 'Send Message',
       step3Desc: 'Send chat to VRChat with the Send button.',
       startButton: 'Get Started'
@@ -351,13 +382,26 @@ export const TRANSLATIONS: TranslationsMap = {
       HIRAGANA: 'Hiragana (Tab to Switch)',
       KATAKANA: 'Katakana (Tab to Switch)'
     },
+    modesShort: {
+      ENGLISH: 'English',
+      HIRAGANA: 'Hiragana',
+      KATAKANA: 'Katakana'
+    },
+    modeKeys: {
+      ENGLISH: 'abc',
+      HIRAGANA: 'あ',
+      KATAKANA: 'ア'
+    },
     controls: {
       copyModeOn: 'Copy Mode: ON',
       copyModeOff: 'Copy Mode: OFF',
-      copyOnShort: 'COPY',
-      copyOffShort: 'SEND',
+      copyOnShort: 'Copy',
+      copyOffShort: 'Copy',
       autoSendOn: 'Auto Send: ON',
       autoSendOff: 'Auto Send: OFF',
+      autoSendOnShort: 'Auto send',
+      autoSendOffShort: 'Auto send',
+      resetOverlay: 'Reset overlay to front',
       autoSendDisabledByCopyMode: 'Auto Send is disabled while Copy Mode is on'
     },
     history: {

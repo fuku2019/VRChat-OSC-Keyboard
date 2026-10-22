@@ -1,5 +1,4 @@
 import { FC } from 'react';
-import { Wifi, Keyboard, Send, CircleCheck } from 'lucide-react';
 import { TRANSLATIONS } from '../constants';
 import { Language } from '../types';
 import { useModalAnimation } from '../hooks/useModalAnimation';
@@ -23,84 +22,46 @@ const TutorialOverlay: FC<TutorialOverlayProps> = ({
 
   const t = TRANSLATIONS[language].tutorial;
 
+  // The steps really are a sequence, so they are numbered.
+  // 手順は実際に順番があるので番号を振る。
   const steps = [
-    {
-      icon: (
-        <Wifi className='dark:text-primary-400 text-primary-600' size={32} />
-      ),
-      title: t.step1Title,
-      desc: t.step1Desc,
-    },
-    {
-      icon: (
-        <Keyboard
-          className='dark:text-primary-400 text-primary-600'
-          size={32}
-        />
-      ),
-      title: t.step2Title,
-      desc: t.step2Desc,
-    },
-    {
-      icon: (
-        <Send className='dark:text-primary-400 text-primary-600' size={32} />
-      ),
-      title: t.step3Title,
-      desc: t.step3Desc,
-    },
+    { title: t.step1Title, desc: t.step1Desc },
+    { title: t.step2Title, desc: t.step2Desc },
+    { title: t.step3Title, desc: t.step3Desc },
   ];
-
-  // When closing, we disable the stagger effect by forcing opacity:1 on children or just relying on container fade out / 閉じるときは、子要素の不透明度を1に強制するか、コンテナのフェードアウトに依存して、スタッガー効果を無効にする
-  // The container fade/scale out is usually enough. / コンテナのフェード/スケールアウトで通常は十分
 
   return (
     <div
-      className={`fixed inset-0 z-[100] flex items-center justify-center dark:bg-slate-950/95 bg-white/95 backdrop-blur-md p-4 ${animationClass}`}
+      className={`fixed inset-0 z-[100] flex items-center justify-center bg-canvas p-4 ${animationClass}`}
     >
       <div
-        className={`w-full max-w-2xl dark:bg-slate-900 bg-white border dark:border-slate-700 border-slate-200 rounded-3xl shadow-2xl p-8 md:p-12 text-center overflow-y-auto max-h-full ${modalAnimationClass}`}
+        className={`w-full max-w-xl bg-key text-ink rounded-[28px] p-10 overflow-y-auto max-h-full ${modalAnimationClass}`}
       >
-        <h2
-          className='text-3xl md:text-4xl font-black dark:text-white text-slate-900 mb-2 tracking-tight opacity-0 animate-slide-up'
-          style={{ animationDelay: isOpen ? '100ms' : '0ms' }}
-        >
-          {t.title}
-        </h2>
-        <p
-          className='dark:text-slate-400 text-slate-600 mb-10 text-lg opacity-0 animate-slide-up'
-          style={{ animationDelay: isOpen ? '200ms' : '0ms' }}
-        >
-          {t.subtitle}
-        </p>
+        <h2 className='text-3xl mb-3'>{t.title}</h2>
+        <p className='text-ink-muted mb-8 leading-relaxed [word-break:auto-phrase]'>{t.subtitle}</p>
 
-        <div className='grid grid-cols-1 md:grid-cols-3 gap-6 mb-12 text-left'>
+        <ol className='space-y-6 mb-10'>
           {steps.map((step, i) => (
-            <div
-              key={i}
-              className='dark:bg-slate-800/50 bg-slate-50 p-6 rounded-2xl border dark:border-slate-700/50 border-slate-200 hover:border-primary-500/30 transition-colors opacity-0 animate-slide-up'
-              style={{ animationDelay: isOpen ? `${300 + i * 150}ms` : '0ms' }}
-            >
-              <div className='mb-4 dark:bg-slate-900 bg-white w-12 h-12 rounded-xl flex items-center justify-center border dark:border-slate-700 border-slate-200'>
-                {step.icon}
+            <li key={i} className='flex gap-4'>
+              <span className='shrink-0 w-9 h-9 rounded-full bg-tonal text-on-tonal flex items-center justify-center text-base font-medium tabular-nums'>
+                {i + 1}
+              </span>
+              <div className='pt-1'>
+                <h3 className='text-[17px] mb-1'>{step.title}</h3>
+                <p className='text-sm text-ink-muted leading-relaxed [word-break:auto-phrase]'>{step.desc}</p>
               </div>
-              <h3 className='dark:text-white text-slate-900 font-bold mb-2'>
-                {step.title}
-              </h3>
-              <p className='text-sm dark:text-slate-400 text-slate-600 leading-relaxed'>
-                {step.desc}
-              </p>
-            </div>
+            </li>
           ))}
-        </div>
+        </ol>
 
-        <button
-          onClick={onClose}
-          className='group relative inline-flex items-center justify-center px-10 py-4 font-bold text-[rgb(var(--rgb-on-primary))] transition-all duration-200 bg-primary-600 font-pj rounded-2xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-600 hover:bg-primary-500 active:scale-95 shadow-[0_0_20px_rgb(var(--rgb-primary-600)_/_0.3)] opacity-0 animate-slide-up'
-          style={{ animationDelay: isOpen ? '750ms' : '0ms' }}
-        >
-          <CircleCheck className='mr-2' size={20} />
-          {t.startButton}
-        </button>
+        <div className='flex justify-end'>
+          <button
+            onClick={onClose}
+            className='px-8 py-3 rounded-full bg-accent text-on-accent text-base font-medium'
+          >
+            {t.startButton}
+          </button>
+        </div>
       </div>
     </div>
   );

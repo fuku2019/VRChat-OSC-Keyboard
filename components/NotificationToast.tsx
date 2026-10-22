@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X } from 'lucide-react';
+import { Download, X } from 'lucide-react';
 import { UpdateInfo } from '../hooks/useUpdateChecker';
 import { TRANSLATIONS, DEFAULT_CONFIG } from '../constants';
 import { Language } from '../types';
@@ -43,13 +43,17 @@ const NotificationToast = ({
 
   return (
     <div
-      className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-full max-w-lg px-4 ${isClosing ? 'animate-fade-out' : 'animate-bounce-in'}`}
+      // At the top, over the header: at the bottom it covered the space bar, so the
+      // VR ray hit the toast instead of the key.
+      // 上端のヘッダーの上に出す。下端ではスペースキーを覆い、VRのレイがキーではなく
+      // トーストに当たっていた。
+      className={`fixed top-3 left-1/2 -translate-x-1/2 z-50 w-full max-w-xl px-4 ${isClosing ? 'animate-fade-out' : 'animate-scale-in'}`}
     >
-      <div className='flex flex-col gap-2 dark:bg-slate-800 bg-white p-4 rounded-xl shadow-2xl border dark:border-primary-500/50 border-primary-500 ring-1 ring-primary-500/20 w-full'>
+      <div className='flex flex-col gap-3 bg-key text-ink pl-5 pr-3 py-3 rounded-2xl border border-line w-full'>
         <div className='flex items-center justify-between gap-4'>
           <div className='flex flex-col'>
-            <span className='text-sm font-bold dark:text-white text-slate-800 flex items-center gap-2'>
-              <span className='w-2 h-2 rounded-full bg-primary-500 animate-pulse'></span>
+            <span className='text-sm flex items-center gap-2 whitespace-nowrap'>
+              <Download size={18} className='text-accent shrink-0' />
               {t.settings.updateAvailable.replace(
                 '{version}',
                 updateAvailable.version,
@@ -61,7 +65,7 @@ const NotificationToast = ({
               downloadedPath && installUpdate ? (
                 <button
                   onClick={installUpdate}
-                  className='px-3 py-1.5 text-xs font-bold bg-green-600 hover:bg-green-500 text-white rounded-lg transition-colors'
+                  className='px-4 py-2 text-sm font-medium bg-accent text-on-accent rounded-full whitespace-nowrap'
                 >
                   {t.settings.installUpdate}
                 </button>
@@ -69,7 +73,7 @@ const NotificationToast = ({
                 <button
                   onClick={startDownload}
                   disabled={isDownloading}
-                  className='px-3 py-1.5 text-xs font-bold bg-primary-600 hover:bg-primary-500 text-[rgb(var(--rgb-on-primary))] rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
+                  className='px-4 py-2 text-sm font-medium bg-accent text-on-accent rounded-full whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed'
                 >
                   {isDownloading ? t.settings.downloading : t.settings.downloadAndUpdate}
                 </button>
@@ -81,16 +85,16 @@ const NotificationToast = ({
                     window.electronAPI.openExternal(updateAvailable.url);
                   }
                 }}
-                className='px-3 py-1.5 text-xs font-bold bg-primary-600 hover:bg-primary-500 text-[rgb(var(--rgb-on-primary))] rounded-lg transition-colors'
+                className='px-4 py-2 text-sm font-medium bg-accent text-on-accent rounded-full whitespace-nowrap'
               >
                 {t.settings.openReleasePage}
               </button>
             )}
             <button
               onClick={handleDismiss}
-              className='p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-slate-500 dark:text-slate-400 transition-colors'
+              className='p-3 rounded-full text-ink-muted'
             >
-              <X size={16} />
+              <X size={20} />
             </button>
           </div>
         </div>
@@ -98,20 +102,24 @@ const NotificationToast = ({
         {isDownloading && (
           <div className='flex flex-col gap-1 w-full'>
             <div className='flex items-center justify-between'>
-              <div className='w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1 overflow-hidden mr-2'>
+              {/* No looping animation for unknown progress: it would make the offscreen
+                  keyboard window paint every frame.
+                  進捗不明でもループするアニメーションは使わない。オフスクリーンの
+                  キーボードウィンドウに毎フレーム描画させるため。 */}
+              <div className='w-full bg-key-fn rounded-full h-1 overflow-hidden mr-3'>
                 {downloadProgress >= 0 ? (
                   <div
-                    className='bg-primary-500 h-1 rounded-full transition-all duration-300 ease-out'
+                    className='bg-accent h-1 rounded-full'
                     style={{ width: `${downloadProgress}%` }}
                   ></div>
                 ) : (
-                  <div className='bg-primary-500 h-1 rounded-full animate-pulse w-full'></div>
+                  <div className='bg-accent h-1 rounded-full w-full opacity-50'></div>
                 )}
               </div>
               {cancelDownload && (
                 <button
                   onClick={cancelDownload}
-                  className='text-[10px] px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 transition-colors flex-shrink-0'
+                  className='text-[13px] px-3 py-1 rounded-full text-error flex-shrink-0'
                 >
                   {t.settings.cancel}
                 </button>
@@ -121,7 +129,7 @@ const NotificationToast = ({
         )}
         {/* Download Error / ダウンロードエラー */}
         {downloadError && !isDownloading && (
-          <p className='text-xs text-red-500 dark:text-red-400'>{t.settings.downloadError}: {downloadError}</p>
+          <p className='text-[13px] text-error'>{t.settings.downloadError}: {downloadError}</p>
         )}
       </div>
     </div>

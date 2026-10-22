@@ -32,6 +32,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@fontsource-variable/google-sans-flex": "^5.3.2",
     "electron-store": "^11.0.2",
     "gl-matrix": "^3.4.4",
     "node-osc": "^11.2.2",
@@ -84,6 +85,7 @@
       "electron/assets/ime/mozc/**/*",
       "package.json",
       "THIRD_PARTY_MOZC_DICTIONARY_LICENSES.txt",
+      "THIRD_PARTY_FONT_LICENSES.txt",
       "native/index.node",
       "native/openvr_api.dll",
       "img/**/*",

@@ -21,7 +21,7 @@ export const DEFAULT_CONFIG = {
   KEY_SOUND_VARIANT: 'soft' as const,
   LANGUAGE: 'ja' as const,
   THEME: 'dark' as const,
-  ACCENT_COLOR: 'cyan',
+  ACCENT_COLOR: 'blue',
   UPDATE_CHECK_INTERVAL: 'weekly' as const,
   STEAMVR_AUTO_LAUNCH: false,
   HISTORY_MAX_COUNT: 30, // Max send history entries / 送信履歴の最大保持件数
@@ -42,7 +42,8 @@ export const TIMEOUTS = {
 // Grid layout configuration / グリッドレイアウト設定
 export const KEYBOARD_GRID = {
   COLUMNS: 60,
-  ROW_HEIGHT: '3.5rem',
+  ROW_HEIGHT: '3.75rem',
+  GAP: '6px', // Space between keys; the Enter key's L shape is computed from it / キー間の間隔。Enterキーの逆L字はこれから計算する
 } as const;
 
 // VRChat chatbox limits / VRChatチャットボックスの制限

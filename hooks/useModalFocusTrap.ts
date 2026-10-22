@@ -39,8 +39,11 @@ export const useModalFocusTrap = (
         (element) => !element.hasAttribute('aria-hidden'),
       );
 
-    const focusableElements = getFocusableElements();
-    (focusableElements[0] || modalElement).focus();
+    // Focus the dialog itself rather than its first control, which would open with
+    // a focus ring on the first tab. Tab still moves into the controls from here.
+    // 最初の操作要素ではなくダイアログ自体にフォーカスする。最初の要素だと、開いた時点で
+    // 先頭のタブにフォーカスリングが出ていた。ここからでも Tab で操作要素へ移れる。
+    modalElement.focus();
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {

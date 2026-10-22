@@ -58,10 +58,10 @@ const VrStatusBanner: FC = () => {
   return (
     <div
       role='status'
-      className={`flex items-center gap-3 px-5 py-3 text-sm border-b ${
+      className={`flex items-center gap-3 px-6 py-3 text-sm ${
         failed
-          ? 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border-red-200 dark:border-red-500/30'
-          : 'bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200 border-amber-200 dark:border-amber-500/30'
+          ? 'bg-error-container text-error'
+          : 'bg-warning-container text-warning'
       }`}
     >
       {failed ? (

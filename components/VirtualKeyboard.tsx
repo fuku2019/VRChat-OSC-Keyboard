@@ -1,13 +1,9 @@
 import { useState, FC, memo } from 'react';
-import { ChevronUp, ChevronDown } from 'lucide-react';
 import { KEYBOARD_LAYOUT, TRANSLATIONS, KEYBOARD_GRID } from '../constants';
 import { KeyConfig, InputMode, Language, KeySoundVariant } from '../types';
 import type { ImeCandidate } from '../types/ime';
 import Key from './Key';
 import { useKeyPressSound } from '../hooks/useKeyPressSound';
-import packageJson from '../package.json';
-
-const APP_VERSION = packageJson.version;
 const SOUND_BASE_URL = `${import.meta.env.BASE_URL}sounds/`;
 
 interface VirtualKeyboardProps {
@@ -35,6 +31,39 @@ interface VirtualKeyboardProps {
 // 6-9 が画面に無い候補を確定していた。
 const MAX_VISIBLE_CANDIDATES = 9;
 
+// JIS inverted-L Enter key. The button spans 6 of the 60 grid columns over two
+// rows; the lower row gives it only the right 5, so the notch on the left is one
+// column plus one gap wide. The step sits at the bottom edge of the upper row,
+// half a gap above the middle. Corners are rounded like the other keys; shape()
+// clips hit testing too, so the VR ray's elementFromPoint misses the notch.
+// JIS の逆L字の Enter キー。ボタンは 60列グリッドのうち6列ぶんの幅で2行にまたがり、
+// 下の行では右の5列しか使わないので、左の切り欠きは1列+1ギャップの幅になる。
+// 段差は上の行の下端、つまり中央よりギャップ半分だけ上にある。角はほかのキーと同じく
+// 丸める。shape() は当たり判定も切り抜くので、VRレイの elementFromPoint は切り欠きを拾わない。
+const ENTER_KEY_RADIUS = '10px';
+const NOTCH_X = '((100% - 5 * var(--kb-gap)) / 6 + var(--kb-gap))';
+const STEP_Y = '(50% - var(--kb-gap) / 2)';
+const ENTER_NOTCH_X = `calc${NOTCH_X}`;
+const ENTER_KEY_SHAPE = (() => {
+  const r = ENTER_KEY_RADIUS;
+  return [
+    `shape(from ${r} 0`,
+    `hline to calc(100% - ${r})`,
+    `arc to 100% ${r} of ${r} cw`,
+    `vline to calc(100% - ${r})`,
+    `arc to calc(100% - ${r}) 100% of ${r} cw`,
+    `hline to calc(${NOTCH_X} + ${r})`,
+    `arc to calc${NOTCH_X} calc(100% - ${r}) of ${r} cw`,
+    `vline to calc(${STEP_Y} + ${r})`,
+    `arc to calc(${NOTCH_X} - ${r}) calc${STEP_Y} of ${r} ccw`,
+    `hline to ${r}`,
+    `arc to 0 calc(${STEP_Y} - ${r}) of ${r} cw`,
+    `vline to ${r}`,
+    `arc to ${r} 0 of ${r} cw`,
+    'close)',
+  ].join(', ');
+})();
+
 const SOUND_SRC_MAP: Record<KeySoundVariant, string> = {
   soft: `${SOUND_BASE_URL}key-soft.mp3`,
   mechanical: `${SOUND_BASE_URL}key-mechanical.mp3`,
@@ -60,7 +89,8 @@ const VirtualKeyboard: FC<VirtualKeyboardProps> = ({
 }) => {
   const [shift, setShift] = useState(false);
   const [capsLock, setCapsLock] = useState(false);
-  const tKeys = TRANSLATIONS[language].keys;
+  const t = TRANSLATIONS[language];
+  const tKeys = t.keys;
   const playKeyPressSound = useKeyPressSound({
     enabled: keySoundEnabled,
     src: SOUND_SRC_MAP[keySoundVariant],
@@ -136,47 +166,70 @@ const VirtualKeyboard: FC<VirtualKeyboardProps> = ({
   };
 
   return (
-    <div className='flex flex-col w-full max-w-5xl mx-auto p-2 dark:bg-slate-900/60 bg-white/60 rounded-2xl shadow-2xl border dark:border-white/10 border-black/10 select-none backdrop-blur-2xl transition-colors duration-300'>
-      <div className='h-10 mb-2 px-2 md:px-4 flex items-center gap-2 dark:text-primary-300 text-primary-700 overflow-hidden'>
-        <div className='flex-1 min-w-0 h-full overflow-x-auto overflow-y-hidden'>
+    <div className='flex flex-col w-full select-none'>
+      {/* Suggestion strip, Gboard style: plain text split by thin rules, the
+          selected candidate in a tonal pill. Keeps its height while empty so the
+          keys do not jump when conversion starts.
+          Gboard 風の候補帯。細い縦線で区切った文字だけを並べ、選択中の候補を tonal の
+          pill にする。変換が始まってもキーが動かないよう、空のときも高さを保つ。 */}
+      <div className='h-16 flex items-center overflow-hidden'>
+        <div className='flex-1 min-w-0 h-full overflow-x-auto overflow-y-hidden scrollbar-none [mask-image:linear-gradient(to_right,#000_94%,transparent)]'>
           {isConverting && candidates.length > 0 && (
-            <div className='inline-flex h-full items-center gap-2 pr-2'>
+            <div className='inline-flex h-full items-center pr-16'>
               {candidates.slice(0, MAX_VISIBLE_CANDIDATES).map((candidate, index) => (
-                <button
-                  key={`${candidate.text}-${index}`}
-                  type='button'
-                  onClick={() => handleCandidateCommit(index)}
-                  // Keep the textarea focused, same as Key.tsx. Without this the
-                  // candidate click blurs it and the caret jumps to the end.
-                  // Key.tsx と同じくテキストエリアのフォーカスを保つ。これが無いと
-                  // 候補クリックでblurし、キャレットが末尾へ飛ぶ。
-                  onMouseDown={(e) => e.preventDefault()}
-                  // Committed on VR trigger press, like the keys (Key.tsx).
-                  // キーと同じく、VRのトリガーを押した瞬間に確定する(Key.tsx)。
-                  data-vr-click='press'
-                  className={`h-7 px-3 rounded-lg text-sm border transition-colors whitespace-nowrap ${
-                    index === candidateIndex
-                      ? 'bg-primary-500/20 border-primary-500 text-primary-700 dark:text-primary-200'
-                      : 'dark:bg-slate-900/60 bg-white/80 dark:border-slate-700 border-slate-300 dark:text-slate-200 text-slate-700 hover:border-primary-500'
-                  }`}
-                  title={candidate.source ? `${candidate.source}` : 'candidate'}
-                >
-                  <span className='mr-1 text-[10px] opacity-70'>{index + 1}</span>
-                  {candidate.text}
-                </button>
+                <div key={`${candidate.text}-${index}`} className='flex h-full items-center'>
+                  {/* Hidden next to the selected pill, which already separates itself
+                      選択中の pill の隣では隠す。pill 自体が区切りになるため */}
+                  {index > 0 && (
+                    <span
+                      aria-hidden='true'
+                      className={`h-5 w-px ${
+                        index === candidateIndex || index - 1 === candidateIndex ? '' : 'bg-line'
+                      }`}
+                    />
+                  )}
+                  <button
+                    type='button'
+                    onClick={() => handleCandidateCommit(index)}
+                    // Keep the textarea focused, same as Key.tsx. Without this the
+                    // candidate click blurs it and the caret jumps to the end.
+                    // Key.tsx と同じくテキストエリアのフォーカスを保つ。これが無いと
+                    // 候補クリックでblurし、キャレットが末尾へ飛ぶ。
+                    onMouseDown={(e) => e.preventDefault()}
+                    // Committed on VR trigger press, like the keys (Key.tsx).
+                    // キーと同じく、VRのトリガーを押した瞬間に確定する(Key.tsx)。
+                    data-vr-click='press'
+                    // The whole strip height is the target; the pill inside stays small.
+                    // 当たり判定は帯の高さいっぱい。見た目の pill は内側で小さく保つ。
+                    className='h-full px-1 flex items-center'
+                    title={candidate.source ? `${candidate.source}` : 'candidate'}
+                  >
+                    <span
+                      className={`h-10 px-4 rounded-full text-xl whitespace-nowrap flex items-center gap-1.5 ${
+                        index === candidateIndex ? 'bg-tonal text-on-tonal' : 'text-ink'
+                      }`}
+                    >
+                      <span className='text-[13px] opacity-70 tabular-nums'>{index + 1}</span>
+                      {candidate.text}
+                    </span>
+                  </button>
+                </div>
               ))}
             </div>
           )}
         </div>
-
       </div>
 
       <div
-        className='grid gap-1 w-full'
-        style={{
-          gridTemplateColumns: `repeat(${KEYBOARD_GRID.COLUMNS}, 1fr)`,
-          gridAutoRows: KEYBOARD_GRID.ROW_HEIGHT,
-        }}
+        className='grid w-full'
+        style={
+          {
+            '--kb-gap': KEYBOARD_GRID.GAP,
+            gap: 'var(--kb-gap)',
+            gridTemplateColumns: `repeat(${KEYBOARD_GRID.COLUMNS}, 1fr)`,
+            gridAutoRows: KEYBOARD_GRID.ROW_HEIGHT,
+          } as React.CSSProperties
+        }
       >
         {KEYBOARD_LAYOUT.map((key, index) => {
           let displayKey = { ...key };
@@ -184,20 +237,14 @@ const VirtualKeyboard: FC<VirtualKeyboardProps> = ({
           // Localization / ローカリゼーション（多言語対応）
           if (key.action === 'send') displayKey.label = tKeys.send;
           if (key.action === 'clear') displayKey.label = tKeys.clear;
-          if (key.action === 'space' && key.label.trim() === '')
-            displayKey.label = tKeys.space;
+          // The space bar names the current input mode, like Gboard's language label.
+          // スペースキーには、Gboard の言語表示のように現在の入力モードを出す。
+          if (key.action === 'space') displayKey.label = t.modesShort[mode];
           if (key.action === 'backspace' && key.label === '←')
             displayKey.label = tKeys.backspace;
 
           // Dynamic Labels / 動的ラベル
-          if (key.action === 'mode') {
-            displayKey.label =
-              mode === InputMode.ENGLISH
-                ? 'ENG'
-                : mode === InputMode.HIRAGANA
-                  ? 'あ'
-                  : 'ア';
-          }
+          if (key.action === 'mode') displayKey.label = t.modeKeys[mode];
 
           // Spacer Logic for Enter Key / Enterキー用のスペーサーロジック
           if (key.isSpacer) {
@@ -226,14 +273,13 @@ const VirtualKeyboard: FC<VirtualKeyboardProps> = ({
                       top: 0,
                       left: 0,
                       width: '100%',
-                      height: 'calc(200% + 0.25rem)', // Span 2 rows (100% + 100% + gap)
+                      height: 'calc(200% + var(--kb-gap))', // Span 2 rows (100% + 100% + gap)
                       zIndex: 10,
-                      clipPath:
-                        'polygon(0 0, 100% 0, 100% 100%, 16.666% 100%, 16.666% 50%, 0 50%)',
-                      filter:
-                        'drop-shadow(0 4px 6px -1px rgb(0 0 0 / 0.1)) drop-shadow(0 2px 4px -2px rgb(0 0 0 / 0.1))',
+                      clipPath: ENTER_KEY_SHAPE,
+                      // Centre the label over the lower part / ラベルを下段の部分の中央に置く
+                      paddingLeft: ENTER_NOTCH_X,
                     }}
-                    className='shadow-none pointer-events-auto' // Enable pointer events for the button itself
+                    className='pointer-events-auto' // Enable pointer events for the button itself
                   />
                 </div>
               );
@@ -268,11 +314,6 @@ const VirtualKeyboard: FC<VirtualKeyboardProps> = ({
             />
           );
         })}
-      </div>
-
-      <div className='mt-2 flex justify-between px-4 text-slate-500 text-xs'>
-        <span>JIS Layout (Standard)</span>
-        <span>VRChat OSC Keyboard v{APP_VERSION}</span>
       </div>
     </div>
   );

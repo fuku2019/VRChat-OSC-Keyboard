@@ -3,6 +3,8 @@
 @custom-variant pure-black (&:where(.pure-black, .pure-black *));
 
 @theme {
+  --font-sans: 'Google Sans Flex Variable', 'BIZ UDPGothic', 'Yu Gothic UI', 'Meiryo UI', sans-serif;
+
   --animate-fade-in: fadeIn 0.3s ease-out forwards;
   --animate-fade-out: fadeOut 0.2s ease-in forwards;
   --animate-scale-in: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
@@ -42,36 +44,118 @@
   }
 }
 
+/* Semantic UI tokens (bg-canvas, text-ink, ...). Components use these instead of
+   dark:/light pairs, so a theme is just a class on <html> that swaps the values.
+   意味トークン(bg-canvas, text-ink など)。コンポーネントは dark:/light の対の代わりに
+   これを使う。テーマは <html> のクラスで値を切り替えるだけになる。 */
+@theme inline {
+  --color-canvas: var(--ui-canvas);
+  --color-key: var(--ui-key);
+  --color-key-fn: var(--ui-key-fn);
+  --color-tonal: var(--ui-tonal);
+  --color-on-tonal: var(--ui-on-tonal);
+  --color-key-active: var(--ui-key-active);
+  --color-on-key-active: var(--ui-on-key-active);
+  --color-accent: var(--ui-accent);
+  --color-on-accent: var(--ui-on-accent);
+  --color-ink: var(--ui-ink);
+  --color-ink-muted: var(--ui-ink-muted);
+  --color-line: var(--ui-line);
+  --color-error: var(--ui-error);
+  --color-error-container: var(--ui-error-container);
+  --color-warning: var(--ui-warning);
+  --color-warning-container: var(--ui-warning-container);
+  --color-success: var(--ui-success);
+  --color-success-container: var(--ui-success-container);
+}
+
 :root {
-  /* Default Cyan RGB values */
-  --rgb-primary-50: 236 254 255;
-  --rgb-primary-100: 207 250 254;
-  --rgb-primary-200: 165 243 252;
-  --rgb-primary-300: 103 232 249;
-  --rgb-primary-400: 34 211 238;
-  --rgb-primary-500: 6 182 212;
-  --rgb-primary-600: 8 145 178;
-  --rgb-primary-700: 14 116 144;
-  --rgb-primary-800: 21 94 117;
-  --rgb-primary-900: 22 78 99;
-  
-  --rgb-on-primary: 255 255 255;
-  --color-on-primary: rgb(var(--rgb-on-primary));
+  /* Default Blue RGB values (Google Material 3 baseline tones), overwritten by useTheme
+     既定の青(Google Material 3 ベースラインのトーン)。useTheme が上書きする */
+  --rgb-primary-50: 238 244 255;
+  --rgb-primary-100: 211 227 253;
+  --rgb-primary-200: 168 199 250;
+  --rgb-primary-300: 124 172 248;
+  --rgb-primary-400: 76 141 246;
+  --rgb-primary-500: 27 110 243;
+  --rgb-primary-600: 11 87 208;
+  --rgb-primary-700: 8 66 160;
+  --rgb-primary-800: 6 46 111;
+  --rgb-primary-900: 4 30 73;
+
+  /* Text on the accent and tonal fills; useTheme picks them by contrast ratio for the
+     current theme, so generated palettes (white, yellow) stay readable.
+     accent と tonal の塗りの上の文字色。useTheme が現在のテーマでのコントラスト比から
+     選ぶので、生成したパレット(白系、黄系)でも読める。 */
+  --rgb-on-accent: 255 255 255;
+  --rgb-on-tonal: 6 46 111;
+
+  /* Neutrals borrow only the hue of the accent and pin lightness and chroma, the way
+     Material You tints its surfaces. Mixing by percentage instead made saturated
+     accents (purple) stain the whole window.
+     中立色はアクセントの色相だけを借り、明度と彩度は固定する(Material You の面の染め方)。
+     割合で混ぜると、彩度の高いアクセント(紫)でウィンドウ全体が濃く染まっていた。 */
+  --ui-canvas: oklch(from rgb(var(--rgb-primary-500)) 0.94 min(c, 0.014) h);
+  --ui-key: oklch(from rgb(var(--rgb-primary-500)) 0.995 min(c, 0.004) h);
+  --ui-key-fn: oklch(from rgb(var(--rgb-primary-500)) 0.87 min(c, 0.03) h);
+  --ui-line: oklch(from rgb(var(--rgb-primary-500)) 0.8 min(c, 0.02) h);
+  --ui-tonal: rgb(var(--rgb-primary-100));
+  --ui-on-tonal: rgb(var(--rgb-on-tonal));
+  /* A held modifier (Shift on). In light it must be darker than key-fn: the pale
+     tonal read as "released" next to the grey function keys.
+     押されたままの修飾キー(Shift ON)。light では key-fn より暗くする。淡い tonal だと
+     灰色の機能キーの隣で「解除された」ように見えていた。 */
+  --ui-key-active: oklch(from rgb(var(--rgb-primary-500)) 0.76 min(c, 0.1) h);
+  --ui-on-key-active: rgb(var(--rgb-primary-900));
+  --ui-accent: rgb(var(--rgb-primary-600));
+  --ui-on-accent: rgb(var(--rgb-on-accent));
+  --ui-ink: #1b1c1f;
+  --ui-ink-muted: #3f424a;
+  --ui-error: #b3261e;
+  --ui-error-container: #f9dedc;
+  --ui-warning: #8a5300;
+  --ui-warning-container: #ffdcbc;
+  --ui-success: #146c2e;
+  --ui-success-container: #c4eed0;
+}
+
+:root.dark {
+  color-scheme: dark;
+  --rgb-on-accent: 0 0 0;
+  --rgb-on-tonal: 211 227 253;
+  --ui-canvas: oklch(from rgb(var(--rgb-primary-500)) 0.25 min(c, 0.012) h);
+  --ui-key: oklch(from rgb(var(--rgb-primary-500)) 0.34 min(c, 0.012) h);
+  --ui-key-fn: oklch(from rgb(var(--rgb-primary-500)) 0.42 min(c, 0.03) h);
+  --ui-line: oklch(from rgb(var(--rgb-primary-500)) 0.45 min(c, 0.02) h);
+  --ui-tonal: rgb(var(--rgb-primary-700));
+  --ui-key-active: var(--ui-tonal);
+  --ui-on-key-active: var(--ui-on-tonal);
+  --ui-accent: rgb(var(--rgb-primary-200));
+  --ui-ink: #e6e6eb;
+  --ui-ink-muted: #b4b7bf;
+  --ui-error: #f2b8b5;
+  --ui-error-container: #601410;
+  --ui-warning: #f5c26b;
+  --ui-warning-container: #4a2800;
+  --ui-success: #7dd99a;
+  --ui-success-container: #0a3a1a;
+}
+
+/* Must come after :root.dark: pure-black sets both classes on <html>.
+   :root.dark より後に置くこと。pure-black では <html> に両方のクラスが付く。 */
+:root.pure-black {
+  --ui-canvas: #000;
+  --ui-key: oklch(from rgb(var(--rgb-primary-500)) 0.24 min(c, 0.01) h);
+  --ui-key-fn: oklch(from rgb(var(--rgb-primary-500)) 0.33 min(c, 0.025) h);
+  --ui-line: oklch(from rgb(var(--rgb-primary-500)) 0.35 min(c, 0.02) h);
 }
 
 /* Custom Scrollbar & Global Settings migrated from index.html */
 @layer base {
   ::-webkit-scrollbar { width: 6px; }
-  
-  /* Light mode scrollbar */
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.2); border-radius: 10px; }
-  ::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.3); }
-
-  /* Dark mode scrollbar */
-  :root.dark ::-webkit-scrollbar-track { background: transparent; }
-  :root.dark ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 10px; }
-  :root.dark ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.3); }
+  ::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--ui-ink) 22%, transparent); border-radius: 10px; }
+  ::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--ui-ink) 32%, transparent); }
 
   html.vr-scroll-select-lock,
   html.vr-scroll-select-lock * {
@@ -85,46 +169,103 @@
     -webkit-user-select: text;
     user-select: text;
   }
-  
-  html, body { 
-    height: 100%; 
-    overflow: hidden; 
-    background-color: transparent; 
-    font-family: 'Segoe UI Variable', 'Segoe UI', 'BIZ UDPGothic', sans-serif;
+
+  html, body {
+    height: 100%;
+    overflow: hidden;
+    background-color: transparent;
+    font-family: var(--font-sans);
   }
-  
-  #root { 
-    height: 100%; 
+
+  #root {
+    height: 100%;
+  }
+
+  /* State layers (Material 3): a tint of the text colour painted as background-image,
+     so it also lands on buttons that set their own bg-* colour. The old rule set
+     background-color in this base layer, which every bg-* utility overrode.
+     VR hover adds an outline in the text colour: in a headset the hover is the main
+     cue for where the ray points, and a tint alone was too faint to see. The text
+     colour keeps it visible on the accent-filled Enter key as well.
+     状態レイヤー(Material 3)。文字色の薄い色を background-image として重ねるので、
+     自前の bg-* を持つボタンにも乗る。以前はこの base レイヤーで background-color を
+     指定しており、bg-* ユーティリティにすべて上書きされていた。
+     VRのホバーには文字色の縁も付ける。ヘッドセットではホバーがレイの指す先を示す
+     主な手がかりで、色の重ねだけでは薄すぎて見えなかった。文字色なので accent で
+     塗った Enter キーの上でも見える。 */
+  @media (hover: hover) {
+    button:hover:not(:disabled) {
+      background-image: linear-gradient(
+        color-mix(in srgb, currentColor 10%, transparent),
+        color-mix(in srgb, currentColor 10%, transparent)
+      );
+    }
   }
 
   button.vr-hover,
   [role="button"].vr-hover {
-    outline: none;
-    border-color: rgb(var(--rgb-primary-500) / 0.5);
-    background-color: rgb(var(--rgb-primary-500) / 0.1);
-    filter: brightness(1.05);
+    background-image: linear-gradient(
+      color-mix(in srgb, currentColor 12%, transparent),
+      color-mix(in srgb, currentColor 12%, transparent)
+    );
+    outline: 2px solid currentColor;
+    outline-offset: -2px;
   }
 
-  :root.dark button.vr-hover,
-  :root.dark [role="button"].vr-hover {
-    border-color: rgba(255, 255, 255, 0.3);
-    background-color: rgba(255, 255, 255, 0.1);
-    filter: brightness(1.15);
+  /* The Enter key is clipped to an L shape, which cuts a rectangular outline off along
+     the notch. It gets a stronger tint instead.
+     Enter キーは逆L字に切り抜かれており、矩形の縁は切り欠きに沿って途切れる。
+     代わりに濃い色を重ねる。 */
+  button[data-action='send'].vr-hover {
+    outline: none;
+    background-image: linear-gradient(
+      color-mix(in srgb, currentColor 24%, transparent),
+      color-mix(in srgb, currentColor 24%, transparent)
+    );
+  }
+
+  /* In light the Enter text is white, and lightening the fill with it dropped the
+     label below 4.5:1. Darken with ink instead.
+     light では Enter の文字が白で、その色で塗りを明るくするとラベルが 4.5:1 を割った。
+     代わりに ink で暗くする。 */
+  :root:not(.dark) button[data-action='send'].vr-hover {
+    background-image: linear-gradient(
+      color-mix(in srgb, var(--ui-ink) 18%, transparent),
+      color-mix(in srgb, var(--ui-ink) 18%, transparent)
+    );
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ui-accent);
+    outline-offset: 2px;
+  }
+
+  /* Containers focused from code (dialogs) get no ring: it showed up as a stray
+     accent line under the VR status banner every time the settings window opened.
+     コードからフォーカスするコンテナ(ダイアログ)にはリングを出さない。設定ウィンドウを
+     開くたびに、VR状態バナーの下に余計な accent の線として出ていた。 */
+  [tabindex='-1']:focus-visible {
+    outline: none;
+  }
+
+  button:active:not(:disabled),
+  button.vr-pressed,
+  [role="button"].vr-pressed {
+    background-image: linear-gradient(
+      color-mix(in srgb, currentColor 20%, transparent),
+      color-mix(in srgb, currentColor 20%, transparent)
+    );
   }
 
   button.vr-pressed,
   [role="button"].vr-pressed {
     transform: scale(0.96);
-    filter: brightness(0.95);
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
   }
 
-  :root.dark button.vr-pressed,
-  :root.dark [role="button"].vr-pressed {
-    transform: scale(0.96);
-    filter: brightness(0.9);
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
-  }
+  /* Scrolled by the VR ray or a drag; a scrollbar here only ate into the strip's height
+     VRのレイやドラッグでスクロールする。ここのスクロールバーは帯の高さを削るだけだった */
+  .scrollbar-none { scrollbar-width: none; }
+  .scrollbar-none::-webkit-scrollbar { display: none; }
 
   /* Larger handles for VR pointer interactions in Settings custom accent picker */
   .settings-accent-picker.react-colorful {

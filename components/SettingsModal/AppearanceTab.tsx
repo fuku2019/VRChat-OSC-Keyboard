@@ -8,11 +8,19 @@ import { HexColorInput, HexColorPicker } from 'react-colorful';
 import { OscConfig, UpdateConfigFn } from '../../types';
 import { TranslationStrings } from '../../constants';
 import {
+  PRESET_ACCENT_IDS,
+  PRESET_PALETTES,
+  PresetAccentId,
   isPresetAccentColor,
   isValidCustomAccentColor,
   normalizeCustomAccentColor,
 } from '../../utils/colorUtils';
-import { SECTION_LABEL_CLASS, selectedBtnClass } from './settingsRows';
+import { INPUT_CLASS, SECTION_CLASS, SECTION_LABEL_CLASS, selectedBtnClass, SelectedMark } from './settingsRows';
+
+const PRESET_LABEL_KEYS: Record<PresetAccentId, keyof TranslationStrings['settings']> = {
+  blue: 'accentColorBlue',
+  purple: 'accentColorPurple',
+};
 
 interface AppearanceTabProps {
   t: TranslationStrings['settings'];
@@ -43,45 +51,54 @@ const AppearanceTab: FC<AppearanceTabProps> = ({
       <section>
         <label className={SECTION_LABEL_CLASS}>{t.theme}</label>
         <div className='flex gap-2'>
-          <button onClick={() => updateConfig('theme', 'pure-black')} className={selectedBtnClass(localConfig.theme === 'pure-black')}>{t.themePureBlack}</button>
-          <button onClick={() => updateConfig('theme', 'dark')} className={selectedBtnClass(localConfig.theme === 'dark')}>{t.themeDark}</button>
-          <button onClick={() => updateConfig('theme', 'light')} className={selectedBtnClass(localConfig.theme === 'light')}>{t.themeLight}</button>
+          {([
+            ['light', t.themeLight],
+            ['dark', t.themeDark],
+            ['pure-black', t.themePureBlack],
+          ] as [OscConfig['theme'], string][]).map(([theme, label]) => (
+            <button key={theme} onClick={() => updateConfig('theme', theme)} className={selectedBtnClass(localConfig.theme === theme)}>
+              <SelectedMark active={localConfig.theme === theme} />
+              {label}
+            </button>
+          ))}
         </div>
       </section>
 
-      <section className='pt-6 border-t dark:border-white/10 border-black/10'>
+      <section className={SECTION_CLASS}>
         <label className={SECTION_LABEL_CLASS}>{t.accentColor}</label>
         <div className='flex gap-2'>
-          <button onClick={() => onAccentColorChange('cyan')} className={`${selectedBtnClass(localConfig.accentColor === 'cyan' || !localConfig.accentColor)} flex items-center justify-center gap-2`}>
-            <div className='w-4 h-4 rounded-full bg-[#06b6d4] shadow-sm' />
-            <span className='text-xs md:text-sm whitespace-nowrap'>{t.accentColorCyan}</span>
-          </button>
-          <button onClick={() => onAccentColorChange('purple')} className={`${selectedBtnClass(localConfig.accentColor === 'purple')} flex items-center justify-center gap-2`}>
-            <div className='w-4 h-4 rounded-full bg-[#a855f7] shadow-sm' />
-            <span className='text-xs md:text-sm whitespace-nowrap'>{t.accentColorPurple}</span>
-          </button>
-          <button type='button' onClick={onCustomAccentSelect} className={`${selectedBtnClass(isCustomAccentSelected)} flex items-center justify-center gap-2`}>
-            <div className='w-4 h-4 rounded-full border border-slate-300 dark:border-slate-500 shadow-sm' style={{ background: customAccentColor }} />
-            <span className='text-xs md:text-sm whitespace-nowrap'>{t.accentColorCustom}</span>
+          {PRESET_ACCENT_IDS.map((id) => (
+            <button
+              key={id}
+              onClick={() => onAccentColorChange(id)}
+              className={selectedBtnClass(localConfig.accentColor === id || (id === 'blue' && !localConfig.accentColor))}
+            >
+              <SelectedMark active={localConfig.accentColor === id || (id === 'blue' && !localConfig.accentColor)} />
+              <span className='w-4 h-4 rounded-full ring-2 ring-key' style={{ background: PRESET_PALETTES[id][600] }} />
+              <span className='whitespace-nowrap'>{t[PRESET_LABEL_KEYS[id]]}</span>
+            </button>
+          ))}
+          <button type='button' onClick={onCustomAccentSelect} className={selectedBtnClass(isCustomAccentSelected)}>
+            <SelectedMark active={isCustomAccentSelected} />
+            <span className='w-4 h-4 rounded-full ring-2 ring-key border border-line' style={{ background: customAccentColor }} />
+            <span className='whitespace-nowrap'>{t.accentColorCustom}</span>
           </button>
         </div>
 
         {isCustomAccentSelected && (
-          <div className='mt-4 p-4 rounded-xl border dark:border-white/10 border-black/10 dark:bg-slate-900/50 bg-white/50 backdrop-blur-md space-y-4 shadow-sm'>
+          <div className='mt-5 space-y-4'>
             <HexColorPicker
               color={customAccentColor}
               onChange={onAccentColorChange}
               className='settings-accent-picker !w-full !h-48'
             />
             <div className='flex items-center gap-3'>
-              <span className='text-xs font-semibold dark:text-slate-400 text-slate-500 bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded-md'>
-                HEX
-              </span>
+              <span className='text-[13px] text-ink-muted'>HEX</span>
               <HexColorInput
                 color={customAccentColor}
                 prefixed
                 onChange={onAccentColorChange}
-                className='flex-1 dark:bg-slate-950/80 bg-white border dark:border-white/10 border-black/10 rounded-lg px-3 py-2 text-sm font-mono dark:text-slate-100 text-slate-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500/30 focus:outline-none transition-all shadow-inner'
+                className={`flex-1 ${INPUT_CLASS}`}
                 aria-label='custom-accent-color-input'
               />
             </div>

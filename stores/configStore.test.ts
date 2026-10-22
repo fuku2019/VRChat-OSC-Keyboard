@@ -30,12 +30,17 @@ window.electronAPI = {
 } as unknown as typeof window.electronAPI;
 
 // A config saved by an older build, still carrying the display settings that
-// were removed when the app became VR-only.
-// 古いビルドが保存した設定。アプリがVR専用になったときに削除した表示設定を
-// まだ含んでいる。
+// were removed when the app became VR-only, and the removed 'cyan' accent.
+// 古いビルドが保存した設定。アプリがVR専用になったときに削除した表示設定と、
+// 削除したアクセント 'cyan' をまだ含んでいる。
 localStorage.setItem(
   STORAGE_KEYS.OSC_CONFIG,
-  JSON.stringify({ language: 'ja', disableOverlay: true, vrOsrMode: 'never' }),
+  JSON.stringify({
+    language: 'ja',
+    disableOverlay: true,
+    vrOsrMode: 'never',
+    accentColor: 'cyan',
+  }),
 );
 
 const { useConfigStore } = await import('./configStore');
@@ -53,6 +58,10 @@ describe('loading a config saved by an older build', () => {
     expect(initialConfig).not.toHaveProperty('disableOverlay');
     expect(initialConfig).not.toHaveProperty('vrOsrMode');
     expect(initialConfig.language).toBe('ja');
+  });
+
+  it('moves the removed cyan accent to the blue default', () => {
+    expect(initialConfig.accentColor).toBe('blue');
   });
 });
 
@@ -87,6 +96,11 @@ describe('cross-window broadcast', () => {
 
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEYS.OSC_CONFIG) ?? '{}');
     expect(saved.language).toBe('en');
+  });
+
+  it('sanitizes an incoming accent sent by an older build', () => {
+    broadcastListener!({ ...initialConfig, accentColor: 'cyan' });
+    expect(useConfigStore.getState().config.accentColor).toBe('blue');
   });
 
   it('does not send the adopted config back to the other window', () => {

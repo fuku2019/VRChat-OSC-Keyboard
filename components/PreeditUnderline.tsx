@@ -54,7 +54,7 @@ const PreeditUnderline = ({
         <>
           {text.slice(0, range.start)}
           <span
-            className={`underline underline-offset-4 decoration-slate-900 dark:decoration-white ${
+            className={`underline underline-offset-4 decoration-accent ${
               isConverting ? 'decoration-[3px]' : 'decoration-1 decoration-dotted'
             }`}
           >

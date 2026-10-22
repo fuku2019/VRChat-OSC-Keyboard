@@ -62,9 +62,13 @@ const CURSOR_STYLE: [string, string][] = [
   ['width', '18px'],
   ['height', '18px'],
   ['border-radius', '50%'],
-  ['background-color', 'rgb(var(--rgb-primary-500))'],
-  ['border', '2px solid rgb(var(--rgb-primary-500))'],
-  ['box-shadow', '0 0 10px rgb(var(--rgb-primary-500) / 0.5)'],
+  // Accent fill with an ink ring: an accent-only dot vanished over the Enter key,
+  // which is painted in the same accent.
+  // accent の塗りに ink の縁を付ける。accent だけの点は、同じ accent で塗った
+  // Enter キーの上で見えなくなっていた。
+  ['background-color', 'var(--ui-accent)'],
+  ['border', '2px solid var(--ui-ink)'],
+  ['box-shadow', '0 0 10px color-mix(in srgb, var(--ui-accent) 45%, transparent)'],
   ['pointer-events', 'none'],
   ['will-change', 'transform'],
   ['visibility', 'hidden'],

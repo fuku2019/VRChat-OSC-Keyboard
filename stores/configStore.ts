@@ -189,9 +189,19 @@ if (typeof window !== 'undefined' && window.electronAPI?.onConfigBroadcast) {
     // each other forever.
     // setConfig を経由せず直接ストアへ書く。経由すると値を送り返してしまい、
     // 2つのウィンドウが延々とエコーし合うことになる。
-    saveConfigToStorage(incoming);
+    // Still normalised here: the sender may be an older build that predates a
+    // removed accent preset.
+    // ここでも正規化する。送信元が、削除済みのアクセントを持つ古いビルドの場合がある。
+    const adopted: OscConfig = {
+      ...incoming,
+      accentColor: sanitizeAccentColor(
+        incoming.accentColor,
+        DEFAULT_CONFIG.ACCENT_COLOR,
+      ),
+    };
+    saveConfigToStorage(adopted);
     useConfigStore.setState((state) => ({
-      config: incoming,
+      config: adopted,
       externalRevision: state.externalRevision + 1,
     }));
   });

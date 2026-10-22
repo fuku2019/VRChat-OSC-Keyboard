@@ -4,26 +4,45 @@
  */
 
 import { FC } from 'react';
-import { Info } from 'lucide-react';
+import { Check } from 'lucide-react';
 
 // Shared CSS class constants / 共通CSSクラス定数
-export const SECTION_LABEL_CLASS = 'block dark:text-slate-300 text-slate-600 mb-3 text-sm font-semibold uppercase tracking-wider';
-const BTN_ACTIVE_CLASS = 'dark:bg-primary-900/40 bg-primary-50 border-primary-500 dark:text-primary-300 text-primary-700 shadow-[0_0_15px_rgb(var(--rgb-primary-500)_/_0.15)]';
-const BTN_INACTIVE_CLASS = 'dark:bg-slate-900 bg-slate-50 dark:border-slate-700 border-slate-300 dark:text-slate-400 text-slate-500 hover:border-slate-400 dark:hover:border-slate-500';
+// Sections are separated by a divider, Android settings style, instead of cards.
+// セクションはカードではなく、Android の設定画面のように区切り線で分ける。
+export const SECTION_CLASS = 'pt-6 border-t border-line';
+export const SECTION_LABEL_CLASS = 'block text-accent mb-3 text-sm font-medium';
+export const FILLED_BTN_CLASS =
+  'px-5 py-2.5 rounded-full text-sm font-medium bg-accent text-on-accent disabled:opacity-50 disabled:cursor-not-allowed';
+export const TONAL_BTN_CLASS =
+  'px-5 py-2.5 rounded-full text-sm font-medium bg-tonal text-on-tonal disabled:opacity-50 disabled:cursor-not-allowed';
+export const OUTLINED_BTN_CLASS =
+  'px-5 py-2.5 rounded-full text-sm font-medium border border-line text-accent disabled:opacity-50 disabled:cursor-not-allowed';
+export const DANGER_BTN_CLASS =
+  'px-5 py-2.5 rounded-full text-sm font-medium bg-error-container text-error whitespace-nowrap';
+export const INPUT_CLASS =
+  'px-4 py-2.5 rounded-xl text-sm bg-canvas text-ink border border-line focus:border-accent focus:outline-none tabular-nums disabled:opacity-50 disabled:cursor-not-allowed';
+const BTN_ACTIVE_CLASS = 'bg-tonal text-on-tonal border-transparent';
+const BTN_INACTIVE_CLASS = 'border-line text-ink';
 export const selectedBtnClass = (active: boolean) =>
-  `flex-1 py-3 px-4 rounded-xl border transition-all ${active ? BTN_ACTIVE_CLASS : BTN_INACTIVE_CLASS}`;
+  `flex-1 py-3 px-4 rounded-full border text-sm font-medium inline-flex items-center justify-center gap-2 ${active ? BTN_ACTIVE_CLASS : BTN_INACTIVE_CLASS}`;
+
+// Check mark for the selected segment: the tonal fill alone is a weak cue in light.
+// 選択中のセグメントに付けるチェック。light では tonal の塗りだけでは手がかりが弱い。
+export const SelectedMark: FC<{ active: boolean }> = ({ active }) =>
+  active ? <Check size={16} strokeWidth={2.5} className='shrink-0' /> : null;
 
 // Shared label + description UI / 共通ラベル+説明文UI
 export const SettingLabel: FC<{ label: string; description: string }> = ({ label, description }) => (
   <div className='flex-1'>
-    <p className='text-sm font-semibold dark:text-slate-200 text-slate-700'>{label}</p>
-    <p className='text-xs text-slate-500 mt-1 flex items-start gap-2'>
-      <Info size={14} className='text-slate-400 mt-0.5 flex-shrink-0' />
-      <span>{description}</span>
-    </p>
+    <p className='text-base text-ink'>{label}</p>
+    <p className='text-sm text-ink-muted mt-1 leading-relaxed [word-break:auto-phrase]'>{description}</p>
   </div>
 );
 
+// Material 3 switch. enabledText/disabledText only become a tooltip; the track no
+// longer carries text, and the state is exposed through role="switch".
+// Material 3 のスイッチ。enabledText/disabledText はツールチップになるだけで、
+// トラックに文字は載せない。状態は role="switch" で伝える。
 export const ToggleRow: FC<{
   label: string;
   description: string;
@@ -32,29 +51,28 @@ export const ToggleRow: FC<{
   enabledText?: string;
   disabledText?: string;
 }> = ({ label, description, enabled, onToggle, enabledText, disabledText }) => (
-  <div className='flex items-center justify-between gap-4'>
+  <div className='flex items-center justify-between gap-6'>
     <SettingLabel label={label} description={description} />
     <button
       type='button'
+      role='switch'
       onClick={() => onToggle(!enabled)}
-      aria-pressed={enabled}
-      aria-label={enabled ? enabledText || label : disabledText || label}
-      className={`relative inline-flex h-8 w-14 items-center rounded-full border transition-colors ${
-        enabled
-          ? 'bg-primary-500/80 border-primary-500'
-          : 'bg-slate-200 dark:bg-slate-700 border-slate-300 dark:border-slate-600'
+      aria-checked={enabled}
+      aria-label={label}
+      title={enabled ? enabledText : disabledText}
+      className={`relative inline-flex h-8 w-[52px] shrink-0 items-center rounded-full border-2 ${
+        enabled ? 'bg-accent border-accent' : 'bg-key-fn border-ink-muted'
       }`}
     >
-      {(enabledText || disabledText) && (
-        <span className='absolute inset-0 flex items-center justify-center text-[10px] font-semibold text-white pointer-events-none'>
-          {enabled ? enabledText : disabledText}
-        </span>
-      )}
       <span
-        className={`inline-block h-6 w-6 transform rounded-full bg-white shadow transition-transform ${
-          enabled ? 'translate-x-7' : 'translate-x-1'
+        className={`inline-flex items-center justify-center rounded-full ${
+          enabled
+            ? 'h-6 w-6 translate-x-[22px] bg-on-accent text-accent'
+            : 'h-4 w-4 translate-x-1.5 bg-ink-muted'
         }`}
-      />
+      >
+        {enabled && <Check size={16} strokeWidth={3} />}
+      </span>
     </button>
   </div>
 );
@@ -67,18 +85,14 @@ export const TextSwitchRow: FC<{
   enabledText: string;
   disabledText: string;
 }> = ({ label, description, enabled, onToggle, enabledText, disabledText }) => (
-  <div className='flex items-center justify-between gap-4'>
+  <div className='flex items-center justify-between gap-6'>
     <SettingLabel label={label} description={description} />
     <button
       type='button'
       onClick={() => onToggle(!enabled)}
       aria-pressed={enabled}
       aria-label={enabled ? enabledText : disabledText}
-      className={`px-3 py-2 rounded-lg text-xs font-semibold border min-w-[92px] transition-colors ${
-        enabled
-          ? 'bg-primary-600 hover:bg-primary-500 border-primary-600 text-[rgb(var(--rgb-on-primary))]'
-          : 'dark:bg-slate-700/40 bg-slate-100 hover:bg-slate-200 dark:hover:bg-slate-600/60 dark:border-slate-500 border-slate-300 dark:text-slate-200 text-slate-700'
-      }`}
+      className={`min-w-[96px] ${OUTLINED_BTN_CLASS}`}
     >
       {enabled ? enabledText : disabledText}
     </button>

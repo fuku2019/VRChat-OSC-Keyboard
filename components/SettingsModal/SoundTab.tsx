@@ -6,7 +6,13 @@
 import { FC } from 'react';
 import { KeySoundVariant, OscConfig, UpdateConfigFn } from '../../types';
 import { TranslationStrings } from '../../constants';
-import { SECTION_LABEL_CLASS, SettingLabel, ToggleRow } from './settingsRows';
+import {
+  SECTION_LABEL_CLASS,
+  selectedBtnClass,
+  SelectedMark,
+  SettingLabel,
+  ToggleRow,
+} from './settingsRows';
 
 interface SoundTabProps {
   t: TranslationStrings['settings'];
@@ -17,28 +23,41 @@ interface SoundTabProps {
 const SoundTab: FC<SoundTabProps> = ({ t, localConfig, updateConfig }) => (
   <div className='space-y-8 animate-fade-in'>
     <section>
-      <label className={`${SECTION_LABEL_CLASS} !mb-2`}>{t.keySoundTitle}</label>
-      <div className='p-4 rounded-xl border dark:border-white/10 border-black/10 dark:bg-slate-800/30 bg-white/50 shadow-sm space-y-4'>
+      <label className={SECTION_LABEL_CLASS}>{t.keySoundTitle}</label>
+      <div className='space-y-5'>
         <ToggleRow
           label={t.keySoundEnabled}
           description={t.keySoundEnabledDesc}
           enabled={localConfig.keySoundEnabled}
           onToggle={(value) => updateConfig('keySoundEnabled', value)}
         />
-        <div className='h-px w-full bg-black/5 dark:bg-white/5' />
         <div className='flex items-center justify-between gap-4'>
           <SettingLabel label={t.keySoundVariant} description={t.keySoundVariantDesc} />
-          <select
-            value={localConfig.keySoundVariant}
-            onChange={(e) =>
-              updateConfig('keySoundVariant', e.target.value as KeySoundVariant)
-            }
-            disabled={!localConfig.keySoundEnabled}
-            className='min-w-[160px] px-3 py-2 rounded-lg text-sm border dark:bg-slate-900/80 bg-white/80 dark:border-white/10 border-black/10 dark:text-slate-100 text-slate-800 disabled:opacity-50 disabled:cursor-not-allowed focus:ring-1 focus:ring-primary-500/50 outline-none transition-all shadow-inner'
-          >
-            <option value='soft'>{t.keySoundSoft}</option>
-            <option value='mechanical'>{t.keySoundMechanical}</option>
-          </select>
+          {/* Buttons, not a <select>: its native popup is not painted into the
+              offscreen keyboard window, so it could not be opened in VR.
+              <select> ではなくボタンにする。ネイティブのポップアップはオフスクリーンの
+              キーボードウィンドウに描画されず、VRでは開けなかったため。 */}
+          <div className='flex gap-2 min-w-[280px]'>
+            {([
+              ['soft', t.keySoundSoft],
+              ['mechanical', t.keySoundMechanical],
+            ] as [KeySoundVariant, string][]).map(([variant, label]) => {
+              const active = localConfig.keySoundVariant === variant;
+              return (
+                <button
+                  key={variant}
+                  type='button'
+                  disabled={!localConfig.keySoundEnabled}
+                  aria-pressed={active}
+                  onClick={() => updateConfig('keySoundVariant', variant)}
+                  className={`${selectedBtnClass(active)} disabled:opacity-50 disabled:cursor-not-allowed`}
+                >
+                  <SelectedMark active={active} />
+                  {label}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
     </section>

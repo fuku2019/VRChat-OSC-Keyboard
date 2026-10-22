@@ -27,7 +27,16 @@ import { TRANSLATIONS, STORAGE_KEYS, TIMEOUTS, CHATBOX } from './constants';
 // Shared by the textarea and its preedit underline mirror so both wrap identically.
 // テキストエリアと未確定下線のミラーで共有し、折り返し位置を一致させる。
 const TEXT_LAYOUT_CLASS =
-  'text-2xl md:text-4xl font-medium leading-tight break-all font-sans';
+  'text-4xl font-normal leading-tight break-all font-sans';
+
+// Header controls: borderless round buttons, tonal when on (Material 3).
+// ヘッダーの操作ボタン。枠のない丸いボタンで、ON のときは tonal(Material 3)。
+const HEADER_ICON_CLASS =
+  'relative w-11 h-11 rounded-full flex items-center justify-center text-ink-muted';
+const HEADER_PILL_CLASS =
+  'h-11 px-4 rounded-full flex items-center gap-2 text-[15px]';
+const HEADER_ON_CLASS = 'bg-tonal text-on-tonal font-medium';
+const HEADER_OFF_CLASS = 'text-ink-muted';
 
 // Copy text to clipboard / クリップボードへテキストをコピー
 const copyTextToClipboard = async (text: string): Promise<boolean> => {
@@ -212,7 +221,6 @@ const App = () => {
   // Use keyboard controller hook / キーボードコントローラーフックを使用
   const {
     textareaRef,
-    toggleMode,
     handleTextareaChange,
     handleSelect,
     handlePointerDown,
@@ -330,7 +338,7 @@ const App = () => {
   };
 
   return (
-    <div className='h-full min-h-screen w-full dark:bg-slate-950/90 pure-black:bg-black bg-slate-50 flex flex-col items-center justify-center p-4 overflow-y-auto overflow-x-hidden transition-colors duration-300'>
+    <div className='h-full min-h-screen w-full bg-canvas text-ink flex flex-col items-center justify-center px-4 py-4 overflow-y-auto overflow-x-hidden'>
       <TutorialOverlay
         isOpen={isTutorialOpen}
         onClose={handleTutorialClose}
@@ -338,39 +346,24 @@ const App = () => {
       />
 
       {/* Header / ヘッダー */}
-      <div className='w-full max-w-5xl flex justify-between items-center mb-4 px-2 shrink-0 pt-4 md:pt-0'>
-        <div className='flex items-center gap-3'>
-          <div className='w-3 h-3 rounded-full bg-primary-500 shadow-[0_0_10px_rgb(var(--rgb-primary-500)_/_0.8)]'></div>
-          <h1 className='text-xl md:text-2xl font-bold dark:text-slate-100 text-slate-800 tracking-wider drop-shadow-md flex items-center gap-2'>
-            {t.appTitlePrefix}
-            <span className='ml-0 px-1.5 py-1 bg-primary-500/40 dark:bg-primary-900/80 rounded-md border border-primary-500/60 dark:border-primary-500/30 shadow-lg backdrop-blur-sm'>
-              {t.appTitle}
-            </span>
-            {isDebug && (
-              <span className='text-sm font-medium tracking-wide text-red-500/80 dark:text-red-400/80 ml-2 select-none'>
-                (Debug)
-              </span>
-            )}
-          </h1>
-        </div>
+      <div className='w-full flex justify-between items-center mb-3 pl-2 shrink-0'>
+        <h1 className='text-[17px] font-medium flex items-center gap-2'>
+          {t.appTitlePrefix} {t.appTitle}
+          {isDebug && (
+            <span className='text-sm text-error select-none'>(Debug)</span>
+          )}
+        </h1>
 
-        <div className='flex items-center gap-3'>
+        <div className='flex items-center gap-1'>
           <button
             onClick={handleCopyModeToggle}
-            className={`
-              relative p-2 rounded-md transition-all border shadow-sm flex items-center gap-2 px-3
-              ${
-                config.copyMode
-                  ? 'bg-blue-500/10 border-blue-500/50 text-blue-600 dark:text-blue-400'
-                  : 'dark:bg-slate-800/80 bg-white/80 dark:hover:bg-slate-700 hover:bg-slate-100 dark:text-slate-500 text-slate-400 border-slate-200 dark:border-slate-700'
-              }
-            `}
+            className={`${HEADER_PILL_CLASS} ${config.copyMode ? HEADER_ON_CLASS : HEADER_OFF_CLASS}`}
             title={
               config.copyMode ? t.controls.copyModeOn : t.controls.copyModeOff
             }
           >
-            <Copy size={20} />
-            <span className='text-xs font-bold hidden md:inline'>
+            <Copy size={22} />
+            <span>
               {config.copyMode
                 ? t.controls.copyOnShort
                 : t.controls.copyOffShort}
@@ -380,16 +373,13 @@ const App = () => {
           <button
             onClick={handleAutoSendToggle}
             disabled={config.copyMode}
-            className={`
-              relative p-2 rounded-md transition-all border shadow-sm flex items-center gap-2 px-3
-              ${
-                config.copyMode
-                  ? 'dark:bg-slate-800/60 bg-slate-100/70 dark:text-slate-600 text-slate-400 border-slate-300 dark:border-slate-700 cursor-not-allowed opacity-70'
-                  : config.autoSend
-                    ? 'bg-green-500/10 border-green-500/50 text-green-600 dark:text-green-400'
-                    : 'dark:bg-slate-800/80 bg-white/80 dark:hover:bg-slate-700 hover:bg-slate-100 dark:text-slate-500 text-slate-400 border-slate-200 dark:border-slate-700'
-              }
-            `}
+            className={`${HEADER_PILL_CLASS} ${
+              config.copyMode
+                ? `${HEADER_OFF_CLASS} opacity-40 cursor-not-allowed`
+                : config.autoSend
+                  ? HEADER_ON_CLASS
+                  : HEADER_OFF_CLASS
+            }`}
             title={
               config.copyMode
                 ? t.controls.autoSendDisabledByCopyMode
@@ -398,63 +388,61 @@ const App = () => {
                   : t.controls.autoSendOff
             }
           >
-            {config.autoSend ? <Zap size={20} /> : <ZapOff size={20} />}
-            <span className='text-xs font-bold hidden md:inline'>
-              {config.autoSend ? 'AUTO' : 'MANUAL'}
+            {config.autoSend ? <Zap size={22} /> : <ZapOff size={22} />}
+            <span>
+              {config.autoSend
+                ? t.controls.autoSendOnShort
+                : t.controls.autoSendOffShort}
             </span>
           </button>
 
           <button
             onClick={() => window.electronAPI?.resetOverlayPosition?.()}
-            className='relative p-2 dark:bg-slate-800/80 bg-white/80 rounded-md dark:hover:bg-slate-700 hover:bg-slate-100 dark:text-slate-300 text-slate-500 transition-colors border dark:border-slate-700 border-slate-200 shadow-sm'
-            title='Reset Overlay to Front'
+            className={HEADER_ICON_CLASS}
+            title={t.controls.resetOverlay}
+            aria-label={t.controls.resetOverlay}
           >
-            <RefreshCw size={20} />
+            <RefreshCw size={22} />
           </button>
 
           <button
             onClick={() => setIsSettingsOpen(true)}
-            className='relative p-2 dark:bg-slate-800/80 bg-white/80 rounded-md dark:hover:bg-slate-700 hover:bg-slate-100 dark:text-slate-300 text-slate-500 transition-colors border dark:border-slate-700 border-slate-200 shadow-sm'
+            className={HEADER_ICON_CLASS}
+            title={t.settings.title}
+            aria-label={t.settings.title}
           >
-            <Settings size={20} />
+            <Settings size={22} />
+            {/* Static on purpose: a pulsing dot would make the offscreen window
+                paint every frame for as long as an update is pending.
+                あえて静止させている。点滅させると、更新がある間ずっと
+                オフスクリーンのウィンドウが毎フレーム描画することになる。 */}
             {updateAvailable && (
-              <span className='absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full border-2 dark:border-slate-900 border-white animate-pulse' />
+              <span className='absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-error rounded-full' />
             )}
           </button>
         </div>
       </div>
 
       {/* Text Input Area / テキスト入力エリア */}
-      <div className='w-full max-w-5xl mb-4 relative shrink-0 group px-1'>
+      <div className='w-full mb-3 shrink-0'>
         <div
           className={`
-          relative w-full h-24 md:h-32 dark:bg-slate-900/60 bg-white/60 rounded-xl border
-          flex flex-col px-6 py-2 shadow-lg backdrop-blur-2xl transition-colors overflow-hidden
-          ${error ? 'border-red-500/50' : 'dark:border-slate-500/30 border-slate-300/50'}
+          relative w-full h-36 bg-key rounded-3xl flex flex-col px-6 pt-3 pb-2 overflow-hidden
+          ${error ? 'outline-2 outline-error -outline-offset-2' : 'pure-black:border pure-black:border-line'}
         `}
         >
-          {/* Active bar / アクティブバー */}
-          <div className='absolute bottom-0 left-0 h-[2px] w-full bg-primary-500 scale-x-0 origin-center transition-transform duration-300 ease-out group-focus-within:scale-x-100' />
-          <StatusDisplay
-            displayTextLength={displayText.length}
-            isSending={isSending}
-            lastSent={lastSent}
-            error={error}
-            sendingText={t.status.sending}
-            sentText={t.status.sent}
-          />
-
-          <div className='absolute top-2 left-4 z-10'>
-            <button
-              className='cursor-pointer text-[10px] font-bold dark:bg-slate-800 bg-slate-100 px-2 py-0.5 rounded dark:text-slate-400 text-slate-500 border dark:border-slate-700 border-slate-200 hover:text-primary-600 dark:hover:text-[rgb(var(--rgb-on-primary))] hover:border-primary-500 transition-colors'
-              onClick={toggleMode}
-              tabIndex={-1}
-            >
-              {t.modes[mode]}
-            </button>
+          <div className='absolute top-2 right-3 z-10'>
+            <StatusDisplay
+              displayTextLength={displayText.length}
+              isSending={isSending}
+              lastSent={lastSent}
+              error={error}
+              sendingText={t.status.sending}
+              sentText={t.status.sent}
+            />
           </div>
 
-          <div className='relative w-full h-full mt-6'>
+          <div className='relative w-full h-full mt-7'>
             <PreeditUnderline
               textareaRef={textareaRef}
               text={displayText}
@@ -470,7 +458,7 @@ const App = () => {
               onSelect={handleSelect}
               onPointerDown={handlePointerDown}
               maxLength={CHATBOX.MAX_LENGTH}
-              className={`relative w-full h-full bg-transparent dark:text-white text-slate-900 resize-none outline-none ${TEXT_LAYOUT_CLASS}`}
+              className={`relative w-full h-full bg-transparent text-ink caret-accent resize-none outline-none ${TEXT_LAYOUT_CLASS}`}
               spellCheck='false'
               autoFocus
             />
@@ -479,7 +467,7 @@ const App = () => {
       </div>
 
       {/* Virtual Keyboard / 仮想キーボード */}
-      <div className='w-full max-w-5xl shrink-0 px-1 pb-4'>
+      <div className='w-full shrink-0'>
         <VirtualKeyboard
           {...virtualKeyHandlers}
           mode={mode}

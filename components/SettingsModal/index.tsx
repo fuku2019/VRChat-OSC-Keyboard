@@ -143,8 +143,8 @@ const SettingsModal: FC<SettingsModalProps> = ({
     <div
       className={
         isPanel
-          ? 'absolute inset-0 flex dark:bg-slate-950 pure-black:bg-black bg-slate-50'
-          : `fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 ${animationClass}`
+          ? 'absolute inset-0 flex bg-canvas'
+          : `fixed inset-0 z-[110] flex items-center justify-center bg-black/60 p-4 ${animationClass}`
       }
     >
       <div
@@ -155,18 +155,18 @@ const SettingsModal: FC<SettingsModalProps> = ({
         tabIndex={-1}
         className={
           isPanel
-            ? 'dark:bg-slate-900/80 pure-black:bg-black/80 bg-white/80 w-full h-full flex overflow-hidden transition-colors duration-300'
-            : `dark:bg-slate-900/80 pure-black:bg-black/80 bg-white/80 w-full max-w-4xl h-[85vh] flex rounded-2xl border dark:border-white/10 pure-black:border-slate-800 border-black/10 shadow-2xl overflow-hidden backdrop-blur-2xl transition-colors duration-300 ${modalAnimationClass}`
+            ? 'bg-canvas text-ink w-full h-full flex overflow-hidden'
+            : `bg-canvas text-ink w-full max-w-4xl h-[85vh] flex rounded-[28px] pure-black:border pure-black:border-line overflow-hidden ${modalAnimationClass}`
         }
       >
         {/* Sidebar */}
-        <div className='w-64 border-r dark:border-white/10 border-black/10 flex flex-col bg-slate-100/30 dark:bg-slate-950/30'>
-          <div className='p-6 pb-2'>
-            <h2 id={SETTINGS_MODAL_TITLE_ID} className='text-2xl font-bold dark:text-primary-400 text-primary-600 drop-shadow-sm'>
+        <div className='w-64 flex flex-col'>
+          <div className='px-7 pt-7 pb-4'>
+            <h2 id={SETTINGS_MODAL_TITLE_ID} className='text-2xl'>
               {t.title}
             </h2>
           </div>
-          <nav className='flex-1 overflow-y-auto p-4 space-y-2'>
+          <nav className='flex-1 overflow-y-auto px-3 space-y-1'>
             {TABS.map(tab => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -174,29 +174,34 @@ const SettingsModal: FC<SettingsModalProps> = ({
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-                    isActive 
-                      ? 'bg-primary-500/20 text-primary-700 dark:text-primary-300 font-bold shadow-sm' 
-                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-200'
+                  aria-current={isActive ? 'page' : undefined}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-full text-sm ${
+                    isActive ? 'bg-tonal text-on-tonal font-medium' : 'text-ink'
                   }`}
                 >
-                  <Icon size={18} />
-                  <span className='text-sm'>{tab.label}</span>
-                  {isActive && <div className='absolute left-0 w-1 h-6 bg-primary-500 rounded-r-full' />}
+                  <Icon size={20} />
+                  <span>{tab.label}</span>
                 </button>
               );
             })}
           </nav>
-          <div className='p-4 border-t dark:border-white/10 border-black/10'>
-            <button onClick={onClose} className='w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary-600 hover:bg-primary-500 text-white rounded-lg font-bold transition-all shadow-md active:scale-95'>
-              <X size={18} />
-              {t.save}
-            </button>
-          </div>
+          {/* Changes save as they are made, so closing is not a primary action. The
+              panel has none: it is the settings window, whose title bar closes it and
+              with it the app.
+              変更は即座に保存されるので、閉じる操作は主ボタンにしない。panel には置かない。
+              panel は設定ウィンドウそのもので、タイトルバーで閉じるとアプリも終了する。 */}
+          {!isPanel && (
+            <div className='p-4'>
+              <button onClick={onClose} className='w-full flex items-center justify-center gap-2 px-4 py-3 border border-line text-ink rounded-full font-medium'>
+                <X size={18} />
+                {t.save}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Content Area */}
-        <div ref={contentRef} className='flex-1 overflow-y-auto p-8 bg-transparent'>
+        <div ref={contentRef} className='flex-1 overflow-y-auto my-3 mr-3 px-8 py-7 bg-key rounded-3xl pure-black:border pure-black:border-line'>
           {activeTab === 'general' && (
             <GeneralTab
               t={t}

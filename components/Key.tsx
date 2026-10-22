@@ -1,5 +1,12 @@
 import { FC, useRef, useEffect } from 'react';
-import { ChevronUp, ChevronDown } from 'lucide-react';
+import {
+  ArrowBigUp,
+  ArrowBigUpDash,
+  ChevronDown,
+  ChevronUp,
+  Delete,
+  Eraser,
+} from 'lucide-react';
 import { KeyConfig } from '../types';
 import { TIMEOUTS } from '../constants';
 
@@ -24,8 +31,14 @@ const Key: FC<KeyProps> = ({
   className = '',
   style = {},
 }) => {
+  // Flat Gboard-style key: no border, shadow or blur, and no transition, so a
+  // press repaints the offscreen window once instead of for every animated frame.
+  // Hover and press feedback comes from the state layers in index.css.
+  // Gboard 風の平らなキー。枠・影・ぼかし・トランジションを付けないので、押下時の
+  // オフスクリーンウィンドウの再描画はアニメーションの各フレームではなく1回で済む。
+  // ホバーと押下の手応えは index.css の状態レイヤーが受け持つ。
   const baseClasses =
-    'rounded-md font-bold text-xl transition-all duration-150 active:scale-95 select-none flex shadow-sm border relative items-center justify-center backdrop-blur-md overflow-hidden';
+    'relative flex items-center justify-center select-none overflow-hidden rounded-[10px] text-[22px] font-medium transition-none';
 
   const timerRef = useRef<number | null>(null);
   const isLongPressTriggeredRef = useRef(false);
@@ -117,14 +130,12 @@ const Key: FC<KeyProps> = ({
   };
 
   const colorClasses = highlight
-    ? 'bg-primary-500/80 text-[rgb(var(--rgb-on-primary))] hover:bg-primary-500 border-primary-500/50'
+    ? 'bg-key-active text-on-key-active'
     : config.action === 'send'
-      ? 'bg-green-500/80 text-white hover:bg-green-500 border-green-500/50'
-      : config.action === 'backspace' || config.action === 'clear'
-        ? 'dark:bg-red-900/40 bg-red-100/60 dark:text-red-200 text-red-800 dark:hover:bg-red-900/60 hover:bg-red-200/80 dark:border-red-500/30 border-red-500/30'
-        : config.action
-          ? 'dark:bg-slate-700/40 bg-slate-300/40 dark:text-slate-200 text-slate-800 dark:hover:bg-slate-600/60 hover:bg-slate-400/60 dark:border-white/10 border-black/10'
-          : 'dark:bg-white/5 bg-black/5 dark:text-slate-100 text-slate-900 dark:hover:bg-white/10 hover:bg-black/10 dark:border-white/10 border-black/10';
+      ? 'bg-accent text-on-accent'
+      : config.action && config.action !== 'space'
+        ? 'bg-key-fn text-ink'
+        : 'bg-key text-ink';
 
   // Label Logic / ラベルロジック
   let displayLabel = config.label;
@@ -139,9 +150,44 @@ const Key: FC<KeyProps> = ({
     }
   }
 
-  // Handle Shift Key label itself / Shiftキー自体のラベルを処理する
-  if (config.action === 'shift' && isShiftActive)
-    displayLabel = isCapsLock ? 'SHIFT ↑' : 'SHIFT';
+  // The shifted symbol, shown small in the corner while Shift is off. Skipped when
+  // it would repeat the label ('_') or there is none ('0').
+  // Shift が OFF の間、角に小さく出すシフト時の記号。ラベルと同じ('_')か、
+  // 無い('0')ときは出さない。
+  const hint =
+    !isShiftActive && config.shiftValue && config.shiftValue !== config.label
+      ? config.shiftValue
+      : null;
+
+  const renderContent = () => {
+    switch (config.action) {
+      case 'history-up':
+        return <ChevronUp size={26} />;
+      case 'history-down':
+        return <ChevronDown size={26} />;
+      case 'backspace':
+        return <Delete size={26} />;
+      case 'shift':
+        return isCapsLock ? (
+          <ArrowBigUpDash size={26} fill='currentColor' />
+        ) : (
+          <ArrowBigUp size={26} fill={isShiftActive ? 'currentColor' : 'none'} />
+        );
+      case 'clear':
+        return (
+          <span className='flex items-center gap-2 text-[17px]'>
+            <Eraser size={20} className='text-error' />
+            {displayLabel}
+          </span>
+        );
+      case 'space':
+        return <span className='text-base'>{displayLabel}</span>;
+      case undefined:
+        return <span>{displayLabel}</span>;
+      default:
+        return <span className='text-[17px]'>{displayLabel}</span>;
+    }
+  };
 
   return (
     <button
@@ -152,6 +198,8 @@ const Key: FC<KeyProps> = ({
         height: '100%',
         ...style,
       }}
+      aria-label={displayLabel}
+      data-action={config.action}
       data-vr-key='true'
       // How a VR trigger drives this key: 'press' clicks the moment the trigger
       // goes down; 'hold' presses on trigger down and releases on trigger up, so
@@ -166,12 +214,19 @@ const Key: FC<KeyProps> = ({
       onClick={handleClick}
       type='button'
     >
-      {config.action === 'history-up' ? (
-        <ChevronUp size={24} />
-      ) : config.action === 'history-down' ? (
-        <ChevronDown size={24} />
-      ) : (
-        <span>{displayLabel}</span>
+      {renderContent()}
+      {/* CapsLock bar: the dash in the icon alone was too small to see in a headset.
+          CapsLock の目印。アイコンの短い線だけではヘッドセットで見えなかった。 */}
+      {config.action === 'shift' && isCapsLock && (
+        <span aria-hidden='true' className='absolute bottom-2 w-6 h-[3px] rounded-full bg-current' />
+      )}
+      {hint && (
+        <span
+          aria-hidden='true'
+          className='absolute top-1.5 right-2.5 text-[15px] leading-none text-ink-muted'
+        >
+          {hint}
+        </span>
       )}
     </button>
   );

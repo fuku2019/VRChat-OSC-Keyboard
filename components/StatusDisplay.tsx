@@ -20,32 +20,26 @@ const StatusDisplay = ({
   sentText,
 }: StatusDisplayProps) => {
   return (
-    <div className='absolute top-2 right-4 flex gap-3 items-center pointer-events-none z-10'>
+    <div className='flex gap-3 items-center pointer-events-none text-sm tabular-nums'>
+      {error && (
+        <span className='text-error bg-error-container flex items-center gap-1.5 px-3 py-1 rounded-full'>
+          <WifiOff size={14} /> {error}
+        </span>
+      )}
+      {isSending && <span className='text-ink-muted'>{sendingText}</span>}
+      {lastSent && <span className='text-success'>{sentText}</span>}
       {/* Character Counter / 文字数カウンター */}
       <span
-        className={`text-[10px] font-mono px-1.5 py-0.5 rounded border transition-colors ${
+        className={
           displayTextLength >= CHATBOX.MAX_LENGTH
-            ? 'text-red-400 border-red-500/50 bg-red-900/20'
+            ? 'text-error bg-error-container px-3 py-1 rounded-full'
             : displayTextLength > CHATBOX.WARNING_THRESHOLD
-              ? 'text-amber-400 border-amber-500/50 bg-amber-900/20'
-              : 'dark:text-slate-400 text-slate-500 dark:border-slate-600 border-slate-200 dark:bg-slate-800/50 bg-slate-100/50'
-        }`}
+              ? 'text-warning bg-warning-container px-3 py-1 rounded-full'
+              : 'text-ink-muted px-3 py-1'
+        }
       >
-        {displayTextLength}/{CHATBOX.MAX_LENGTH}
+        {displayTextLength} / {CHATBOX.MAX_LENGTH}
       </span>
-      {isSending && (
-        <span className='text-[10px] text-primary-400 font-mono animate-pulse'>
-          {sendingText}
-        </span>
-      )}
-      {lastSent && (
-        <span className='text-[10px] text-green-400 font-mono'>{sentText}</span>
-      )}
-      {error && (
-        <span className='text-[10px] text-red-400 font-mono flex items-center gap-1 bg-red-900/20 px-1 rounded border border-red-900/50'>
-          <WifiOff size={10} /> {error}
-        </span>
-      )}
     </div>
   );
 };

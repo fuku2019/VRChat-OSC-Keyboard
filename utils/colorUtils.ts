@@ -5,8 +5,19 @@ type HSL = { h: number; s: number; l: number };
 
 const HEX6_COLOR_REGEX = /^#?[0-9a-f]{6}$/i;
 
+// Built-in accent ids. 'cyan' was the default until the Gboard redesign and is
+// still found in saved configs; sanitizeAccentColor maps it to the fallback.
+// 組み込みのアクセントID。'cyan' は Gboard 風への刷新まで既定値で、保存済みの設定に
+// まだ残っている。sanitizeAccentColor がフォールバックへ移す。
+export const PRESET_ACCENT_IDS = ['blue', 'purple'] as const;
+export type PresetAccentId = (typeof PRESET_ACCENT_IDS)[number];
+const LEGACY_ACCENT_IDS = ['cyan'];
+
+export const isPresetAccentId = (color: unknown): color is PresetAccentId =>
+  (PRESET_ACCENT_IDS as readonly unknown[]).includes(color);
+
 export const isPresetAccentColor = (color?: string): boolean =>
-  !color || color === 'cyan' || color === 'purple';
+  !color || isPresetAccentId(color);
 
 export const normalizeCustomAccentColor = (color: string): string =>
   color.startsWith('#') ? color.toLowerCase() : `#${color.toLowerCase()}`;
@@ -16,9 +27,10 @@ export const isValidCustomAccentColor = (color: string): boolean =>
 
 export const sanitizeAccentColor = (
   color: unknown,
-  fallback: string = 'cyan',
+  fallback: string = 'blue',
 ): string => {
   if (typeof color !== 'string') return fallback;
+  if (LEGACY_ACCENT_IDS.includes(color)) return fallback;
   if (isPresetAccentColor(color)) return color || fallback;
   if (isValidCustomAccentColor(color)) {
     return normalizeCustomAccentColor(color);
@@ -120,6 +132,26 @@ export function getLuminance(hex: string): number {
   return 0.2126 * Rs + 0.7152 * Gs + 0.0722 * Bs;
 }
 
+// WCAG contrast ratio between two hex colors
+export function getContrastRatio(a: string, b: string): number {
+  const la = getLuminance(a);
+  const lb = getLuminance(b);
+  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+}
+
+// Pick a text color for a background: the first candidate that reaches 4.5:1,
+// otherwise the candidate with the highest contrast. A fixed luminance threshold
+// put white text on yellow accents (2.2:1).
+// 背景に載せる文字色を選ぶ。4.5:1 に届く最初の候補、どれも届かなければ最もコントラストの
+// 高い候補を返す。輝度の固定しきい値では、黄色のアクセントに白文字(2.2:1)が載っていた。
+export function pickTextColor(background: string, candidates: string[]): string {
+  const found = candidates.find((c) => getContrastRatio(background, c) >= 4.5);
+  if (found) return found;
+  return candidates.reduce((best, c) =>
+    getContrastRatio(background, c) > getContrastRatio(background, best) ? c : best,
+  );
+}
+
 // Generate a palette based on a single hex color
 // Generates shades 50-900
 export const generatePalette = (
@@ -184,29 +216,31 @@ export const generatePalette = (
 };
 
 // Preset Palettes
-export const PRESET_PALETTES: Record<string, Record<number, string>> = {
-  cyan: {
-    50: '#ecfeff',
-    100: '#cffafe',
-    200: '#a5f3fc',
-    300: '#67e8f9',
-    400: '#22d3ee',
-    500: '#06b6d4',
-    600: '#0891b2',
-    700: '#0e7490',
-    800: '#155e75',
-    900: '#164e63',
+export const PRESET_PALETTES: Record<PresetAccentId, Record<number, string>> = {
+  // Google Material 3 baseline tones (Gboard's default blue) / Google Material 3 ベースラインのトーン(Gboard 既定の青)
+  blue: {
+    50: '#eef4ff',
+    100: '#d3e3fd',
+    200: '#a8c7fa',
+    300: '#7cacf8',
+    400: '#4c8df6',
+    500: '#1b6ef3',
+    600: '#0b57d0',
+    700: '#0842a0',
+    800: '#062e6f',
+    900: '#041e49',
   },
+  // Material 3 baseline tones, like blue / blue と同じく Material 3 ベースラインのトーン
   purple: {
-    50: '#faf5ff',
-    100: '#f3e8ff',
-    200: '#e9d5ff',
-    300: '#d8b4fe',
-    400: '#c084fc',
-    500: '#a855f7',
-    600: '#9333ea',
-    700: '#7e22ce',
-    800: '#6b21a8',
-    900: '#581c87',
+    50: '#f6edff',
+    100: '#eaddff',
+    200: '#d0bcff',
+    300: '#b69df8',
+    400: '#9a82db',
+    500: '#7f67be',
+    600: '#6750a4',
+    700: '#4f378b',
+    800: '#381e72',
+    900: '#21005d',
   },
 };

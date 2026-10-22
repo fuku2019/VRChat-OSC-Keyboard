@@ -3,6 +3,7 @@ import { OscConfig, UpdateConfigFn } from '../types';
 import { useConfigStore } from '../stores/configStore';
 import {
   isPresetAccentColor,
+  isPresetAccentId,
   isValidCustomAccentColor,
   normalizeCustomAccentColor,
 } from '../utils/colorUtils';
@@ -111,7 +112,7 @@ export const useSettingsDraft = (isOpen: boolean): UseSettingsDraftReturn => {
 
   // Handle accent color change / アクセントカラー変更の処理
   const handleAccentColorChange = (color: string) => {
-    if (color === 'cyan' || color === 'purple') {
+    if (isPresetAccentId(color)) {
       updateConfig('accentColor', color);
       return;
     }

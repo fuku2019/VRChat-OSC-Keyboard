@@ -8,6 +8,8 @@ import {
   generatePalette,
   PRESET_PALETTES,
   sanitizeAccentColor,
+  getContrastRatio,
+  pickTextColor,
 } from './colorUtils';
 
 describe('hexToRgb / HEXからRGBへの変換', () => {
@@ -107,9 +109,13 @@ describe('generatePalette / パレット生成', () => {
 });
 
 describe('PRESET_PALETTES / プリセットパレット', () => {
-  it('contains cyan preset', () => {
-    expect(PRESET_PALETTES).toHaveProperty('cyan');
-    expect(PRESET_PALETTES.cyan).toHaveProperty('500');
+  it('contains blue preset', () => {
+    expect(PRESET_PALETTES).toHaveProperty('blue');
+    expect(PRESET_PALETTES.blue).toHaveProperty('500');
+  });
+
+  it('no longer contains the removed cyan preset', () => {
+    expect(PRESET_PALETTES).not.toHaveProperty('cyan');
   });
 
   it('contains purple preset', () => {
@@ -117,8 +123,8 @@ describe('PRESET_PALETTES / プリセットパレット', () => {
     expect(PRESET_PALETTES.purple).toHaveProperty('500');
   });
 
-  it('cyan preset has valid hex colors', () => {
-    Object.values(PRESET_PALETTES.cyan).forEach((hex) => {
+  it('blue preset has valid hex colors', () => {
+    Object.values(PRESET_PALETTES.blue).forEach((hex) => {
       expect(hex).toMatch(/^#[0-9A-Fa-f]{6}$/);
     });
   });
@@ -132,8 +138,13 @@ describe('PRESET_PALETTES / プリセットパレット', () => {
 
 describe('sanitizeAccentColor / アクセントカラー正規化', () => {
   it('keeps preset colors as-is', () => {
-    expect(sanitizeAccentColor('cyan')).toBe('cyan');
+    expect(sanitizeAccentColor('blue')).toBe('blue');
     expect(sanitizeAccentColor('purple')).toBe('purple');
+  });
+
+  it('moves the removed cyan preset to the fallback', () => {
+    expect(sanitizeAccentColor('cyan')).toBe('blue');
+    expect(sanitizeAccentColor('cyan', 'purple')).toBe('purple');
   });
 
   it('normalizes valid custom hex', () => {
@@ -142,8 +153,26 @@ describe('sanitizeAccentColor / アクセントカラー正規化', () => {
   });
 
   it('falls back for invalid values', () => {
-    expect(sanitizeAccentColor('#12')).toBe('cyan');
-    expect(sanitizeAccentColor('not-a-color')).toBe('cyan');
+    expect(sanitizeAccentColor('#12')).toBe('blue');
+    expect(sanitizeAccentColor('not-a-color')).toBe('blue');
     expect(sanitizeAccentColor('', '#ff0000')).toBe('#ff0000');
+  });
+});
+
+describe('pickTextColor / 文字色の選択', () => {
+  it('keeps the first candidate when it reaches 4.5:1', () => {
+    expect(pickTextColor('#0b57d0', ['#ffffff', '#000000'])).toBe('#ffffff');
+  });
+
+  it('skips white on a yellow accent', () => {
+    // generatePalette('#ffd700')[600] is #CCAC00: white on it is about 2.2:1.
+    // generatePalette('#ffd700')[600] は #CCAC00 で、白文字は約 2.2:1。
+    const yellow600 = generatePalette('#ffd700', 'light')[600];
+    expect(getContrastRatio(yellow600, '#ffffff')).toBeLessThan(4.5);
+    expect(pickTextColor(yellow600, ['#ffffff', '#000000'])).toBe('#000000');
+  });
+
+  it('falls back to the highest contrast when none reaches 4.5:1', () => {
+    expect(pickTextColor('#777777', ['#888888', '#ffffff'])).toBe('#ffffff');
   });
 });

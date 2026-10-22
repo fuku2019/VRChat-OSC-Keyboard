@@ -258,7 +258,7 @@ export function createKeyboardWindow(options = {}) {
     minHeight: 700,
     frame: true,
     transparent: false,
-    backgroundColor: '#020617', // Match slate-950
+    backgroundColor: '#1e2228', // Dark canvas token for the blue accent (index.css) / 青アクセントでの dark の canvas トークン(index.css)
     show: false, // Wait for content to be ready before showing / コンテンツの準備ができるまで表示を待つ
     icon: path.join(__dirname, '../../dist/icon.ico'), // Try to load icon if available / 利用可能な場合はアイコンをロードしようとする
     webPreferences: {
@@ -359,7 +359,7 @@ export function createSettingsWindow() {
     minHeight: 600,
     frame: true,
     transparent: false,
-    backgroundColor: '#020617', // Match slate-950
+    backgroundColor: '#1e2228', // Dark canvas token for the blue accent (index.css) / 青アクセントでの dark の canvas トークン(index.css)
     show: false,
     icon: path.join(__dirname, '../../dist/icon.ico'),
     webPreferences: {

@@ -46,7 +46,7 @@ describe('variant="panel"', () => {
     const classes = screen.getByRole('dialog').className;
     expect(classes).toContain('h-full');
     expect(classes).not.toContain('max-w-4xl');
-    expect(classes).not.toContain('rounded-2xl');
+    expect(classes).not.toContain('rounded-[28px]');
   });
 });
 
