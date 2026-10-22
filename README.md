@@ -5,7 +5,7 @@
 
 </div>
 
-# VRChat-OSC-Keyboard
+# VRChat-OSC-Keyboard:Re
 
 <div align="center">
 
