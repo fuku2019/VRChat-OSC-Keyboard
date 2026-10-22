@@ -1,7 +1,8 @@
-import { FC, useRef, useEffect } from 'react';
+import { FC, ReactNode, useRef, useEffect } from 'react';
 import {
   ArrowBigUp,
   ArrowBigUpDash,
+  ArrowRightToLine,
   ChevronDown,
   ChevronUp,
   Delete,
@@ -17,6 +18,7 @@ interface KeyProps {
   highlight?: boolean;
   isShiftActive?: boolean;
   isCapsLock?: boolean;
+  icon?: ReactNode; // Drawn instead of the label; the label stays as aria-label / ラベルの代わりに描く。ラベルは aria-label に残る
   className?: string; // Additional classes / 追加のクラス
   style?: React.CSSProperties; // Additional styles / 追加のスタイル
 }
@@ -28,6 +30,7 @@ const Key: FC<KeyProps> = ({
   highlight = false,
   isShiftActive = false,
   isCapsLock = false,
+  icon,
   className = '',
   style = {},
 }) => {
@@ -173,6 +176,9 @@ const Key: FC<KeyProps> = ({
         ) : (
           <ArrowBigUp size={26} fill={isShiftActive ? 'currentColor' : 'none'} />
         );
+      case 'tab':
+        return <ArrowRightToLine size={26} />;
+      // Keeps its word: an eraser alone did not say "everything" / 文字を残す。消しゴムだけでは全消去と伝わらない
       case 'clear':
         return (
           <span className='flex items-center gap-2 text-[17px]'>
@@ -199,6 +205,7 @@ const Key: FC<KeyProps> = ({
         ...style,
       }}
       aria-label={displayLabel}
+      aria-pressed={config.action === 'shift' ? isShiftActive : undefined}
       data-action={config.action}
       data-vr-key='true'
       // How a VR trigger drives this key: 'press' clicks the moment the trigger
@@ -214,7 +221,7 @@ const Key: FC<KeyProps> = ({
       onClick={handleClick}
       type='button'
     >
-      {renderContent()}
+      {icon ?? renderContent()}
       {/* CapsLock bar: the dash in the icon alone was too small to see in a headset.
           CapsLock の目印。アイコンの短い線だけではヘッドセットで見えなかった。 */}
       {config.action === 'shift' && isCapsLock && (

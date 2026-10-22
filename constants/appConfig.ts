@@ -35,6 +35,7 @@ export const TIMEOUTS = {
   ERROR_NOTIFICATION: 5000, // Error message display duration / エラーメッセージ表示時間
   MODAL_ANIMATION: 200, // Modal open/close animation duration / モーダル開閉アニメーション時間
   LONG_PRESS_THRESHOLD: 500, // Long press detection threshold / 長押し検出しきい値
+  SHIFT_DOUBLE_TAP: 400, // Second Shift tap within this locks Shift (CapsLock), like Gboard / この時間内にShiftをもう一度押すとロック(CapsLock)する。Gboardと同じ
   FOCUS_DELAY: 100, // Delay before focusing textarea / テキストエリアにフォーカスするまでの遅延
   VR_SCROLL_SELECTION_LOCK: 120, // Keep selection lock briefly during VR scroll drag / VRスクロールドラッグ中の選択抑止保持時間
 } as const;

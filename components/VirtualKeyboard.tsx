@@ -1,5 +1,6 @@
-import { useState, FC, memo } from 'react';
-import { KEYBOARD_LAYOUT, TRANSLATIONS, KEYBOARD_GRID } from '../constants';
+import { useRef, useState, FC, memo } from 'react';
+import { CornerDownLeft } from 'lucide-react';
+import { KEYBOARD_LAYOUT, TRANSLATIONS, KEYBOARD_GRID, TIMEOUTS } from '../constants';
 import { KeyConfig, InputMode, Language, KeySoundVariant } from '../types';
 import type { ImeCandidate } from '../types/ime';
 import Key from './Key';
@@ -17,6 +18,7 @@ interface VirtualKeyboardProps {
   candidates: ImeCandidate[];
   candidateIndex: number;
   isConverting: boolean;
+  copyMode: boolean; // The Enter key copies instead of sending / Enterキーが送信ではなくコピーする
   onCommitCandidate: (index: number) => void;
   language: Language;
   keySoundEnabled: boolean;
@@ -80,6 +82,7 @@ const VirtualKeyboard: FC<VirtualKeyboardProps> = ({
   candidates,
   candidateIndex,
   isConverting,
+  copyMode,
   onCommitCandidate,
   language,
   keySoundEnabled,
@@ -89,6 +92,8 @@ const VirtualKeyboard: FC<VirtualKeyboardProps> = ({
 }) => {
   const [shift, setShift] = useState(false);
   const [capsLock, setCapsLock] = useState(false);
+  // When Shift was last turned on, to spot a double tap / ダブルタップを判定するため、Shift を最後に ON にした時刻
+  const shiftOnAtRef = useRef(0);
   const t = TRANSLATIONS[language];
   const tKeys = t.keys;
   const playKeyPressSound = useKeyPressSound({
@@ -105,7 +110,13 @@ const VirtualKeyboard: FC<VirtualKeyboardProps> = ({
         if (capsLock) {
           setCapsLock(false);
           setShift(false);
+        } else if (shift && Date.now() - shiftOnAtRef.current <= TIMEOUTS.SHIFT_DOUBLE_TAP) {
+          // Double tap locks Shift, like Gboard. Long press still does too.
+          // Gboard と同じくダブルタップでロックする。長押しでもロックできる。
+          setCapsLock(true);
+          setShift(false);
         } else {
+          if (!shift) shiftOnAtRef.current = Date.now();
           setShift(!shift);
         }
         return;
@@ -158,6 +169,16 @@ const VirtualKeyboard: FC<VirtualKeyboardProps> = ({
     setCapsLock(!capsLock);
     setShift(false); // Reset temp shift logic / 一時的なシフトロジックをリセット
   };
+
+  // The Enter key commits a conversion, otherwise sends (or copies in copy mode);
+  // its face follows. useKeyboardController decides the action itself.
+  // Enter キーは変換中なら確定、それ以外は送信(コピーモードではコピー)し、表示もそれに
+  // 合わせる。動作そのものは useKeyboardController が決める。
+  const enterLabel = isConverting
+    ? tKeys.enter
+    : copyMode
+      ? t.controls.copyOnShort
+      : tKeys.send;
 
   // Handle candidate commit / 変換候補の確定処理
   const handleCandidateCommit = (index: number) => {
@@ -262,11 +283,12 @@ const VirtualKeyboard: FC<VirtualKeyboardProps> = ({
                 >
                   <Key
                     config={{
-                      label: tKeys.send,
+                      label: enterLabel,
                       value: 'enter',
                       action: 'send',
                       gridCols: 6,
                     }}
+                    icon={isConverting ? <CornerDownLeft size={28} /> : undefined}
                     onPress={handleKeyPress}
                     style={{
                       position: 'absolute',
