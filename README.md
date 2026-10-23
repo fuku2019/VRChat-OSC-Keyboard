@@ -152,6 +152,7 @@ npm run dist
 - Mozc dictionary_oss由来データを同梱しています。
 - 辞書shardは `dictionary00-09` 由来のフル語彙を先頭1文字キー分割で再生成しています。
 - 詳細は `THIRD_PARTY_MOZC_DICTIONARY_LICENSES.txt` を参照してください。
+- UIのアイコンには [Lucide](https://lucide.dev)（ISC License、Feather由来の部分はMIT License）を使用しています。詳細は `THIRD_PARTY_ICON_LICENSES.txt` を参照してください。
 
 ***
 <table>

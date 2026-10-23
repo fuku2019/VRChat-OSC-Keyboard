@@ -86,6 +86,7 @@
       "package.json",
       "THIRD_PARTY_MOZC_DICTIONARY_LICENSES.txt",
       "THIRD_PARTY_FONT_LICENSES.txt",
+      "THIRD_PARTY_ICON_LICENSES.txt",
       "native/index.node",
       "native/openvr_api.dll",
       "img/**/*",
